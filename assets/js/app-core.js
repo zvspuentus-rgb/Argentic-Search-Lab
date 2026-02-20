@@ -39,7 +39,9 @@
       attachments: [],
       discoveryCount: 24,
       sourcesLayout: "row",
-      mediaCursor: null
+      mediaCursor: null,
+      runningPreview: false,
+      runningPreviewMode: "deep"
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -175,6 +177,36 @@
       const label = activeFlowLabel() || "Collection • Search • Compute • Answer";
       text.textContent = `Running: ${label}`;
       root.classList.add("active");
+    }
+
+    function setRunningPreview(on, mode = "deep") {
+      state.runningPreview = !!on;
+      state.runningPreviewMode = mode || "deep";
+    }
+
+    function buildRunningMarkdown() {
+      const active = activeFlowLabel() || "Collection";
+      const modeLabel = state.runningPreviewMode === "quick" ? "Quick" : "Deep";
+      const stageCopy = {
+        Analyzer: "Analyzing intent and constraints",
+        Planner: "Building search plan and query strategy",
+        Refiner: "Refining and deduplicating query set",
+        Search: "Collecting sources across selected lanes",
+        Critic: "Scoring coverage and checking blind spots",
+        Writing: "Synthesizing final answer with citations",
+        Copilot: "Generating follow-up suggestions"
+      };
+      const action = stageCopy[active] || "Collection • Search • Compute • Answer";
+      const trace = state.logs.slice(0, 4).map((x) => `- [${x.stage}] ${x.message}`).join("\n") || "- Initializing agents...";
+      return [
+        `### ${modeLabel} Research Running...`,
+        "",
+        `**Active Agent:** ${active}`,
+        `**Action:** ${action}`,
+        "",
+        "#### Live Trace",
+        trace
+      ].join("\n");
     }
 
     function markdownToSafeHtml(mdText) {
@@ -596,6 +628,9 @@
       updateFlowFromLog(stage, level);
       renderLogs();
       renderFlow();
+      if (state.busy && state.runningPreview) {
+        renderAnswerMarkdown(buildRunningMarkdown());
+      }
       renderRunStageIndicator();
     }
 

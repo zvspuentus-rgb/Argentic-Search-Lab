@@ -932,7 +932,8 @@
       renderFollowups();
       renderAnswerMedia();
       stopAnswerAnimation();
-      renderAnswerMarkdown("### Quick Search\nLooking for a fast answer...");
+      setRunningPreview(true, "quick");
+      renderAnswerMarkdown(buildRunningMarkdown());
       addLog("analyzer", `Quick mode active (profile=${mode})`, "ok");
 
       try {
@@ -964,6 +965,7 @@
         updateAnswerMeta();
 
         if (!quickSources.length) {
+          setRunningPreview(false);
           renderAnswerMarkdown("### Search temporarily unavailable\nSearXNG is currently unavailable. Please try again shortly.");
           addLog("search", "Quick mode finished without sources", "warn");
           setStatus("Quick mode: no sources.");
@@ -983,12 +985,17 @@
           maxTokens: maxOutTokens,
           streamOutput: streamSynthesis,
           thinkingMode,
-          onStreamText: (partial) => { renderAnswerMarkdown(partial); }
+          onStreamText: (partial) => {
+            setRunningPreview(false);
+            renderAnswerMarkdown(partial);
+          }
         });
         if (streamSynthesis) {
+          setRunningPreview(false);
           stopAnswerAnimation();
           renderAnswerMarkdown(answer || "No answer generated.");
         } else {
+          setRunningPreview(false);
           await animateAnswerMarkdown(answer || "No answer generated.");
         }
         await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
@@ -1014,10 +1021,12 @@
         addLog("done", "Quick pipeline completed", "ok");
         saveSession();
       } catch (err) {
+        setRunningPreview(false);
         stopAnswerAnimation();
         setStatus(`Error: ${err.message}`);
         addLog("error", err.message || String(err), "err");
       } finally {
+        setRunningPreview(false);
         setBusy(false);
       }
     }
@@ -1165,7 +1174,8 @@
       renderAnswerNotes("No notes yet.");
       updateAnswerMeta();
       stopAnswerAnimation();
-      renderAnswerMarkdown("### Running...\nCollecting sources and composing an answer.");
+      setRunningPreview(true, "deep");
+      renderAnswerMarkdown(buildRunningMarkdown());
 
       try {
         const preset = DEPTH_PRESETS[mode] || DEPTH_PRESETS.balanced;
@@ -1253,14 +1263,17 @@
             thinkingMode,
             temperature: DEPTH_PRESETS[mode]?.temperature,
             onStreamText: (partial) => {
+              setRunningPreview(false);
               renderAnswerMarkdown(partial);
             }
           });
 
           if (streamSynthesis) {
+            setRunningPreview(false);
             stopAnswerAnimation();
             renderAnswerMarkdown(answer || "No answer generated.");
           } else {
+            setRunningPreview(false);
             await animateAnswerMarkdown(answer || "No answer generated.");
           }
           await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
@@ -1511,14 +1524,17 @@
           thinkingMode,
           temperature: DEPTH_PRESETS[mode]?.temperature,
           onStreamText: (partial) => {
+            setRunningPreview(false);
             renderAnswerMarkdown(partial);
           }
         });
 
         if (streamSynthesis) {
+          setRunningPreview(false);
           stopAnswerAnimation();
           renderAnswerMarkdown(answer || "No answer generated.");
         } else {
+          setRunningPreview(false);
           await animateAnswerMarkdown(answer || "No answer generated.");
         }
         try {
@@ -1553,11 +1569,13 @@
         setStatus("Done.");
       } catch (err) {
         console.error(err);
+        setRunningPreview(false);
         stopAnswerAnimation();
         renderAnswerMarkdown(`### Pipeline failed\n\nCheck **Agent Timeline** and **Debug Console**.\n\n\`${String(err.message || err)}\``);
         setStatus(`Error: ${err.message}`);
         addLog("error", err.message || String(err), "err");
       } finally {
+        setRunningPreview(false);
         setBusy(false);
       }
       } finally {
