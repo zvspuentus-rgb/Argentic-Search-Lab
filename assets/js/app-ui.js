@@ -336,6 +336,83 @@
       return map[String(code || "").toLowerCase()] || "English";
     }
 
+    function looksMostlyHebrew(text) {
+      const src = String(text || "");
+      if (!src) return false;
+      const heb = (src.match(/[\u0590-\u05FF]/g) || []).length;
+      const lat = (src.match(/[A-Za-z]/g) || []).length;
+      return heb > 0 && heb >= lat;
+    }
+
+    async function forcePromptLanguage({
+      lmBase,
+      model,
+      promptText,
+      draftText,
+      targetLang
+    }) {
+      const content = normalizeQuery(promptText);
+      if (!content) return "";
+      const lang = String(targetLang || "en").toLowerCase();
+
+      if (lang === "en") {
+        return await maybeTranslatePromptToEnglish({
+          text: content,
+          lmBase,
+          model,
+          enabled: true
+        });
+      }
+
+      const autoLikeHebrew = lang === "auto" && looksMostlyHebrew(draftText);
+      const directive = lang === "auto"
+        ? "Rewrite and return the final prompt in the SAME language as the user's original draft."
+        : `Rewrite and return the final prompt in ${labelForLanguageCode(lang)}.`;
+
+      const out = await lmChat({
+        lmBase,
+        payload: {
+          model,
+          temperature: 0.1,
+          max_tokens: 900,
+          messages: [
+            {
+              role: "system",
+              content: `${directive} Preserve intent, constraints, and key entities. Return only the final prompt text.`
+            },
+            {
+              role: "user",
+              content: lang === "auto"
+                ? `Original draft:\n${draftText}\n\nCandidate prompt:\n${content}`
+                : content
+            }
+          ]
+        }
+      });
+      const forced = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+      if (!forced) return content;
+
+      if (lang === "auto" && autoLikeHebrew && !looksMostlyHebrew(forced)) {
+        const retry = await lmChat({
+          lmBase,
+          payload: {
+            model,
+            temperature: 0.1,
+            max_tokens: 900,
+            messages: [
+              {
+                role: "system",
+                content: "Return this prompt in Hebrew only. Preserve all technical details. Return only the prompt."
+              },
+              { role: "user", content: forced }
+            ]
+          }
+        });
+        return normalizeQuery(retry?.choices?.[0]?.message?.content || forced);
+      }
+      return forced;
+    }
+
     async function improvePromptDraft() {
       if (state.busy || state.promptEnhanceLock) return;
       const input = $("userQuery");
@@ -366,9 +443,6 @@
       setStatus("Processing request... improving prompt");
       try {
         const targetLang = String($("enhancePromptLanguage")?.value || "en").toLowerCase();
-        const langInstruction = targetLang === "auto"
-          ? "Detect the draft language and return the improved prompt in that same language."
-          : `Return the improved prompt in ${labelForLanguageCode(targetLang)}.`;
         const out = await lmChat({
           lmBase,
           payload: {
@@ -378,13 +452,20 @@
             messages: [
               {
                 role: "system",
-                content: `Rewrite the user draft into a concise, high-quality research prompt. Preserve intent, constraints, dates, and key entities. ${langInstruction} Return only the improved prompt text.`
+                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent, constraints, dates, and key entities. Return only the improved prompt text."
               },
               { role: "user", content: draft }
             ]
           }
         });
-        const improved = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+        const improvedEnglish = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+        const improved = await forcePromptLanguage({
+          lmBase,
+          model,
+          promptText: improvedEnglish,
+          draftText: draft,
+          targetLang
+        });
         if (!improved) throw new Error("No improved prompt returned.");
         input.value = improved;
         input.style.height = "auto";

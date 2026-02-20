@@ -223,7 +223,8 @@
 
     function shouldShowAnalysisLiveFx() {
       if (!state.busy) return false;
-      return state.runningPreviewMode === "deep" || state.executionModeResolved === "deep";
+      if (!state.runningPreview) return false;
+      return state.runningPreviewMode === "deep";
     }
 
     function renderAnalysisLiveFxTick(activeText, lineAText, lineBText) {
