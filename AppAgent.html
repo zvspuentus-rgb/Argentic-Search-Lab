@@ -48,7 +48,7 @@
           <span>✨ Trending Discovery</span>
           <div class="d-flex align-items-center gap-2">
             <label class="btn-action m-0" style="font-size: 0.72rem; cursor: pointer;">
-              <input class="form-check-input ms-0 me-1" type="checkbox" id="autoRunDiscovery">
+              <input class="form-check-input ms-0 me-1" type="checkbox" id="autoRunDiscovery" checked>
               Auto-run click
             </label>
             <button onclick="refreshDiscovery()" class="btn-action" style="font-size: 0.7rem;">Refresh</button>
@@ -123,19 +123,20 @@
           </div>
         </section>
 
-        <!-- Media & Visual Evidence -->
-        <section id="mediaSection" style="display: none;">
-          <div class="section-title">Visual Context</div>
-          <div id="answerMediaImagesGrid"></div>
-          <div id="answerMediaVideosGrid"></div>
-        </section>
-
         <!-- Next Step Suggestions -->
         <section id="followupsSection">
           <div class="section-title" style="color: #d8e8f3;">Deepen your research</div>
           <div id="followupsList" class="d-flex flex-column gap-2"></div>
         </section>
       </div>
+      <section id="mediaVideosSection" class="media-sidecar media-sidecar-left" style="display: none;">
+        <div class="section-title">Video Context</div>
+        <div id="answerMediaVideosGridLeft"></div>
+      </section>
+      <section id="mediaImagesSection" class="media-sidecar media-sidecar-right" style="display: none;">
+        <div class="section-title">Image Context</div>
+        <div id="answerMediaImagesGridRight"></div>
+      </section>
 
     </div>
   </main>
@@ -192,6 +193,9 @@
               <option value="auto" selected>🌐 Auto</option>
               <option value="he">Hebrew</option>
               <option value="en">English</option>
+            </select>
+            <select id="chatModel" class="btn-action chat-model-select" title="Quick model switch">
+              <option value="">Model</option>
             </select>
             <div class="form-check form-switch btn-action border-0 p-0 m-0 d-flex align-items-center gap-2"
               style="background: none;">

@@ -50,6 +50,8 @@
         modelName: $("modelName").value.trim(),
         searchUrl: $("searchUrl").value.trim(),
         searchMode: $("searchMode")?.value || "auto",
+        discoveryCount: Number($("discoveryCount")?.value || state.discoveryCount || 24),
+        sourcesLayout: state.sourcesLayout || "row",
         mode: $("mode").value,
         researchMode: $("researchMode").value,
         thinkingMode: $("thinkingMode").value,
@@ -87,6 +89,13 @@
       if (s.modelName) $("modelName").value = s.modelName;
       if (s.searchUrl) $("searchUrl").value = s.searchUrl;
       if (s.searchMode && $("searchMode")) $("searchMode").value = s.searchMode;
+      if (s.discoveryCount && $("discoveryCount")) {
+        $("discoveryCount").value = String(s.discoveryCount);
+        state.discoveryCount = Number(s.discoveryCount) || 24;
+      }
+      if (typeof s.sourcesLayout === "string") {
+        state.sourcesLayout = s.sourcesLayout === "rail" ? "rail" : "row";
+      }
       if ($("searchMode")) renderExecutionModeBadge($("searchMode").value || "auto");
       if (s.mode) $("mode").value = s.mode;
       if (s.researchMode) $("researchMode").value = s.researchMode;
@@ -98,6 +107,7 @@
         if ($("copilotBtn")) $("copilotBtn").checked = s.copilotMode;
       }
       if (typeof s.fastFollowups === "boolean" && $("fastFollowups")) $("fastFollowups").checked = s.fastFollowups;
+      if ($("copilotBtn") && $("fastFollowups") && !$("copilotBtn").checked) $("fastFollowups").checked = false;
       if (typeof s.autoRunDiscovery === "boolean" && $("autoRunDiscovery")) $("autoRunDiscovery").checked = s.autoRunDiscovery;
       if (typeof s.expAgentRelay === "boolean" && $("expAgentRelay")) $("expAgentRelay").checked = s.expAgentRelay;
       if (typeof s.expFastContextFetch === "boolean" && $("expFastContextFetch")) $("expFastContextFetch").checked = s.expFastContextFetch;
@@ -113,8 +123,11 @@
       if (typeof s.criticHardGate === "boolean") $("criticHardGate").checked = s.criticHardGate;
       if (typeof s.customSystem === "string") $("customSystem").value = s.customSystem;
       if (typeof s.contextUrls === "string") $("contextUrls").value = s.contextUrls;
+      if (typeof syncChatModelOptions === "function") syncChatModelOptions();
       const lanes = Array.isArray(s.sourceLanes) ? new Set(s.sourceLanes) : new Set(["web"]);
       document.querySelectorAll(".source-lane").forEach((el) => { el.checked = lanes.has(el.value); });
+      renderDiscovery();
+      renderSources();
     }
 
     function saveSettingsToStorage() {
@@ -136,19 +149,58 @@
       }
     }
 
+    function syncChatModelOptions(opts = {}) {
+      const modelSelect = $("modelName");
+      const chatModelSelect = $("chatModel");
+      if (!modelSelect || !chatModelSelect) return;
+      const keepChatSelection = opts.keepChatSelection === true;
+      const preferred = keepChatSelection ? (chatModelSelect.value || modelSelect.value) : modelSelect.value;
+      const previous = chatModelSelect.value;
+
+      chatModelSelect.innerHTML = "";
+      const options = [...modelSelect.options];
+      if (!options.length) {
+        chatModelSelect.innerHTML = '<option value="">Model</option>';
+        return;
+      }
+
+      for (const opt of options) {
+        const clone = document.createElement("option");
+        clone.value = opt.value;
+        clone.textContent = opt.textContent || opt.value;
+        chatModelSelect.appendChild(clone);
+      }
+
+      const values = options.map((o) => o.value);
+      if (values.includes(preferred)) chatModelSelect.value = preferred;
+      else if (values.includes(previous)) chatModelSelect.value = previous;
+      else chatModelSelect.value = options[0].value;
+
+      if (modelSelect.value !== chatModelSelect.value) {
+        modelSelect.value = chatModelSelect.value;
+      }
+    }
+
     function loadSettingsFromStorage() {
       try {
         const raw = localStorage.getItem(SETTINGS_KEY);
-        if (!raw) return;
+        if (!raw) {
+          if ($("autoRunDiscovery")) $("autoRunDiscovery").checked = true;
+          return;
+        }
         const parsed = JSON.parse(raw);
         applySettingsSnapshot(parsed);
+        syncChatModelOptions();
+        if (typeof parsed?.autoRunDiscovery !== "boolean" && $("autoRunDiscovery")) {
+          $("autoRunDiscovery").checked = true;
+        }
       } catch { }
     }
 
     function bindSettingsPersistence() {
       const ids = [
         "provider", "lmBase", "ollamaBase", "openaiBase", "openaiKey", "anthropicKey", "geminiKey",
-        "modelName", "searchUrl", "searchMode", "mode", "researchMode", "thinkingMode", "language",
+        "modelName", "chatModel", "searchUrl", "searchMode", "discoveryCount", "mode", "researchMode", "thinkingMode", "language",
         "copilotMode", "fastFollowups", "autoRunDiscovery", "expAgentRelay", "expFastContextFetch", "autoTranslatePrompts", "llmParallel", "searchParallel", "maxOutTokens",
         "streamSynthesis", "robustJson", "criticMinScore", "criticAgents", "maxAutoLoops",
         "criticHardGate", "customSystem", "contextUrls"
@@ -181,6 +233,41 @@
           renderExecutionModeBadge(searchModeEl.value || "auto");
           saveSettingsToStorage();
         });
+      }
+      const copilotBtn = $("copilotBtn");
+      const fastFollowupsEl = $("fastFollowups");
+      if (copilotBtn && fastFollowupsEl) {
+        copilotBtn.addEventListener("change", () => {
+          if (!copilotBtn.checked) fastFollowupsEl.checked = false;
+          saveSettingsToStorage();
+        });
+        fastFollowupsEl.addEventListener("change", () => {
+          if (fastFollowupsEl.checked && !copilotBtn.checked) copilotBtn.checked = true;
+          if ($("copilotMode")) $("copilotMode").checked = copilotBtn.checked;
+          saveSettingsToStorage();
+        });
+      }
+      const discoveryCountEl = $("discoveryCount");
+      if (discoveryCountEl) {
+        discoveryCountEl.addEventListener("change", () => {
+          state.discoveryCount = Number(discoveryCountEl.value) || 24;
+          renderDiscovery();
+          saveSettingsToStorage();
+        });
+      }
+
+      const modelEl = $("modelName");
+      const chatModelEl = $("chatModel");
+      if (modelEl && chatModelEl) {
+        modelEl.addEventListener("change", () => {
+          syncChatModelOptions();
+          saveSettingsToStorage();
+        });
+        chatModelEl.addEventListener("change", () => {
+          if (modelEl.value !== chatModelEl.value) modelEl.value = chatModelEl.value;
+          saveSettingsToStorage();
+        });
+        syncChatModelOptions({ keepChatSelection: true });
       }
     }
 

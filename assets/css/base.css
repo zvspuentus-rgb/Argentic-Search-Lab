@@ -128,6 +128,14 @@
       padding: 0;
     }
 
+    .search-container.processing-shift {
+      left: auto;
+      right: 1rem;
+      transform: none;
+      max-width: 430px;
+      padding: 0;
+    }
+
     .search-container.dock-right.collapsed {
       transform: translateY(20px);
     }
@@ -311,6 +319,11 @@
       border-color: var(--accent-secondary);
     }
 
+    .chat-model-select {
+      min-width: 160px;
+      max-width: 220px;
+    }
+
     .btn-send {
       background: var(--accent-primary);
       color: #05100d;
@@ -340,18 +353,22 @@
     .chat-busy-overlay {
       display: none;
       position: absolute;
-      inset: 0;
-      border-radius: 1.5rem;
-      background: rgba(8, 12, 16, 0.74);
-      backdrop-filter: blur(2px);
+      top: 0.6rem;
+      right: 0.7rem;
+      left: auto;
+      bottom: auto;
+      border-radius: 999px;
+      padding: 0.35rem 0.6rem;
+      background: rgba(8, 12, 16, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       z-index: 8;
       align-items: center;
       justify-content: center;
       gap: 0.6rem;
       color: #d9e9f5;
-      font-size: 0.85rem;
+      font-size: 0.72rem;
       font-family: var(--font-mono);
-      pointer-events: all;
+      pointer-events: none;
     }
 
     .search-box.is-busy .chat-busy-overlay {

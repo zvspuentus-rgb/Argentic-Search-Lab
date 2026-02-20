@@ -34,7 +34,9 @@
       answerAnimToken: 0,
       busySince: 0,
       executionModeResolved: "auto",
-      attachments: []
+      attachments: [],
+      discoveryCount: 24,
+      sourcesLayout: "row"
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -93,6 +95,9 @@
             select.appendChild(opt);
           });
         }
+        if (typeof syncChatModelOptions === "function") {
+          syncChatModelOptions({ keepChatSelection: true });
+        }
         setStatus(`Found ${models.length} models.`);
         addLog("health", `Fetched ${models.length} models from LM Studio.`, "ok");
       } catch (err) {
@@ -113,6 +118,8 @@
       state.busySince = on ? Date.now() : 0;
       const searchBox = $("searchBox");
       if (searchBox) searchBox.classList.toggle("is-busy", !!on);
+      const searchContainer = $("searchContainer");
+      if (searchContainer) searchContainer.classList.toggle("processing-shift", !!on);
       if ($("runBtn")) {
         $("runBtn").disabled = on || ($("userQuery")?.value.trim().length === 0);
       }
@@ -121,6 +128,7 @@
       if (form) {
         form.querySelectorAll("button, select, textarea, input").forEach((el) => {
           if (el.id === "runBtn") return;
+          if (el.dataset?.allowBusy === "true") return;
           el.disabled = !!on;
         });
       }
@@ -431,10 +439,16 @@
 
     function renderAnswerMedia() {
       const hasMedia = state.mediaImages.length > 0 || state.mediaVideos.length > 0;
-      const section = $("mediaSection");
-      if (section) section.style.display = hasMedia ? "block" : "none";
-      renderMediaList("answerMediaImagesGrid", state.mediaImages, "No images yet.");
-      renderMediaList("answerMediaVideosGrid", state.mediaVideos, "No videos yet.");
+      const videosSection = $("mediaVideosSection");
+      const imagesSection = $("mediaImagesSection");
+      if (videosSection) videosSection.style.display = state.mediaVideos.length ? "block" : "none";
+      if (imagesSection) imagesSection.style.display = state.mediaImages.length ? "block" : "none";
+      if (!hasMedia) {
+        if (videosSection) videosSection.style.display = "none";
+        if (imagesSection) imagesSection.style.display = "none";
+      }
+      renderMediaList("answerMediaImagesGridRight", state.mediaImages, "No images yet.");
+      renderMediaList("answerMediaVideosGridLeft", state.mediaVideos, "No videos yet.");
       updateAnswerMeta();
     }
 
@@ -545,7 +559,7 @@
       for (const stage of FLOW_STAGES) {
         const status = state.flow[stage.id] || "idle";
         const item = document.createElement("div");
-        item.className = `flow-badge ${status} ${status === 'running' ? 'active' : ''}`;
+        item.className = `flow-badge ${status} ${status === 'active' ? 'active' : ''}`;
         item.innerHTML = `
           <span>${escapeHtml(stage.label)}</span>
         `;
@@ -591,6 +605,10 @@
 
     function renderSources() {
       const root = $("sources");
+      if (!root) return;
+      root.classList.toggle("as-rail", state.sourcesLayout === "rail");
+      const layoutBtn = $("toggleSourcesLayoutBtn");
+      if (layoutBtn) layoutBtn.textContent = state.sourcesLayout === "rail" ? "Sources: Rail" : "Sources: Row";
       root.innerHTML = "";
       if (!state.sources.length) {
         root.innerHTML = '<div class="mono" style="color:#9db0bc">No sources collected yet.</div>';
@@ -631,6 +649,10 @@
     function renderDiscovery() {
       const root = $("discoveryGrid");
       if (!root) return;
+      const countEl = $("discoveryCount");
+      const configured = Number(countEl?.value || state.discoveryCount || DISCOVERY_VISIBLE);
+      const visibleCount = Number.isFinite(configured) ? Math.max(6, Math.min(48, configured)) : DISCOVERY_VISIBLE;
+      state.discoveryCount = visibleCount;
       root.innerHTML = "";
       if (state.discoveryLoading) {
         root.innerHTML = `
@@ -645,7 +667,7 @@
         root.innerHTML = '<div class="mono p-5 text-center" style="color:#9db0bc; width: 100%;">Finding trending tech stories...</div>';
         return;
       }
-      for (const [idx, item] of state.discovery.slice(0, DISCOVERY_VISIBLE).entries()) {
+      for (const [idx, item] of state.discovery.slice(0, visibleCount).entries()) {
         const mediaType = item.mediaType || inferMediaType(item.url);
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);

@@ -115,7 +115,8 @@
       if (!card) return;
       const idx = Number(card.dataset.didx);
       if (!Number.isInteger(idx) || idx < 0) return;
-      const item = state.discovery.slice(0, DISCOVERY_VISIBLE)[idx];
+      const visible = Math.max(6, Math.min(48, Number(state.discoveryCount) || DISCOVERY_VISIBLE));
+      const item = state.discovery.slice(0, visible)[idx];
       if (!item) return;
       explainDiscoveryItem(item);
     });
@@ -226,6 +227,12 @@
       if (!container) return;
       container.classList.toggle("dock-right");
       saveUiState();
+    }
+
+    function toggleSourcesLayout() {
+      state.sourcesLayout = state.sourcesLayout === "rail" ? "row" : "rail";
+      renderSources();
+      saveSettingsToStorage();
     }
 
     function openFilePicker() {
@@ -374,7 +381,6 @@
       const container = document.getElementById("searchContainer");
       const trigger = document.getElementById("chatTrigger");
       if (!container || !trigger) return;
-      if (state.busy) return;
       container.classList.add("collapsed");
       trigger.style.display = "flex";
       saveUiState();

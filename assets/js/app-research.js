@@ -288,10 +288,51 @@
       return [normalizeQuery(englishQuery), buildAttachmentContextBlock()].filter(Boolean).join("\n\n");
     }
 
+    function buildQuickVariantQueries(cleanQuery, mode = "balanced") {
+      const q = normalizeQuery(cleanQuery);
+      const base = [
+        q,
+        `${q} latest updates`,
+        `${q} comparison`,
+        `${q} pros cons`,
+        `${q} implementation guide`
+      ];
+      const byMode = { speed: 1, balanced: 2, analytic: 3, systematic: 4, deep: 5 };
+      const n = byMode[String(mode || "balanced")] || 2;
+      return uniqueStrings(base).slice(0, n);
+    }
+
+    function buildFallbackFollowups(query, language = "auto") {
+      const q = String(query || "").trim();
+      if (!q) return [];
+      const isHebrew = language === "he" || /[\u0590-\u05FF]/.test(q);
+      if (isHebrew) {
+        return [
+          `תן לי השוואה פרקטית בין 3 גישות עבור: ${q}`,
+          "מה הסיכונים הכי גדולים כאן ואיך מצמצמים אותם?",
+          "בנה לי תכנית יישום של 30 יום",
+          "איזה סטאק/כלים לבחור ומה הטריידאופים?",
+          "תן לי צ'קליסט ביצוע קצר להתחלה מיידית"
+        ];
+      }
+      return [
+        `Give me a practical comparison of 3 approaches for: ${q}`,
+        "What are the biggest risks here and how can we mitigate them?",
+        "Build a 30-day implementation plan",
+        "Which stack/tools should I choose and what are the tradeoffs?",
+        "Give me a short execution checklist to start today"
+      ];
+    }
+
     async function runFastFollowupPipeline(rawQuery) {
-      if (state.busy) return;
+      if (state.busy) {
+        setStatus("A request is already running...");
+        return;
+      }
       const providerIssue = validateProviderConfig();
       if (providerIssue) {
+        state.flow = createFlowState();
+        renderFlow();
         setStatus(providerIssue);
         addLog("health", providerIssue, "warn");
         return;
@@ -367,6 +408,10 @@
         } else {
           await animateAnswerMarkdown(answer || "No answer generated.");
         }
+        const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
+        await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
+        state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 5);
+        renderFollowups();
 
         state.lastUserQuery = cleanQuery;
         setStatus("Done (fast follow-up).");
@@ -383,9 +428,9 @@
 
     async function loadAnswerMedia(searchUrl, query) {
       const [images, videos, web] = await Promise.all([
-        searchQuery({ searchUrl, query, limit: 8, sourceProfile: "images" }),
-        searchQuery({ searchUrl, query, limit: 8, sourceProfile: "videos" }),
-        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "web" })
+        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "images" }),
+        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "videos" }),
+        searchQuery({ searchUrl, query, limit: 12, sourceProfile: "web" })
       ]);
       const webAsImages = web
         .filter((m) => !!(m.thumbnail || m.img_src))
@@ -409,8 +454,8 @@
           mediaType: String(m.mediaType || inferMediaType(m.url))
         });
       }
-      state.mediaImages = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "image").slice(0, 9);
-      state.mediaVideos = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "video").slice(0, 9);
+      state.mediaImages = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "image").slice(0, 10);
+      state.mediaVideos = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "video").slice(0, 10);
       state.media = [...state.mediaImages, ...state.mediaVideos];
       addLog("media", `images=${state.mediaImages.length}, videos=${state.mediaVideos.length}`, (state.mediaImages.length + state.mediaVideos.length) ? "ok" : "warn");
       renderAnswerMedia();
@@ -755,9 +800,11 @@
       lmBase,
       model,
       searchUrl,
+      mode,
       thinkingMode,
       language,
       sourceProfiles,
+      copilotMode,
       streamSynthesis,
       maxOutTokens,
       customSystem,
@@ -770,6 +817,9 @@
       state.flow = createFlowState();
       state.queries = [cleanQuery];
       state.followups = [];
+      state.media = [];
+      state.mediaImages = [];
+      state.mediaVideos = [];
       state.criticReport = null;
       state.agentBrief = "";
       renderLogs();
@@ -777,22 +827,35 @@
       renderDebug();
       renderQueries();
       renderFollowups();
+      renderAnswerMedia();
       stopAnswerAnimation();
       renderAnswerMarkdown("### Quick Search\nLooking for a fast answer...");
-      addLog("analyzer", "Quick mode: minimal pipeline", "ok");
+      addLog("analyzer", `Quick mode active (profile=${mode})`, "ok");
 
       try {
-        const tasks = sourceProfiles.map((lane) => ({ q: cleanQuery, lane }));
-        const grouped = await mapWithConcurrency(tasks, Math.min(3, tasks.length || 1), async (task) => {
+        const quickProfile = {
+          speed: { perLaneLimit: 2, maxSources: 6, workers: 2 },
+          balanced: { perLaneLimit: 3, maxSources: 8, workers: 3 },
+          analytic: { perLaneLimit: 4, maxSources: 10, workers: 3 },
+          systematic: { perLaneLimit: 4, maxSources: 12, workers: 4 },
+          deep: { perLaneLimit: 5, maxSources: 14, workers: 4 }
+        }[String(mode || "balanced")] || { perLaneLimit: 3, maxSources: 8, workers: 3 };
+
+        const quickQueries = buildQuickVariantQueries(cleanQuery, mode);
+        state.queries = quickQueries;
+        renderQueries();
+
+        const tasks = quickQueries.flatMap((q) => sourceProfiles.map((lane) => ({ q, lane })));
+        const grouped = await mapWithConcurrency(tasks, Math.min(quickProfile.workers, tasks.length || 1), async (task) => {
           addLog("search", `Quick search [${task.lane}]`, "ok");
           return searchQuery({
             searchUrl,
             query: task.q,
-            limit: 3,
+            limit: quickProfile.perLaneLimit,
             sourceProfile: task.lane
           });
         });
-        const quickSources = dedupeSources(grouped.flat()).slice(0, 10);
+        const quickSources = dedupeSources(grouped.flat()).slice(0, quickProfile.maxSources);
         state.sources = quickSources;
         renderSources();
         updateAnswerMeta();
@@ -813,7 +876,7 @@
           customSystem: composeSystemPrompt(customSystem),
           sources: quickSources,
           analyzer: { intent: "quick", goal: "fast answer", mustInclude: [] },
-          copilotMode: false,
+          copilotMode,
           maxTokens: maxOutTokens,
           streamOutput: streamSynthesis,
           thinkingMode,
@@ -825,6 +888,25 @@
         } else {
           await animateAnswerMarkdown(answer || "No answer generated.");
         }
+        await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
+        if (copilotMode) {
+          try {
+            const follow = await followupQuestionsAgent({
+              lmBase,
+              model,
+              userQuery: cleanQuery,
+              answer,
+              language
+            });
+            state.followups = uniqueStrings(follow.questions || []).slice(0, 5);
+          } catch (err) {
+            addLog("copilot", `Follow-up generation failed: ${err.message}`, "warn");
+          }
+        }
+        if (!state.followups.length) {
+          state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 5);
+        }
+        renderFollowups();
         setStatus("Done (quick).");
         addLog("done", "Quick pipeline completed", "ok");
         saveSession();
@@ -839,11 +921,9 @@
 
     async function runPipeline() {
       if (state.busy) {
-        const recovered = recoverFromStuckBusy();
-        if (!recovered) {
-          addLog("health", "Forcing unlock before new run.", "warn");
-          setBusy(false);
-        }
+        setStatus("A request is already running...");
+        addLog("health", "Blocked duplicate run while pipeline is active.", "warn");
+        return;
       }
 
       const lmBase = $("lmBase").value.trim();
@@ -868,6 +948,8 @@
       const previousSourcesSnapshot = Array.isArray(state.sources) ? state.sources.slice() : [];
       const providerIssue = validateProviderConfig();
       if (providerIssue) {
+        state.flow = createFlowState();
+        renderFlow();
         setStatus(providerIssue);
         addLog("health", providerIssue, "warn");
         return;
@@ -928,9 +1010,11 @@
           lmBase,
           model,
           searchUrl,
+          mode,
           thinkingMode,
           language,
           sourceProfiles,
+          copilotMode,
           streamSynthesis,
           maxOutTokens,
           customSystem,
@@ -1080,6 +1164,10 @@
             } catch (err) {
               addLog("copilot", `Follow-up generation failed: ${err.message}`, "warn");
             }
+          }
+          if (!state.followups.length) {
+            state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 5);
+            renderFollowups();
           }
           setStatus("Done (focus mode).");
           addLog("done", "Focus pipeline completed successfully", "ok");
@@ -1340,6 +1428,10 @@
             addLog("copilot", `Follow-up generation failed: ${err.message}`, "warn");
           }
         }
+        if (!state.followups.length) {
+          state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 5);
+          renderFollowups();
+        }
         addLog("done", "Pipeline completed successfully", "ok");
         saveSession();
         setStatus("Done.");
@@ -1361,6 +1453,7 @@
       document.getElementById('researchFeed').style.display = 'none';
       document.getElementById('discoveryView').style.display = 'none';
       $("userQuery").value = "";
+      if ($("contextUrls")) $("contextUrls").value = "";
       $("answer").innerHTML = "No output yet.";
       renderAnswerNotes("No notes yet.");
       state.logs = [];
@@ -1384,6 +1477,7 @@
       renderFollowups();
       renderThinking();
       if (typeof renderAttachmentTray === "function") renderAttachmentTray();
+      renderSessions();
       renderConversationTree();
       updateAnswerMeta();
       setStatus("New session ready.");
