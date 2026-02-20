@@ -12,7 +12,9 @@ COPY server.js /app/server.js
 COPY mcp-service /app/mcp-service
 COPY entrypoint.sh /app/entrypoint.sh
 
-RUN pip3 install --no-cache-dir -r /app/mcp-service/requirements.txt
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN /opt/venv/bin/pip install --no-cache-dir -r /app/mcp-service/requirements.txt
 RUN chmod +x /app/entrypoint.sh
 
 ENV PORT=7860
