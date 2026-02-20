@@ -11,6 +11,19 @@
   <div class="bg-orb orb-a"></div>
   <div class="bg-orb orb-b"></div>
 
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="topbar-brand">Argentic Search Lab</div>
+      <nav class="topbar-nav">
+        <a href="#install">Install</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#mcp">MCP</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab/blob/main/MCP_INTEGRATION.md" target="_blank" rel="noreferrer">MCP Integration</a>
+      </nav>
+    </div>
+  </header>
+
   <main class="wrap">
     <section class="hero reveal">
       <img class="hero-logo" src="logo.svg" alt="Argentic Search Lab" />
@@ -28,20 +41,20 @@
 
     <section class="stats reveal">
       <article class="stat card">
-        <div class="stat-num" data-target="3">0</div>
-        <div class="stat-label">Core Services</div>
+        <div class="stat-num">3 Services</div>
+        <div class="stat-label">UI + SearXNG + MCP</div>
       </article>
       <article class="stat card">
-        <div class="stat-num" data-target="3">0</div>
-        <div class="stat-label">MCP Tools</div>
+        <div class="stat-num">3 MCP Tools</div>
+        <div class="stat-label">quick / deep / url-context</div>
       </article>
       <article class="stat card">
-        <div class="stat-num" data-target="2">0</div>
-        <div class="stat-label">Search Modes</div>
+        <div class="stat-num">2 Modes</div>
+        <div class="stat-label">Quick + Deep (Auto resolver)</div>
       </article>
       <article class="stat card">
-        <div class="stat-num" data-target="0">0</div>
-        <div class="stat-label">Mandatory Cloud Cost</div>
+        <div class="stat-num">No Mandatory Fee</div>
+        <div class="stat-label">local-first, model-dependent quality</div>
       </article>
     </section>
 
@@ -72,11 +85,11 @@
       </article>
     </section>
 
-    <h2 class="section reveal">Quick Install</h2>
+    <h2 id="install" class="section reveal">Quick Install</h2>
     <section class="card reveal">
       <div class="tabs" role="tablist" aria-label="Install Commands">
-        <button class="tab active" data-tab="install-bootstrap">Bootstrap</button>
-        <button class="tab" data-tab="install-manual">Manual</button>
+        <button class="tab active" data-tab="install-bootstrap">Bootstrap (recommended)</button>
+        <button class="tab" data-tab="install-manual">Manual commands</button>
       </div>
       <div class="tab-panels">
         <div class="tab-panel active" id="install-bootstrap">
@@ -104,11 +117,12 @@ docker compose up -d --build</pre>
       <p class="note">Default endpoints: UI <code>http://localhost:8093</code> · MCP <code>http://localhost:8193/mcp</code> · SearXNG <code>http://localhost:8393/search?q=test&format=json</code></p>
     </section>
 
-    <h2 class="section reveal">Mode Explorer</h2>
+    <h2 class="section reveal">Mode Comparison</h2>
     <section class="card reveal">
+      <p class="note">Display-only comparison. These buttons do not run the pipeline here.</p>
       <div class="mode-switch">
-        <button class="mode-btn active" data-mode="quick">Quick Search</button>
-        <button class="mode-btn" data-mode="deep">Deep Research</button>
+        <button class="mode-btn active" data-mode="quick">Show Quick profile</button>
+        <button class="mode-btn" data-mode="deep">Show Deep profile</button>
       </div>
       <div class="mode-panels">
         <article class="mode-panel active" id="mode-quick">
@@ -132,12 +146,12 @@ docker compose up -d --build</pre>
       </div>
     </section>
 
-    <h2 class="section reveal">Search Pipeline</h2>
+    <h2 id="pipeline" class="section reveal">Search Pipeline</h2>
     <section class="reveal">
       <img class="img" src="pipeline.svg" alt="Pipeline Diagram" />
     </section>
 
-    <h2 class="section reveal">MCP Tooling</h2>
+    <h2 id="mcp" class="section reveal">MCP Tooling</h2>
     <section class="grid cols-2 reveal">
       <article class="card">
         <h3>JSON-RPC call (deep, repo-grounded)</h3>
@@ -169,7 +183,7 @@ docker compose up -d --build</pre>
       </article>
     </section>
 
-    <h2 class="section reveal">FAQ</h2>
+    <h2 id="faq" class="section reveal">FAQ</h2>
     <section class="card faq reveal">
       <details>
         <summary>Is this really free to use?</summary>

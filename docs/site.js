@@ -37,21 +37,6 @@ function setupModeSwitcher() {
   });
 }
 
-function animateCounters() {
-  const nums = document.querySelectorAll('.stat-num[data-target]');
-  nums.forEach((el) => {
-    const target = Number(el.dataset.target || 0);
-    const duration = 850;
-    const start = performance.now();
-    const tick = (now) => {
-      const p = Math.min(1, (now - start) / duration);
-      el.textContent = String(Math.round(target * p));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  });
-}
-
 function setupReveal() {
   const nodes = document.querySelectorAll('.reveal');
   const io = new IntersectionObserver((entries) => {
@@ -68,5 +53,4 @@ window.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupModeSwitcher();
   setupReveal();
-  animateCounters();
 });
