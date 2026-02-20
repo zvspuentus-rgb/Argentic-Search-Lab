@@ -395,3 +395,11 @@ cd docs
 python3 -m http.server 8088
 # open http://localhost:8088
 ```
+
+## Hugging Face Space (Prepared)
+A ready Docker Space bundle is included in `hf-space/` for hosted demo deployment.
+
+What is included:
+- UI server + MCP service in one container
+- Demo quota mode enabled (`LIVE_DEMO_QUERY_LIMIT=2`)
+- Docker-ready Space metadata (`hf-space/README.md`)

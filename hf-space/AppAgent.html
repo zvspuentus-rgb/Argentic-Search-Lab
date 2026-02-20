@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppAgent</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/base.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+</head>
+
+<body>
+
+  <!-- Controls Layer (Sidebar Toggle) -->
+  <button id="sidebarToggleBtn" class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle History">☰</button>
+
+  <!-- Sidebar (Session Management) -->
+  <aside id="sidebar" class="sidebar">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0;">History</h2>
+      <button class="btn-action" onclick="toggleSidebar()">✕</button>
+    </div>
+    <div id="sessionsList" class="flex-grow-1 overflow-auto d-flex flex-column gap-2" style="scrollbar-width: none;">
+      <!-- Sessions dynamic content -->
+    </div>
+    <div class="d-grid gap-2 border-top pt-3" style="border-color: rgba(255,255,255,0.05) !important;">
+      <button onclick="startNewSession()" class="btn-action">＋ New Research</button>
+      <button onclick="showDiscovery()" class="btn-action">✨ Discovery</button>
+      <button onclick="toggleSettings()" class="btn-action">⚙ Settings</button>
+    </div>
+  </aside>
+
+  <button id="sidebarEdgeToggle" class="sidebar-edge-toggle" onclick="toggleSidebar()" title="Open History">❯</button>
+
+  <main class="app-container">
+    <!-- Initial State View -->
+    <div id="welcomeView" class="hero-section">
+      <h1 class="hero-title">Agentic Search Lab</h1>
+      <p class="text-muted" style="font-size: 1.2rem;">Multi-agent research orchestrated for precision.</p>
+
+      <!-- Integrated Discovery Section -->
+      <div class="mt-5 w-100" style="max-width: 900px; margin: 0 auto;">
+        <div class="section-title d-flex justify-content-between align-items-center mb-3">
+          <span>✨ Trending Discovery</span>
+          <div class="d-flex align-items-center gap-2">
+            <label class="btn-action m-0" style="font-size: 0.72rem; cursor: pointer;">
+              <input class="form-check-input ms-0 me-1" type="checkbox" id="autoRunDiscovery" checked>
+              Auto-run click
+            </label>
+            <button onclick="refreshDiscovery()" class="btn-action" style="font-size: 0.7rem;">Refresh</button>
+          </div>
+        </div>
+
+        <div class="discovery-tabs">
+          <button class="discovery-tab active" onclick="switchDiscoveryCategory('tech', this)">💻 Technology
+            & AI</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('security', this)">🛡️ Security & Cyber</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('business', this)">📈 Business & Markets</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('science', this)">🧪 Science</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('health', this)">🩺 Health</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('productivity', this)">🧰 Productivity & Tools</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('beauty', this)">✨ Beauty & Care</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('fashion', this)">👗 Fashion</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('history', this)">🏛️ History & Archaeology</button>
+        </div>
+
+        <div id="discoveryGrid" class="row g-3 text-start">
+          <!-- Discovery dynamic content -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Discovery View (Kept for compatibility, but now mirrored in Welcome) -->
+    <div id="discoveryView" style="display: none;" class="d-flex flex-column gap-4">
+      <!-- Content removed here to avoid ID collision if needed, 
+            but we'll just keep the ID uniqueness by using the same grid. -->
+    </div>
+
+    <!-- Active Research Feed -->
+    <div id="researchFeed" style="display: none;" class="d-flex flex-column gap-5">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <div class="mono" style="color: var(--text-muted); font-size: 0.75rem;">Research workspace</div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn-action" onclick="showDiscovery()">← Back to Discovery</button>
+            <button type="button" class="btn-action" onclick="openDeepResearchView()">🧠 Deep View</button>
+            <button type="button" class="btn-action" onclick="exportResearchPdf()">🧾 Export PDF</button>
+            <button type="button" class="btn-action" onclick="exportCurrentSessionJson()">💾 Export JSON</button>
+            <button type="button" class="btn-action" onclick="exportAllTurnsPdf()">🧾 Export All PDF</button>
+            <button type="button" class="btn-action" onclick="exportAllTurnsJson()">💾 Export All JSON</button>
+            <button type="button" class="btn-action" onclick="shareResearchSummary()">📤 Share</button>
+          </div>
+        </div>
+
+      <!-- Execution Progress -->
+      <div id="agentFlow" class="flow-indicators"></div>
+
+      <section id="threadSection">
+        <div class="section-title">
+          <span>Research Thread</span>
+          <span id="threadCountBadge" class="badge rounded-pill"
+            style="background: rgba(255,255,255,0.05); color: var(--accent-secondary);">0</span>
+        </div>
+        <div id="threadTurnsList" class="turns-list"></div>
+      </section>
+
+      <!-- Sources Section -->
+      <section id="sourcesView">
+        <div class="section-title">
+          <span>Relevant Sources</span>
+          <span id="answerSourcesBadge" class="badge rounded-pill"
+            style="background: rgba(255,255,255,0.05); color: var(--accent-secondary);">0</span>
+        </div>
+        <div id="sources" class="sources-scroll"></div>
+      </section>
+
+      <!-- Main Content Block -->
+      <div class="d-flex flex-column gap-4">
+        <!-- Answer Card -->
+        <section class="card">
+          <div class="section-title d-flex justify-content-between align-items-center">
+            <span>Analysis & Synthesis</span>
+            <button type="button" class="btn-action" onclick="copyAnalysisText()">Copy Analysis</button>
+          </div>
+          <div id="analysisLiveFx" class="analysis-live-fx" aria-hidden="true">
+            <div class="analysis-live-head">
+              <span class="analysis-live-dot"></span>
+              <span id="analysisLiveAgent">ANALYZER</span>
+              <span>LIVE AGENT STREAM</span>
+            </div>
+            <div id="analysisLiveStream" class="analysis-live-stream"></div>
+            <div class="analysis-live-head mt-2">
+              <span class="analysis-live-dot"></span>
+              <span>AGENT PACKETS</span>
+            </div>
+            <div id="analysisLiveStreamSecondary" class="analysis-live-stream"></div>
+          </div>
+          <div id="answer" class="answer-body">
+            <!-- Dynamic Answer content -->
+          </div>
+
+          <!-- Thinking Process (Collapsible/Toggleable) -->
+          <div id="thinkingContainer" style="display: none;">
+            <div class="section-title mt-5" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">The
+              AI's Reasoning</div>
+            <div id="answerThinking" class="thinking-box"></div>
+          </div>
+        </section>
+
+        <!-- Next Step Suggestions -->
+        <section id="followupsSection">
+          <div class="section-title" style="color: #d8e8f3;">Deepen your research</div>
+          <div id="followupsList" class="d-flex flex-column gap-2"></div>
+        </section>
+      </div>
+      <section id="mediaVideosSection" class="media-sidecar media-sidecar-left" style="display: none;">
+        <div class="section-title">Video Context</div>
+        <div id="answerMediaVideosGridLeft"></div>
+      </section>
+      <section id="mediaImagesSection" class="media-sidecar media-sidecar-right" style="display: none;">
+        <div class="section-title">Image Context</div>
+        <div id="answerMediaImagesGridRight"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Centered Search Control (Sticky/Floating) -->
+  <div id="searchContainer" class="search-container collapsed">
+
+    <form id="searchForm" onsubmit="event.preventDefault(); runPipeline();">
+      <div id="searchBox" class="search-box">
+        <div class="search-box-header">
+          <div class="search-shell-title">Ask Deep Technical</div>
+          <div class="search-shell-actions">
+            <button type="button" class="btn-action btn-shell-control" onclick="toggleChatCompact()" title="Compact/Expanded size">↔ Size</button>
+            <button type="button" class="btn-action btn-shell-control" onclick="toggleChatDock()" title="Dock left/right">⇄ Dock</button>
+            <button type="button" class="btn-action btn-shell-control" onclick="collapseChat()" title="Minimize chat">✕</button>
+          </div>
+        </div>
+        <textarea id="userQuery" class="search-input" rows="1" placeholder="Ask a deep technical question..."
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); runPipeline(); }"></textarea>
+        <input id="filePicker" type="file" multiple style="display:none"
+          accept=".txt,.md,.markdown,.json,.csv,.tsv,.html,.xml,.js,.ts,.py,.java,.c,.cpp,.pdf,image/*" />
+        <div id="attachmentTray" class="attachment-tray" style="display:none"></div>
+        <div class="search-tools-row">
+          <button type="button" class="btn-action" onclick="openFilePicker()" title="Attach files or images">📎 Attach</button>
+          <button id="improvePromptBtn" type="button" class="btn-action" onclick="improvePromptDraft()" title="Improve current prompt">✨ Enhance Prompt</button>
+          <button type="button" class="btn-action" id="micBtn">🎤 Voice</button>
+          <span id="voiceState" class="small text-muted align-self-center"
+            style="font-family: var(--font-mono); font-size: 0.7rem;">mic off</span>
+        </div>
+
+        <div class="search-focus-row">
+          <button type="button" class="focus-btn active" onclick="setSearchFocus('all', this)">🌐 All</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('academic', this)">🎓 Academic</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('social', this)">💬 Social</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('github', this)">🐙 GitHub</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('youtube', this)">▶ YouTube</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('media', this)">🖼️ Media</button>
+          <button type="button" class="focus-btn" onclick="setSearchFocus('writing', this)">✍️ Writing</button>
+        </div>
+
+        <div class="search-actions">
+          <div class="d-flex gap-2">
+            <select id="searchMode" class="btn-action" title="Execution Mode">
+              <option value="auto" selected>Auto</option>
+              <option value="quick">Quick</option>
+              <option value="deep">Deep</option>
+            </select>
+            <select id="mode" class="btn-action">
+              <option value="speed">Speed</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="analytic">Analytic</option>
+              <option value="systematic">Systematic</option>
+              <option value="deep">Deep</option>
+            </select>
+            <select id="language" class="btn-action">
+              <option value="en" selected>English</option>
+              <option value="auto">🌐 Auto</option>
+              <option value="he">Hebrew</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="ru">Russian</option>
+              <option value="uk">Ukrainian</option>
+              <option value="ar">Arabic</option>
+              <option value="tr">Turkish</option>
+              <option value="fa">Persian (Farsi)</option>
+              <option value="hi">Hindi</option>
+              <option value="bn">Bengali</option>
+              <option value="ur">Urdu</option>
+              <option value="zh">Chinese (Simplified)</option>
+              <option value="ja">Japanese</option>
+              <option value="ko">Korean</option>
+              <option value="id">Indonesian</option>
+              <option value="vi">Vietnamese</option>
+              <option value="th">Thai</option>
+              <option value="pl">Polish</option>
+              <option value="nl">Dutch</option>
+              <option value="sv">Swedish</option>
+            </select>
+            <select id="chatModel" class="btn-action chat-model-select" title="Quick model switch">
+              <option value="">Model</option>
+            </select>
+            <div class="form-check form-switch btn-action border-0 p-0 m-0 d-flex align-items-center gap-2"
+              style="background: none;">
+              <input class="form-check-input ms-0" type="checkbox" id="copilotBtn" onchange="syncCopilot()">
+              <label class="form-check-label small" for="copilotBtn">Copilot</label>
+            </div>
+            <div class="form-check form-switch btn-action border-0 p-0 m-0 d-flex align-items-center gap-2"
+              style="background: none;">
+              <input class="form-check-input ms-0" type="checkbox" id="fastFollowups" checked>
+              <label class="form-check-label small" for="fastFollowups">Fast Copilot</label>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center search-submit-cluster">
+            <div id="busyPill" class="badge rounded-pill text-bg-secondary mono"
+              style="font-size: 0.65rem; transition: all 0.3s;">IDLE</div>
+            <div id="pipelineModeBadge" class="badge rounded-pill text-bg-dark mono"
+              style="font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2);">auto</div>
+            <button type="submit" id="runBtn" class="btn-send">↑</button>
+          </div>
+        </div>
+        <div id="chatBusyOverlay" class="chat-busy-overlay" aria-hidden="true">
+          <span class="chat-busy-dot"></span>
+          <span>Processing request...</span>
+        </div>
+      </div>
+    </form>
+    <div id="statusText" class="text-center mt-3"
+      style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Ready for mission.</div>
+    <div id="runStageIndicator" class="run-stage-indicator" aria-live="polite">
+      <span class="run-stage-spinner"></span>
+      <span id="runStageText">Idle</span>
+    </div>
+    <div id="agentStreamMatrix" class="agent-stream-matrix" aria-hidden="true">
+      <div id="agentStreamLineA" class="matrix-line"></div>
+      <div id="agentStreamLineB" class="matrix-line"></div>
+    </div>
+  </div>
+
+  <!-- Settings Layer (Overlay) -->
+  <div id="settingsModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+    <div class="card"
+      style="width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 style="margin:0">Infrastructure Settings</h3>
+        <button onclick="toggleSettings()" class="btn-action">✕ Close</button>
+      </div>
+
+      <div class="d-grid gap-4">
+        <section>
+          <div class="section-title mb-2">Engines</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Provider</label>
+              <select id="provider" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="lmstudio" selected>LM Studio (default)</option>
+                <option value="ollama">Ollama</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="gemini">Gemini</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">LM Studio Base URL</label>
+              <input id="lmBase" class="form-control form-control-sm bg-dark text-white border-secondary"
+                value="/lmstudio/v1" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Ollama Base URL</label>
+              <input id="ollamaBase" class="form-control form-control-sm bg-dark text-white border-secondary"
+                value="/ollama/v1" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Active Model Name</label>
+              <div class="input-group input-group-sm">
+                <select id="modelName" class="form-select bg-dark text-white border-secondary">
+                  <option value="qwen3-coder-30b-a3b-instruct-dq-abliterated">qwen3-coder-30b-a3b (Default)</option>
+                </select>
+                <button class="btn btn-outline-secondary" type="button" onclick="refreshModels()">Fetch</button>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">SearXNG Endpoint</label>
+              <input id="searchUrl" class="form-control form-control-sm bg-dark text-white border-secondary"
+                value="/searxng/search" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">OpenAI API Key</label>
+              <input id="openaiKey" type="password" class="form-control form-control-sm bg-dark text-white border-secondary"
+                placeholder="sk-..." />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Anthropic API Key</label>
+              <input id="anthropicKey" type="password" class="form-control form-control-sm bg-dark text-white border-secondary"
+                placeholder="anthropic-api-key" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Gemini API Key</label>
+              <input id="geminiKey" type="password" class="form-control form-control-sm bg-dark text-white border-secondary"
+                placeholder="google-api-key" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">OpenAI-Compatible Base URL</label>
+              <input id="openaiBase" class="form-control form-control-sm bg-dark text-white border-secondary"
+                value="https://api.openai.com/v1" />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title mb-2">Agent Behavior</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Thinking Visibility</label>
+              <select id="thinkingMode" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="use">Show Reasoning Trace</option>
+                <option value="off">Direct Answer Only</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Response Language</label>
+              <select id="languageModal" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="en" selected>English</option>
+                <option value="auto">Auto-Detect</option>
+                <option value="he">Hebrew</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="ru">Russian</option>
+                <option value="uk">Ukrainian</option>
+                <option value="ar">Arabic</option>
+                <option value="tr">Turkish</option>
+                <option value="fa">Persian (Farsi)</option>
+                <option value="hi">Hindi</option>
+                <option value="bn">Bengali</option>
+                <option value="ur">Urdu</option>
+                <option value="zh">Chinese (Simplified)</option>
+                <option value="ja">Japanese</option>
+                <option value="ko">Korean</option>
+                <option value="id">Indonesian</option>
+                <option value="vi">Vietnamese</option>
+                <option value="th">Thai</option>
+                <option value="pl">Polish</option>
+                <option value="nl">Dutch</option>
+                <option value="sv">Swedish</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Enhance Prompt Output Language</label>
+              <select id="enhancePromptLanguage" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="en" selected>English (default)</option>
+                <option value="auto">Auto (same as input prompt)</option>
+                <option value="he">Hebrew</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="ru">Russian</option>
+                <option value="uk">Ukrainian</option>
+                <option value="ar">Arabic</option>
+                <option value="tr">Turkish</option>
+                <option value="fa">Persian (Farsi)</option>
+                <option value="hi">Hindi</option>
+                <option value="bn">Bengali</option>
+                <option value="ur">Urdu</option>
+                <option value="zh">Chinese (Simplified)</option>
+                <option value="ja">Japanese</option>
+                <option value="ko">Korean</option>
+                <option value="id">Indonesian</option>
+                <option value="vi">Vietnamese</option>
+                <option value="th">Thai</option>
+                <option value="pl">Polish</option>
+                <option value="nl">Dutch</option>
+                <option value="sv">Swedish</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-muted">Max Output Tokens</label>
+              <input type="number" id="maxOutTokens"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="1600">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-muted">LLM Parallelism</label>
+              <input type="number" id="llmParallel"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="2">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-muted">Search Parallelism</label>
+              <input type="number" id="searchParallel"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="4">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title mb-2">Critique & Advanced</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Minimum Quality Score</label>
+              <input type="number" id="criticMinScore"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="60">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch small text-muted">
+                <input class="form-check-input" type="checkbox" id="streamSynthesis" checked>
+                <label class="form-check-label">Stream output</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">Manual Context URLs (One per line)</label>
+              <textarea id="contextUrls" class="form-control form-control-sm bg-dark text-white border-secondary"
+                rows="2" placeholder="https://example.com"></textarea>
+            </div>
+            <div style="display:none">
+              <select id="researchMode">
+                <option value="fresh"></option>
+              </select>
+              <input type="checkbox" id="robustJson" checked>
+              <input type="checkbox" id="criticHardGate">
+              <input type="checkbox" id="copilotMode" checked>
+              <input type="number" id="criticAgents" value="3">
+              <input type="number" id="maxAutoLoops" value="1">
+              <textarea id="customSystem"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title mb-2">Experimental (Optional)</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="form-check form-switch small text-muted">
+                <input class="form-check-input" type="checkbox" id="expAgentRelay" checked>
+                <label class="form-check-label">Agent Relay Brief into synthesis</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch small text-muted">
+                <input class="form-check-input" type="checkbox" id="expFastContextFetch">
+                <label class="form-check-label">Fast Copilot URL context fetch</label>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="form-check form-switch small text-muted">
+                <input class="form-check-input" type="checkbox" id="autoTranslatePrompts" checked>
+                <label class="form-check-label">Translate prompts to English before model calls</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="p-3 bg-dark rounded-3 d-grid gap-2 border border-secondary">
+          <button onclick="saveSettingsWithToast();"
+            class="btn btn-success btn-sm fw-semibold">Save Settings</button>
+          <div id="settingsState" class="mono text-center" style="font-size: 0.72rem; color:#c8d9e6;">settings: idle</div>
+          <button onclick="testConnections()" class="btn btn-outline-info btn-sm fw-bold">Test System Stack</button>
+          <button onclick="fullResetAppData()" class="btn btn-outline-danger btn-sm">Full Factory Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div onclick="expandChat()" class="chat-trigger" id="chatTrigger">
+    <svg viewBox="0 0 24 24">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+    </svg>
+  </div>
+
+  <div id="deepViewModal" class="deep-view-modal" aria-hidden="true">
+    <div class="deep-view-shell">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 style="margin:0; font-size:1.05rem;">Deep Research View</h3>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn-action" onclick="exportResearchPdf()">🧾 Print/PDF</button>
+          <button type="button" class="btn-action" onclick="closeDeepResearchView()">✕ Close</button>
+        </div>
+      </div>
+      <div id="deepViewBody"></div>
+    </div>
+  </div>
+
+  <div id="miniToast" class="mini-toast" role="status" aria-live="polite"></div>
+  <div id="requestCenterOverlay" class="request-center-overlay" aria-hidden="true">
+    <div class="request-center-card">
+      <span class="request-center-spinner"></span>
+      <span id="requestCenterText">Processing request...</span>
+    </div>
+  </div>
+
+  <!-- Hidden Compatibility Layer (Ensures existing JS logic never breaks) -->
+  <div style="display: none;" aria-hidden="true">
+    <div id="logs"></div>
+    <div id="debugConsole"></div>
+    <div id="queriesList"></div>
+    <div id="answerNotes"></div>
+    <div id="answerMediaVideosGrid"></div>
+    <div id="answerThinkingMain"></div>
+    <div id="answerQueriesBadge"></div>
+    <div id="answerMediaBadge"></div>
+    <div id="criticScoreBadge"></div>
+    <button id="refreshDiscoveryBtn"></button>
+    <button id="refreshDiscoveryBtn2"></button>
+    <div id="discoveryList"></div>
+    <input type="checkbox" class="source-lane" value="web" checked>
+    <input type="checkbox" class="source-lane" value="images" checked>
+    <input type="checkbox" class="source-lane" value="videos" checked>
+    <input type="checkbox" class="source-lane" value="academic">
+    <input type="checkbox" class="source-lane" value="social">
+    <div id="conversationTree"></div>
+    <div id="weatherBadge"></div>
+    <!-- No duplicate IDs here (lmBase, modelName, searchUrl, thinkingMode, researchMode moved to modal) -->
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/app-core.js"></script>
+  <script src="/assets/js/app-state.js"></script>
+  <script src="/assets/js/app-utils.js"></script>
+  <script src="/assets/js/app-research.js"></script>
+  <script src="/assets/js/app-ui.js"></script>
+</body>
+
+</html>
