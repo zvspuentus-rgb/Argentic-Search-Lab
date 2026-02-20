@@ -28,9 +28,23 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 - `query` (string) or `queries` (array of strings)
 - `limit` (default `5`)
 - `lanes` (default `["general","science","news"]`)
-- `include_context` (default `false`)
-- `context_max_urls` (default `3`)
+- `urls` (optional array of explicit URLs to inspect)
+- `include_context` (default `true`)
+- `context_max_urls` (default `5`)
 - `context_max_chars` (default `1800`)
+
+### URL-aware behavior (new)
+- If the query text itself contains one or more URLs, MCP auto-detects them.
+- In deep mode, MCP can fetch cleaned page context from those URLs (and from top results) when `include_context=true`.
+- Response now includes:
+  - `urls_detected`
+  - `context_items`
+
+### `search_quick` extra arguments (new)
+- `urls` (optional array)
+- `include_context` (default `false`)
+- `context_max_urls` (default `2`)
+- `context_max_chars` (default `1400`)
 
 ## Compatibility HTTP endpoints
 - `GET /tools`

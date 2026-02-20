@@ -12,12 +12,17 @@ from pydantic import BaseModel, Field
 app = FastAPI(title="AppAgent MCP Tool Service", version="1.0.0")
 SEARX_BASE = "http://searxng:8080"
 MCP_PROTOCOL_VERSION = "2024-11-05"
+URL_RX = re.compile(r"(https?://[^\s<>'\"`]+)", re.IGNORECASE)
 
 
 class SearchInput(BaseModel):
     query: Optional[str] = Field(None, min_length=2)
     queries: List[str] = Field(default_factory=list)
     limit: int = Field(5, ge=1, le=20)
+    urls: List[str] = Field(default_factory=list)
+    include_context: bool = False
+    context_max_urls: int = Field(2, ge=0, le=10)
+    context_max_chars: int = Field(1400, ge=500, le=6000)
 
 
 class FetchInput(BaseModel):
@@ -34,8 +39,9 @@ class DeepSearchInput(BaseModel):
     queries: List[str] = Field(default_factory=list)
     limit: int = Field(5, ge=1, le=20)
     lanes: List[str] = Field(default_factory=lambda: ["general", "science", "news"])
-    include_context: bool = False
-    context_max_urls: int = Field(3, ge=0, le=10)
+    urls: List[str] = Field(default_factory=list)
+    include_context: bool = True
+    context_max_urls: int = Field(5, ge=0, le=12)
     context_max_chars: int = Field(1800, ge=500, le=6000)
 
 
@@ -80,6 +86,38 @@ def validate_http_url(url: str) -> None:
         raise HTTPException(status_code=400, detail="url must be http/https")
 
 
+def normalize_url(url: str) -> str:
+    return re.sub(r"[),.;]+$", "", str(url or "").strip())
+
+
+def unique_urls(urls: List[str]) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for raw in urls or []:
+        u = normalize_url(raw)
+        if not u:
+            continue
+        try:
+            validate_http_url(u)
+        except Exception:
+            continue
+        key = u.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(u)
+    return out
+
+
+def split_query_and_urls(text: str) -> Dict[str, Any]:
+    raw = str(text or "")
+    found = [normalize_url(x) for x in URL_RX.findall(raw)]
+    urls = unique_urls(found)
+    cleaned = URL_RX.sub(" ", raw)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return {"query": cleaned, "urls": urls}
+
+
 def collect_queries(query: Optional[str], queries: List[str]) -> List[str]:
     merged: List[str] = []
     for q in ([query] if query else []) + (queries or []):
@@ -119,6 +157,20 @@ async def fetch_clean_context(url: str, max_chars: int) -> str:
     return compact_text(res.text, max_chars)
 
 
+async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) -> List[Dict[str, Any]]:
+    picked = unique_urls(urls)[: max(0, max_urls)]
+    if not picked:
+        return []
+    tasks = [fetch_clean_context(u, max_chars) for u in picked]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    out: List[Dict[str, Any]] = []
+    for u, c in zip(picked, results):
+        if isinstance(c, Exception):
+            continue
+        out.append({"url": u, "context": c})
+    return out
+
+
 def mcp_tools_payload() -> List[Dict[str, Any]]:
     return [
         {
@@ -135,6 +187,10 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                     "query": {"type": "string"},
                     "queries": {"type": "array", "items": {"type": "string"}},
                     "limit": {"type": "number", "default": 5},
+                    "urls": {"type": "array", "items": {"type": "string"}},
+                    "include_context": {"type": "boolean", "default": False},
+                    "context_max_urls": {"type": "number", "default": 2},
+                    "context_max_chars": {"type": "number", "default": 1400},
                 },
                 "anyOf": [{"required": ["query"]}, {"required": ["queries"]}],
             },
@@ -158,8 +214,9 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                         "items": {"type": "string"},
                         "default": ["general", "science", "news"],
                     },
-                    "include_context": {"type": "boolean", "default": False},
-                    "context_max_urls": {"type": "number", "default": 3},
+                    "urls": {"type": "array", "items": {"type": "string"}},
+                    "include_context": {"type": "boolean", "default": True},
+                    "context_max_urls": {"type": "number", "default": 5},
                     "context_max_chars": {"type": "number", "default": 1800},
                 },
                 "anyOf": [{"required": ["query"]}, {"required": ["queries"]}],
@@ -208,23 +265,61 @@ async def tools() -> Dict[str, Any]:
 @app.post("/tools/search_quick")
 async def search_quick(payload: SearchInput) -> Dict[str, Any]:
     query_list = collect_queries(payload.query, payload.queries)
-    if not query_list:
+    if not query_list and not payload.urls:
         raise HTTPException(status_code=400, detail="provide 'query' or non-empty 'queries'")
-    results = await searx_search(query_list[0], "general", payload.limit)
-    return {"mode": "quick", "query": query_list[0], "count": len(results), "results": results}
+
+    explicit_urls = unique_urls(payload.urls)
+    cleaned_queries: List[str] = []
+    for q in query_list:
+        split = split_query_and_urls(q)
+        cleaned = split["query"]
+        if cleaned:
+            cleaned_queries.append(cleaned)
+        explicit_urls.extend(split["urls"])
+    explicit_urls = unique_urls(explicit_urls)
+
+    primary_query = cleaned_queries[0] if cleaned_queries else ""
+    results: List[Dict[str, Any]] = []
+    if primary_query:
+        results = await searx_search(primary_query, "general", payload.limit)
+
+    context_items: List[Dict[str, Any]] = []
+    if payload.include_context and payload.context_max_urls > 0:
+        url_pool = explicit_urls + [r.get("url", "") for r in results if r.get("url")]
+        context_items = await fetch_context_items(url_pool, payload.context_max_urls, payload.context_max_chars)
+
+    return {
+        "mode": "quick",
+        "query": primary_query,
+        "count": len(results),
+        "results": results,
+        "urls_detected": explicit_urls,
+        "context_items": context_items,
+    }
 
 
 @app.post("/tools/search_deep")
 async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
     query_list = collect_queries(payload.query, payload.queries)
-    if not query_list:
+    if not query_list and not payload.urls:
         raise HTTPException(status_code=400, detail="provide 'query' or non-empty 'queries'")
     lanes = [lane for lane in payload.lanes if lane] or ["general", "science", "news"]
     merged: List[Dict[str, Any]] = []
     seen = set()
     queries_used: List[str] = []
+    explicit_urls = unique_urls(payload.urls)
 
+    cleaned_queries: List[str] = []
     for query in query_list:
+        split = split_query_and_urls(query)
+        explicit_urls.extend(split["urls"])
+        cleaned = split["query"]
+        if cleaned:
+            cleaned_queries.append(cleaned)
+
+    explicit_urls = unique_urls(explicit_urls)
+
+    for query in cleaned_queries:
         queries_used.append(query)
         tasks = [searx_search(query, lane, max(3, payload.limit)) for lane in lanes]
         lane_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -239,18 +334,12 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
                 row["matched_query"] = query
                 merged.append(row)
 
-    merged = merged[: payload.limit * max(1, len(lanes)) * max(1, len(query_list))]
+    merged = merged[: payload.limit * max(1, len(lanes)) * max(1, len(cleaned_queries) or 1)]
 
     context_items: List[Dict[str, Any]] = []
     if payload.include_context and payload.context_max_urls > 0:
-        urls = [r.get("url", "") for r in merged if r.get("url")]
-        urls = urls[: payload.context_max_urls]
-        ctx_tasks = [fetch_clean_context(u, payload.context_max_chars) for u in urls]
-        ctx_results = await asyncio.gather(*ctx_tasks, return_exceptions=True)
-        for u, c in zip(urls, ctx_results):
-            if isinstance(c, Exception):
-                continue
-            context_items.append({"url": u, "context": c})
+        urls = explicit_urls + [r.get("url", "") for r in merged if r.get("url")]
+        context_items = await fetch_context_items(urls, payload.context_max_urls, payload.context_max_chars)
 
     return {
         "mode": "deep",
@@ -258,6 +347,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
         "lanes_used": lanes,
         "count": len(merged),
         "results": merged,
+        "urls_detected": explicit_urls,
         "context_items": context_items,
     }
 

@@ -119,6 +119,11 @@ Available tools:
 - `search_deep`
 - `fetch_url_context`
 
+MCP deep/quick now support URL-aware research:
+- Detect URLs embedded inside query text
+- Accept explicit `urls` argument
+- Return `context_items` (cleaned page extracts) and `urls_detected`
+
 Use cases:
 - Agentic IDE coding assistants
 - Chat agents that need optional web search
