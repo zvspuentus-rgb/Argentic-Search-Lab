@@ -27,7 +27,11 @@ This repository folder is intentionally clean and contains only server/runtime f
 │   │   ├── base.css
 │   │   └── components.css
 │   └── js/
-│       └── app.js
+│       ├── app-core.js
+│       ├── app-state.js
+│       ├── app-utils.js
+│       ├── app-research.js
+│       └── app-ui.js
 ├── Dockerfile
 ├── docker-compose.yml
 ├── server.js
@@ -80,7 +84,12 @@ This avoids CORS issues and works better when accessing the UI from another devi
 The original single-file app was split into maintainable files:
 - HTML shell: `AppAgent.html`
 - Styles: `assets/css/base.css`, `assets/css/components.css`
-- Client logic: `assets/js/app.js`
+- Client logic:
+  - `assets/js/app-core.js`
+  - `assets/js/app-state.js`
+  - `assets/js/app-utils.js`
+  - `assets/js/app-research.js`
+  - `assets/js/app-ui.js`
 
 Behavior is unchanged; this is a structural refactor for easier maintenance.
 
