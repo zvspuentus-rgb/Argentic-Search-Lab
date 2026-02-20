@@ -324,6 +324,36 @@
       ];
     }
 
+    function languageNameFromCode(code) {
+      const map = {
+        en: "English",
+        he: "Hebrew",
+        es: "Spanish",
+        fr: "French",
+        de: "German",
+        it: "Italian",
+        pt: "Portuguese",
+        ru: "Russian",
+        uk: "Ukrainian",
+        ar: "Arabic",
+        tr: "Turkish",
+        fa: "Persian (Farsi)",
+        hi: "Hindi",
+        bn: "Bengali",
+        ur: "Urdu",
+        zh: "Chinese (Simplified)",
+        ja: "Japanese",
+        ko: "Korean",
+        id: "Indonesian",
+        vi: "Vietnamese",
+        th: "Thai",
+        pl: "Polish",
+        nl: "Dutch",
+        sv: "Swedish"
+      };
+      return map[String(code || "").toLowerCase()] || "";
+    }
+
     async function runFastFollowupPipeline(rawQuery) {
       if (state.busy) {
         setStatus("A request is already running...");
@@ -612,12 +642,13 @@
         `[${idx + 1}] title: ${s.title}\nurl: ${s.url}\nsnippet: ${s.content}`
       ).join("\n\n");
 
+      const chosenLanguage = languageNameFromCode(language);
       const langRule =
-        language === "he"
-          ? "Answer in Hebrew."
-          : language === "en"
-            ? "Answer in English."
-            : `Auto-Detect: Detect the language of the user query "${userQuery.slice(0, 50)}" and respond accordingly (likely Hebrew or English).`;
+        language === "auto"
+          ? `Auto-Detect: Detect the language of the user query "${userQuery.slice(0, 50)}" and respond accordingly.`
+          : chosenLanguage
+            ? `Answer in ${chosenLanguage}.`
+            : "Answer in English.";
 
       const system = [
         "You are Synthesis Agent.",
