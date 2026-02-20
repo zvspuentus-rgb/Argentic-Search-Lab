@@ -867,16 +867,16 @@
         </div>
 
         <div class="discovery-tabs">
-          <button class="discovery-tab active" onclick="switchDiscoveryCategory('tech', this)">💻 טכנולוגיה
-            ו-AI</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('security', this)">🛡️ ביטחון וסייבר</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('business', this)">📈 עסקים ושווקים</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('science', this)">🧪 מדע</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('health', this)">🩺 בריאות</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('productivity', this)">🧰 פרודוקטיביות וכלים</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('beauty', this)">✨ טיפוח ויופי</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('fashion', this)">👗 אופנה</button>
-          <button class="discovery-tab" onclick="switchDiscoveryCategory('history', this)">🏛️ חפירות והיסטוריה</button>
+          <button class="discovery-tab active" onclick="switchDiscoveryCategory('tech', this)">💻 Technology
+            & AI</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('security', this)">🛡️ Security & Cyber</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('business', this)">📈 Business & Markets</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('science', this)">🧪 Science</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('health', this)">🩺 Health</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('productivity', this)">🧰 Productivity & Tools</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('beauty', this)">✨ Beauty & Care</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('fashion', this)">👗 Fashion</button>
+          <button class="discovery-tab" onclick="switchDiscoveryCategory('history', this)">🏛️ History & Archaeology</button>
         </div>
 
         <div id="discoveryGrid" class="row g-3 text-start">
@@ -1280,7 +1280,7 @@
       deep: { queryCount: 6, perQueryResults: 5, maxSecondPassQueries: 3, contextSources: 20 }
     };
 
-    const DEEP_INTENT_RX = /\b(deep|research|analysis|analyze|חקירה|מחקר|לעומק|מעמיק|השוואה מקיפה|systematic)\b/i;
+    const DEEP_INTENT_RX = /\b(deep|research|analysis|analyze|systematic|comprehensive)\b/i;
 
     function resolveExecutionMode(userQuery) {
       const selected = $("searchMode")?.value || "auto";
@@ -3136,16 +3136,16 @@
     function explainDiscoveryItem(item) {
       if (!item || state.busy) return;
       const focus = [
-        "תסביר לי את הכתבה הבאה בצורה תכל'ס:",
-        `כותרת: ${item.title || "-"}`,
-        `קישור: ${item.url || "-"}`,
-        `תקציר: ${item.content || "-"}`,
+        "Explain this article in a practical way:",
+        `Title: ${item.title || "-"}`,
+        `Link: ${item.url || "-"}`,
+        `Summary: ${item.content || "-"}`,
         "",
-        "אני רוצה:",
-        "1) סיכום קצר",
-        "2) נקודות מפתח",
-        "3) האם זה אמין ולמה",
-        "4) שאלות המשך חכמות"
+        "I want:",
+        "1) A short summary",
+        "2) Key takeaways",
+        "3) Is it reliable and why",
+        "4) Smart follow-up questions"
       ].join("\n");
       const input = $("userQuery");
       input.value = focus;
@@ -3504,11 +3504,11 @@
       const confidence = String(data?.confidence || "medium");
 
       const lines = [];
-      lines.push("## תשובה");
+      lines.push("## Answer");
       if (summary) lines.push(summary);
 
       if (points.length) {
-        lines.push("", "## נקודות מפתח");
+        lines.push("", "## Key Points");
         for (const p of points.slice(0, 12)) {
           const txt = String(p?.point || "").trim();
           if (!txt) continue;
@@ -3517,7 +3517,7 @@
       }
 
       if (deepDive.length) {
-        lines.push("", "## עומק וניתוח");
+        lines.push("", "## Deep Dive");
         for (const para of deepDive.slice(0, 8)) {
           const txt = String(para || "").trim();
           if (!txt) continue;
@@ -3526,14 +3526,14 @@
       }
 
       if (picks.length) {
-        lines.push("", "## המלצה פרקטית");
+        lines.push("", "## Practical Recommendation");
         for (const p of picks.slice(0, 6)) {
           lines.push(`- ${String(p || "").trim()}`);
         }
       }
 
       if (gaps.length) {
-        lines.push("", "## פערי מידע");
+        lines.push("", "## Information Gaps");
         for (const g of gaps.slice(0, 5)) {
           lines.push(`- ${String(g || "").trim()}`);
         }
@@ -3791,7 +3791,7 @@
       renderQueries();
       renderFollowups();
       stopAnswerAnimation();
-      renderAnswerMarkdown("### Quick Search\nמחפש תשובה מהירה...");
+      renderAnswerMarkdown("### Quick Search\nLooking for a fast answer...");
       addLog("analyzer", "Quick mode: minimal pipeline", "ok");
 
       try {
@@ -3811,7 +3811,7 @@
         updateAnswerMeta();
 
         if (!quickSources.length) {
-          renderAnswerMarkdown("### Search temporarily unavailable\nSearXNG לא זמין כרגע. נסה שוב בעוד רגע.");
+          renderAnswerMarkdown("### Search temporarily unavailable\nSearXNG is currently unavailable. Please try again shortly.");
           addLog("search", "Quick mode finished without sources", "warn");
           setStatus("Quick mode: no sources.");
           saveSession();
@@ -3972,7 +3972,7 @@
       renderAnswerNotes("No notes yet.");
       updateAnswerMeta();
       stopAnswerAnimation();
-      renderAnswerMarkdown("### Running...\nאוסף מקורות ומרכיב תשובה.");
+      renderAnswerMarkdown("### Running...\nCollecting sources and composing an answer.");
 
       try {
         const preset = DEPTH_PRESETS[mode] || DEPTH_PRESETS.balanced;
@@ -4353,7 +4353,7 @@
       } catch (err) {
         console.error(err);
         stopAnswerAnimation();
-        renderAnswerMarkdown(`### Pipeline failed\n\nבדוק את **Agent Timeline** ואת **Debug Console**.\n\n\`${String(err.message || err)}\``);
+        renderAnswerMarkdown(`### Pipeline failed\n\nCheck **Agent Timeline** and **Debug Console**.\n\n\`${String(err.message || err)}\``);
         setStatus(`Error: ${err.message}`);
         addLog("error", err.message || String(err), "err");
       } finally {
