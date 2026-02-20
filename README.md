@@ -366,3 +366,22 @@ docker compose down
 
 ## License
 MIT (`LICENSE`).
+
+## GitHub Pages Demo Site
+This repository includes a ready demo site in `docs/`.
+
+Enable it:
+1. Open repository `Settings` -> `Pages`
+2. Under `Build and deployment`, choose `Deploy from a branch`
+3. Select branch `main` and folder `/docs`
+4. Save and wait for deployment
+
+Expected URL:
+- `https://zvspuentus-rgb.github.io/Argentic-Search-Lab/`
+
+Local preview (optional):
+```bash
+cd docs
+python3 -m http.server 8088
+# open http://localhost:8088
+```

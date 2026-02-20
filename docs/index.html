@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Argentic Search Lab</title>
+  <meta name="description" content="Local-first research workspace with Fast/Deep search, SearXNG, and MCP tools." />
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <img class="hero-logo" src="logo.svg" alt="Argentic Search Lab" />
+      <div class="badges">
+        <span class="badge free">TRULY FREE (LOCAL-FIRST)</span>
+        <span class="badge">FAST + DEEP RESEARCH</span>
+        <span class="badge">MCP TOOL CALLS</span>
+        <span class="badge">SEARXNG + DOCKER</span>
+      </div>
+    </section>
+
+    <section class="grid cols-3">
+      <article class="card">
+        <h3>Why this project matters</h3>
+        <ul>
+          <li>Runs locally on <code>localhost</code> with no mandatory subscription.</li>
+          <li>Fast search path for speed, deep path for quality.</li>
+          <li>Grounded research via MCP + URL context.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>How to get best quality</h3>
+        <ul>
+          <li>LM Studio is recommended for local parallel requests.</li>
+          <li>Use stronger models for better synthesis/critique.</li>
+          <li>Use <code>strict_repo_only=true</code> for GitHub repo analysis.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>What you can demo fast</h3>
+        <ul>
+          <li>Discovery to Deep Research flow.</li>
+          <li>MCP quick/deep tool calls.</li>
+          <li>Repo URL grounding with file-level context.</li>
+        </ul>
+      </article>
+    </section>
+
+    <h2 class="section">Quick Install</h2>
+    <section class="card">
+      <div class="commands">
+        <div class="cmd">
+          <div class="cmd-head">
+            <strong>One-command bootstrap</strong>
+            <button class="copy" onclick="copyFromElement('cmd-bootstrap', this)">Copy</button>
+          </div>
+          <pre id="cmd-bootstrap">bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)</pre>
+        </div>
+        <div class="cmd">
+          <div class="cmd-head">
+            <strong>Manual install</strong>
+            <button class="copy" onclick="copyFromElement('cmd-manual', this)">Copy</button>
+          </div>
+          <pre id="cmd-manual">git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
+cd Argentic-Search-Lab
+cp .env.example .env
+docker compose up -d --build</pre>
+        </div>
+      </div>
+      <p class="note">Default endpoints: UI <code>http://localhost:8093</code> · MCP <code>http://localhost:8193/mcp</code> · SearXNG <code>http://localhost:8393/search?q=test&format=json</code></p>
+    </section>
+
+    <h2 class="section">Search Pipeline</h2>
+    <img class="img" src="pipeline.svg" alt="Pipeline Diagram" />
+
+    <h2 class="section">MCP Tooling</h2>
+    <section class="grid cols-2">
+      <article class="card">
+        <h3>JSON-RPC call example (deep)</h3>
+        <div class="cmd">
+          <div class="cmd-head">
+            <strong>Repo-grounded deep call</strong>
+            <button class="copy" onclick="copyFromElement('cmd-mcp', this)">Copy</button>
+          </div>
+          <pre id="cmd-mcp">{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "search_deep",
+    "arguments": {
+      "query": "analyze this repo https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "limit": 10,
+      "include_context": true,
+      "context_max_urls": 8,
+      "strict_repo_only": true
+    }
+  }
+}</pre>
+        </div>
+      </article>
+      <article class="card">
+        <h3>MCP flow</h3>
+        <img class="img" src="mcp-flow.svg" alt="MCP Flow" />
+      </article>
+    </section>
+
+    <h2 class="section">Links</h2>
+    <section class="card">
+      <ul>
+        <li><a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab" target="_blank" rel="noreferrer">Repository</a></li>
+        <li><a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab/blob/main/README.md" target="_blank" rel="noreferrer">README</a></li>
+        <li><a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab/blob/main/MCP_INTEGRATION.md" target="_blank" rel="noreferrer">MCP Integration</a></li>
+      </ul>
+    </section>
+
+    <footer class="footer">
+      Argentic Search Lab · Local-first, fast, deep, grounded.
+    </footer>
+  </main>
+  <script src="site.js"></script>
+</body>
+</html>

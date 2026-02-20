@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="420" viewBox="0 0 1240 420" role="img" aria-labelledby="t d">
+  <title id="t">MCP Flow</title>
+  <desc id="d">MCP request flow for Argentic Search Lab</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fd0ff"/>
+    </marker>
+    <style>
+      .t{font-family:Segoe UI,Arial,sans-serif;fill:#eaf4ff}
+    </style>
+  </defs>
+  <rect width="1240" height="420" rx="18" fill="#0a141f"/>
+  <text class="t" x="34" y="44" font-size="30" font-weight="700">MCP Tool Call Flow</text>
+
+  <rect x="40" y="110" width="220" height="72" rx="12" fill="#123047" stroke="#5fa8ff"/>
+  <text class="t" x="80" y="154" font-size="20">Agent / IDE</text>
+
+  <rect x="330" y="110" width="230" height="72" rx="12" fill="#1f2336" stroke="#b690ff"/>
+  <text class="t" x="384" y="154" font-size="20">MCP Server</text>
+
+  <rect x="630" y="70" width="250" height="72" rx="12" fill="#153a2e" stroke="#43d3a8"/>
+  <text class="t" x="686" y="114" font-size="20">SearXNG JSON</text>
+
+  <rect x="630" y="170" width="250" height="72" rx="12" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t" x="668" y="214" font-size="20">URL Context Fetch</text>
+
+  <rect x="950" y="110" width="250" height="72" rx="12" fill="#2f2248" stroke="#d59cff"/>
+  <text class="t" x="980" y="154" font-size="20">Grounded Response</text>
+
+  <line x1="260" y1="146" x2="330" y2="146" stroke="#9fd0ff" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="560" y1="126" x2="630" y2="106" stroke="#9fd0ff" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="560" y1="166" x2="630" y2="206" stroke="#9fd0ff" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="880" y1="106" x2="950" y2="136" stroke="#9fd0ff" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="880" y1="206" x2="950" y2="156" stroke="#9fd0ff" stroke-width="3" marker-end="url(#a)"/>
+
+  <text class="t" x="42" y="304" font-size="16" opacity="0.9">Highlights: URL-aware retrieval, GitHub repo scope, strict_repo_only, context_items, citations-ready output.</text>
+</svg>
