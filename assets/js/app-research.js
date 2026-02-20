@@ -474,6 +474,19 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return base;
     }
 
+    function extractInlineUrls(rawText) {
+      const text = String(rawText || "");
+      const matches = text.match(/https?:\/\/[^\s<>"'`]+/gi) || [];
+      const cleaned = matches.map((u) => String(u || "").replace(/[),.;!?]+$/g, "").trim()).filter(Boolean);
+      return uniqueStrings(cleaned).filter((u) => /^https?:\/\//i.test(u));
+    }
+
+    function collectEffectiveContextUrls(rawUserQuery) {
+      const inline = extractInlineUrls(rawUserQuery).slice(0, 3);
+      const manual = parseContextUrls($("contextUrls")?.value || "");
+      return uniqueStrings([...inline, ...manual]).slice(0, 8);
+    }
+
     function buildFallbackFollowups(query, language = "auto") {
       const q = String(query || "").trim();
       if (!q) return [];
@@ -541,6 +554,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       }
       const cleanQuery = normalizeQuery(rawQuery);
       state.temporalScope = inferTemporalScope(cleanQuery);
+      const contextUrls = collectEffectiveContextUrls(rawQuery);
       if (typeof archiveCurrentTurnIfNeeded === "function") {
         archiveCurrentTurnIfNeeded();
       }
@@ -580,6 +594,16 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
       try {
         let fastSources = cachedSources;
+        if (contextUrls.length) {
+          addLog("context", `Loading ${contextUrls.length} context URLs`, "ok");
+          const directSources = await ingestContextUrls(contextUrls);
+          if (directSources.length) {
+            fastSources = pickDiverseSources(
+              rankSources(dedupeSources([...fastSources, ...directSources]), { intent: "followup", goal: "direct url context", mustInclude: [] }),
+              24
+            );
+          }
+        }
         if (fastContextFetch) {
           const urls = uniqueStrings(cachedSources.map((s) => s?.url).filter((u) => /^https?:\/\//i.test(String(u || "")))).slice(0, 3);
           if (urls.length) {
@@ -1107,7 +1131,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       maxOutTokens,
       customSystem,
       cleanQuery,
-      modelQuery
+      modelQuery,
+      contextUrls
     }) {
       setBusy(true);
       state.logs = [];
@@ -1119,7 +1144,6 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       state.mediaImages = [];
       state.mediaVideos = [];
       state.mediaCursor = null;
-      state.temporalScope = null;
       state.criticReport = null;
       state.agentBrief = "";
       renderLogs();
@@ -1156,7 +1180,18 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
             sourceProfile: task.lane
           });
         });
-        const quickSources = dedupeSources(grouped.flat()).slice(0, quickProfile.maxSources);
+        let quickSources = dedupeSources(grouped.flat()).slice(0, quickProfile.maxSources);
+        const effectiveContextUrls = Array.isArray(contextUrls) ? contextUrls : collectEffectiveContextUrls($("userQuery")?.value || cleanQuery);
+        if (effectiveContextUrls.length) {
+          addLog("context", `Loading ${effectiveContextUrls.length} context URLs`, "ok");
+          const contextSources = await ingestContextUrls(effectiveContextUrls);
+          if (contextSources.length) {
+            quickSources = pickDiverseSources(
+              rankSources(dedupeSources([...quickSources, ...contextSources]), { intent: "quick", goal: cleanQuery, mustInclude: [] }),
+              Math.max(quickProfile.maxSources, 12)
+            );
+          }
+        }
         state.sources = quickSources;
         renderSources();
         updateAnswerMeta();
@@ -1272,6 +1307,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const searchParallel = Math.max(1, Math.min(8, Number($("searchParallel").value) || 1));
       const customSystem = $("customSystem").value.trim();
       const rawQuery = $("userQuery").value;
+      const contextUrls = collectEffectiveContextUrls(rawQuery);
       const previousSourcesSnapshot = Array.isArray(state.sources) ? state.sources.slice() : [];
       const providerIssue = validateProviderConfig();
       if (providerIssue) {
@@ -1350,7 +1386,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           maxOutTokens,
           customSystem,
           cleanQuery,
-          modelQuery
+          modelQuery,
+          contextUrls
         });
         return;
       }
@@ -1416,7 +1453,6 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           renderSources();
           loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
 
-          const contextUrls = parseContextUrls($("contextUrls").value);
           if (contextUrls.length) {
             addLog("context", `Loading ${contextUrls.length} context URLs`, "ok");
             const contextSources = await ingestContextUrls(contextUrls);
@@ -1692,7 +1728,6 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
         const fallbackSelected = pickDiverseSources(state.sources, effectivePreset.contextSources);
         state.sources = (selected.length ? selected : fallbackSelected).slice(0, effectivePreset.contextSources);
-        const contextUrls = parseContextUrls($("contextUrls").value);
         if (contextUrls.length) {
           addLog("context", `Loading ${contextUrls.length} context URLs`, "ok");
           const contextSources = await ingestContextUrls(contextUrls);
