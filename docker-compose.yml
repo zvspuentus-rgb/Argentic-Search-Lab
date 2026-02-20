@@ -1,0 +1,66 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: appagent-ui
+    ports:
+      - "${APP_PORT:-8093}:8080"
+    environment:
+      - PORT=8080
+      - SEARX_BASE=http://searxng:8080
+      - MCP_BASE=http://mcp:8090
+    depends_on:
+      searxng:
+        condition: service_healthy
+      mcp:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: appagent-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: appagent-searxng
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:${APP_PORT:-8093}/searxng/
+    ports:
+      - "${SEARX_PORT:-8393}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys;u='http://localhost:8080/search?q=health&format=json';sys.exit(0 if urllib.request.urlopen(u, timeout=10).status==200 else 1)"]
+      interval: 25s
+      timeout: 10s
+      retries: 6
+
+  mcp:
+    build:
+      context: ./mcp-service
+      dockerfile: Dockerfile
+    container_name: appagent-mcp
+    depends_on:
+      searxng:
+        condition: service_healthy
+    ports:
+      - "${MCP_PORT:-8193}:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys;u='http://localhost:8090/health';sys.exit(0 if urllib.request.urlopen(u, timeout=10).status==200 else 1)"]
+      interval: 20s
+      timeout: 10s
+      retries: 5

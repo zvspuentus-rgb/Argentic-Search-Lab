@@ -1,0 +1,7 @@
+.git
+node_modules
+cordova-appagent
+APK
+*.apk
+*.log
+.DS_Store
