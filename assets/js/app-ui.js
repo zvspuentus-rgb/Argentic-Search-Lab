@@ -138,6 +138,7 @@
     renderQueries();
     renderSources();
     renderAnswerMedia();
+    bindMediaSidecarScrollIsolation();
     renderFollowups();
     renderThinking();
     renderDiscovery();
@@ -206,6 +207,22 @@
     })();
 
     /* UI Navigation & Interaction - Modern Overhaul Overrides */
+    function bindMediaSidecarScrollIsolation() {
+      const ids = ["mediaVideosSection", "mediaImagesSection"];
+      ids.forEach((id) => {
+        const section = $(id);
+        if (!section || section.dataset.scrollBound === "1") return;
+        section.dataset.scrollBound = "1";
+        section.addEventListener("wheel", (e) => {
+          const scroller = section.querySelector(".media-scroll-container");
+          if (!scroller) return;
+          if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
+          e.preventDefault();
+          scroller.scrollTop += e.deltaY;
+        }, { passive: false });
+      });
+    }
+
     function syncSidebarToggles() {
       const sidebar = document.getElementById('sidebar');
       const topBtn = document.getElementById('sidebarToggleBtn');

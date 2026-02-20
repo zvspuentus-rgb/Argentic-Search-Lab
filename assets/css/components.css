@@ -236,13 +236,21 @@
       overflow-x: hidden;
       height: 100%;
       max-height: none;
+      flex: 1 1 auto;
+      min-height: 0;
       gap: 0.55rem;
       padding: 0.1rem 0.1rem 0.75rem 0.1rem;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
 
     .media-sidecar > div[id^="answerMedia"] {
+      display: flex;
+      flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
+      overflow: hidden;
     }
 
     .media-scroll-container::-webkit-scrollbar {
