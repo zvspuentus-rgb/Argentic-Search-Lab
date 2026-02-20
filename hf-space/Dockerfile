@@ -10,7 +10,7 @@ COPY AppAgent.html /app/AppAgent.html
 COPY assets /app/assets
 COPY server.js /app/server.js
 COPY mcp-service /app/mcp-service
-COPY hf-space/entrypoint.sh /app/entrypoint.sh
+COPY entrypoint.sh /app/entrypoint.sh
 
 RUN pip3 install --no-cache-dir -r /app/mcp-service/requirements.txt
 RUN chmod +x /app/entrypoint.sh
