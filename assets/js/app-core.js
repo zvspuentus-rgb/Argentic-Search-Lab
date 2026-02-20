@@ -33,6 +33,7 @@
       flow: createFlowState(),
       answerAnimToken: 0,
       busySince: 0,
+      pipelineSubmitLock: false,
       executionModeResolved: "auto",
       attachments: [],
       discoveryCount: 24,

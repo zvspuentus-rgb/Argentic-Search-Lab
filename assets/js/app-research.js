@@ -203,7 +203,7 @@
         <div class="deep-grid">
           <section class="card">
             <div class="section-title">Executive Summary</div>
-            <p style="margin:0; line-height:1.6;">${escapeHtml(summary || "No summary available yet.")}</p>
+            <p class="deep-exec-text" style="margin:0; line-height:1.6;">${escapeHtml(summary || "No summary available yet.")}</p>
             <hr style="border-color: rgba(255,255,255,0.08)" />
             <div class="section-title">Current Query</div>
             <pre class="mono" style="white-space:pre-wrap; margin:0; color:#d5e2eb;">${escapeHtml($("userQuery")?.value || "-")}</pre>
@@ -951,11 +951,23 @@
     }
 
     async function runPipeline() {
-      if (state.busy) {
+      if (state.pipelineSubmitLock || state.busy) {
         setStatus("A request is already running...");
         addLog("health", "Blocked duplicate run while pipeline is active.", "warn");
         return;
       }
+      state.pipelineSubmitLock = true;
+      const runBtn = $("runBtn");
+      const defaultRunLabel = runBtn ? (runBtn.dataset.defaultLabel || runBtn.textContent || "↑") : "↑";
+      if (runBtn) {
+        runBtn.dataset.defaultLabel = defaultRunLabel;
+        runBtn.disabled = true;
+        runBtn.textContent = "⏳";
+        runBtn.classList.add("is-processing");
+      }
+      setStatus("Processing... working");
+
+      try {
 
       const lmBase = $("lmBase").value.trim();
       const model = $("modelName").value.trim();
@@ -1474,6 +1486,14 @@
         addLog("error", err.message || String(err), "err");
       } finally {
         setBusy(false);
+      }
+      } finally {
+        state.pipelineSubmitLock = false;
+        if (runBtn) {
+          runBtn.classList.remove("is-processing");
+          runBtn.textContent = runBtn.dataset.defaultLabel || "↑";
+        }
+        if (typeof updateInpState === "function") updateInpState();
       }
     }
 

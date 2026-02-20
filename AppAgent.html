@@ -18,7 +18,7 @@
 <body>
 
   <!-- Controls Layer (Sidebar Toggle) -->
-  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle History">☰</button>
+  <button id="sidebarToggleBtn" class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle History">☰</button>
 
   <!-- Sidebar (Session Management) -->
   <aside id="sidebar" class="sidebar">
@@ -35,6 +35,8 @@
       <button onclick="toggleSettings()" class="btn-action">⚙ Settings</button>
     </div>
   </aside>
+
+  <button id="sidebarEdgeToggle" class="sidebar-edge-toggle" onclick="toggleSidebar()" title="Open History">❯</button>
 
   <main class="app-container">
     <!-- Initial State View -->
