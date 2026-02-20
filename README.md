@@ -1,27 +1,72 @@
-# AppAgent Docker Stack (UI + SearXNG + MCP)
+# Argentic Search Lab
 
-Production-ready Docker stack for `AppAgent.html` with:
-- Web UI (static app server)
-- Internal SearXNG search engine
-- MCP HTTP server (JSON-RPC 2.0 + backward-compatible tool endpoints)
-- Redis dependency for SearXNG
+Production-oriented local research stack with:
+- Modern web UI (`AppAgent.html`)
+- SearXNG as internal search backend
+- MCP server for tool-calling in agent/chat/code workflows
+- Dockerized runtime (UI + SearXNG + MCP + Redis)
 
-This repository folder is intentionally clean and contains only server/runtime files (no Cordova, no APK artifacts).
+The system is designed to run locally with zero mandatory cloud cost.
 
-## Included Features
-- `Quick / Deep / Auto` search flow in UI
-- Discovery + sessions + localStorage restore
-- Floating chat controls (minimize, compact size, dock left/right)
-- File/image attachments in chat prompt context
-- Optional auto-translation of prompts to English before model calls
-- MCP tools:
-  - `search_quick`
-  - `search_deep` (supports multiple queries and optional URL-context enrichment)
-  - `fetch_url_context`
-- Mandatory tool policy text in MCP tool descriptions (use search tools only on explicit user request)
-- SearXNG JSON-first behavior
+## Why This Project
+Argentic Search Lab gives you two research speeds in one interface:
+- `Quick Search`: fast answer path with minimal orchestration
+- `Deep Research`: full multi-agent pipeline for higher quality and coverage
 
-## Project Structure
+You can use it as:
+- A standalone research UI
+- An MCP tool provider for external agents/IDE chat tools
+
+## Core Capabilities
+- Discovery feed + one-click run
+- Session history with local restore (`localStorage`)
+- Prompt enhancement with configurable output language
+- Side media context (image/video)
+- Deep research timeline, source management, follow-up suggestions
+- Export to PDF/JSON and share flows
+- Provider-ready architecture (LM Studio default, plus Ollama/OpenAI/Anthropic/Gemini settings)
+
+## Search Modes
+### 1) Quick Search
+Goal: lowest latency with useful answer quality.
+
+Behavior:
+- Minimal planning and fewer steps
+- Lower search fan-out
+- Faster synthesis
+- Best for follow-ups, short factual checks, and iterative chat
+
+### 2) Deep Research
+Goal: maximum coverage, quality, and confidence.
+
+Pipeline:
+1. Analyzer
+2. Planner
+3. Refiner
+4. Multi-lane Search
+5. Critic / quality pass
+6. Synthesis (with citations)
+7. Copilot follow-ups
+
+Best for:
+- Complex technical investigations
+- Multi-source comparisons
+- Higher-stakes answers where evidence quality matters
+
+### 3) Auto
+- Chooses mode from query intent
+- If query explicitly asks for deep/research/analysis => Deep
+- Otherwise => Quick
+
+## Prompt Enhancement Language
+`Enhance Prompt` now has a dedicated setting:
+- Default: `English`
+- Optional: `Auto` (same language as user prompt)
+- Optional: specific language (Hebrew, Spanish, French, etc.)
+
+This setting is persisted in `localStorage` and restored after refresh.
+
+## Architecture
 ```text
 .
 ├── AppAgent.html
@@ -44,12 +89,39 @@ This repository folder is intentionally clean and contains only server/runtime f
 │   └── requirements.txt
 ├── searxng/
 │   └── settings.yml
-├── MCP_INTEGRATION.md
-└── .env.example
+└── MCP_INTEGRATION.md
 ```
 
-## Quick Start
-1. Copy env file:
+## MCP Integration (Tool Provider)
+The MCP service is exposed as JSON-RPC 2.0 and backward-compatible HTTP endpoints.
+
+Available tools:
+- `search_quick`
+- `search_deep`
+- `fetch_url_context`
+
+Use cases:
+- Agentic IDE coding assistants
+- Chat agents that need optional web search
+- Tool calls from orchestrators with explicit search delegation
+
+### MCP client config snippet
+Add inside your MCP client config (`mcpServers`):
+
+```json
+"appagent": {
+  "url": "http://localhost:8193/mcp"
+}
+```
+
+## Local Model Runtime and Cost
+- Default setup is local-first.
+- Works with small models for lightweight tasks (for example ~1B–3B class models).
+- Larger models generally improve planning, critique, and synthesis quality.
+- No mandatory paid API required when running local providers.
+
+## Docker Quick Start
+1. Copy env:
 ```bash
 cp .env.example .env
 ```
@@ -59,83 +131,35 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-3. Open services:
+3. Open:
 - UI: `http://localhost:8093`
-- MCP (JSON-RPC 2.0): `http://localhost:8193/mcp`
+- MCP: `http://localhost:8193/mcp`
 - SearXNG direct: `http://localhost:8393/search?q=test&format=json`
 
-## Ports
-Defined by `.env`:
+## Ports and Env
+Configured via `.env`:
 - `APP_PORT=8093`
 - `MCP_PORT=8193`
 - `SEARX_PORT=8393`
 - `LMSTUDIO_BASE=http://host.docker.internal:1234`
 - `OLLAMA_BASE=http://host.docker.internal:11434`
 
-## Local LM Studio / Ollama Through Docker
-The UI server now proxies local host-model endpoints via Docker:
-- `/lmstudio/*` -> `${LMSTUDIO_BASE}` (default `http://host.docker.internal:1234`)
-- `/ollama/*` -> `${OLLAMA_BASE}` (default `http://host.docker.internal:11434`)
+## Provider Routing Notes
+The UI server proxies local providers to avoid browser CORS issues:
+- `/lmstudio/*` -> `${LMSTUDIO_BASE}`
+- `/ollama/*` -> `${OLLAMA_BASE}`
 
-Default UI values are already set to:
+Default UI values:
 - LM Studio base: `/lmstudio/v1`
 - Ollama base: `/ollama/v1`
 
-This avoids CORS issues and works better when accessing the UI from another device on your LAN.
+## Persistence
+Persisted in browser `localStorage`:
+- UI/app settings
+- Sessions/history
+- Mode/provider/toggles/language preferences
 
-## Frontend Structure
-The original single-file app was split into maintainable files:
-- HTML shell: `AppAgent.html`
-- Styles: `assets/css/base.css`, `assets/css/components.css`
-- Client logic:
-  - `assets/js/app-core.js`
-  - `assets/js/app-state.js`
-  - `assets/js/app-utils.js`
-  - `assets/js/app-research.js`
-  - `assets/js/app-ui.js`
-
-Behavior is unchanged; this is a structural refactor for easier maintenance.
-See also: `assets/js/MODULES.md`.
-
-## MCP Client Configuration (JSON)
-Add this block inside your `mcpServers` object:
-
-```json
-"appagent": {
-  "url": "http://localhost:8193/mcp"
-}
-```
-
-## MCP API Modes
-### A) MCP JSON-RPC 2.0 (recommended)
-Endpoint: `POST /mcp`
-
-Supported methods:
-- `initialize`
-- `tools/list`
-- `tools/call`
-- `ping`
-
-### B) Backward-compatible HTTP endpoints
-- `GET /tools`
-- `POST /tools/search_quick`
-- `POST /tools/search_deep`
-- `POST /tools/fetch_url_context`
-- `POST /mcp/call`
-
-## Configuration and Persistence
-- UI settings can be changed from `AppAgent.html` settings panel.
-- MCP client connection is configured via your MCP JSON config (`mcpServers`).
-- Runtime app settings and sessions are persisted in browser `localStorage` and restored on refresh.
-
-## Deep Search Advanced Arguments
-`search_deep` accepts:
-- `query` (string) or `queries` (array of strings)
-- `limit` (default `5`)
-- `lanes` (default `["general", "science", "news"]`)
-- `include_context` (default `false`)
-- `context_max_urls` (default `3`)
-- `context_max_chars` (default `1800`)
+Behavior restores automatically on refresh.
 
 ## Useful Commands
 ```bash
@@ -145,7 +169,7 @@ docker compose ps
 # logs
 docker compose logs -f app mcp searxng
 
-# restart only MCP
+# restart MCP only
 docker compose up -d --build mcp
 
 # stop
@@ -155,13 +179,7 @@ docker compose down
 ## Security Notes
 - Do not commit real API keys.
 - Keep `.env` local.
-- If exposing services publicly, put a reverse proxy + auth in front.
+- If exposing publicly, put authentication/reverse-proxy in front.
 
-## Publish to GitHub
-From this `GitHub` folder:
-```bash
-git init
-git add .
-git commit -m "Initial AppAgent Docker stack (UI + SearXNG + MCP)"
-# then add your remote and push
-```
+## License
+MIT (`LICENSE`).

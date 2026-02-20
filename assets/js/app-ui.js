@@ -304,6 +304,36 @@
       $("filePicker")?.click();
     }
 
+    function labelForLanguageCode(code) {
+      const map = {
+        en: "English",
+        he: "Hebrew",
+        es: "Spanish",
+        fr: "French",
+        de: "German",
+        it: "Italian",
+        pt: "Portuguese",
+        ru: "Russian",
+        uk: "Ukrainian",
+        ar: "Arabic",
+        tr: "Turkish",
+        fa: "Persian (Farsi)",
+        hi: "Hindi",
+        bn: "Bengali",
+        ur: "Urdu",
+        zh: "Chinese (Simplified)",
+        ja: "Japanese",
+        ko: "Korean",
+        id: "Indonesian",
+        vi: "Vietnamese",
+        th: "Thai",
+        pl: "Polish",
+        nl: "Dutch",
+        sv: "Swedish"
+      };
+      return map[String(code || "").toLowerCase()] || "English";
+    }
+
     async function improvePromptDraft() {
       if (state.busy || state.promptEnhanceLock) return;
       const input = $("userQuery");
@@ -333,6 +363,10 @@
       }
       setStatus("Processing request... improving prompt");
       try {
+        const targetLang = String($("enhancePromptLanguage")?.value || "en").toLowerCase();
+        const langInstruction = targetLang === "auto"
+          ? "Detect the draft language and return the improved prompt in that same language."
+          : `Return the improved prompt in ${labelForLanguageCode(targetLang)}.`;
         const out = await lmChat({
           lmBase,
           payload: {
@@ -342,7 +376,7 @@
             messages: [
               {
                 role: "system",
-                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent and constraints. Return only the improved prompt."
+                content: `Rewrite the user draft into a concise, high-quality research prompt. Preserve intent, constraints, dates, and key entities. ${langInstruction} Return only the improved prompt text.`
               },
               { role: "user", content: draft }
             ]

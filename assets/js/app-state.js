@@ -56,6 +56,7 @@
         researchMode: $("researchMode").value,
         thinkingMode: $("thinkingMode").value,
         language: $("language").value,
+        enhancePromptLanguage: $("enhancePromptLanguage")?.value || "en",
         sourceLanes: getSelectedSourceProfiles(),
         copilotMode: $("copilotMode").checked,
         fastFollowups: $("fastFollowups")?.checked ?? true,
@@ -102,6 +103,11 @@
       if (s.thinkingMode) $("thinkingMode").value = s.thinkingMode;
       if (s.language) $("language").value = s.language;
       if (s.language && $("languageModal")) $("languageModal").value = s.language;
+      if (typeof s.enhancePromptLanguage === "string" && $("enhancePromptLanguage")) {
+        $("enhancePromptLanguage").value = s.enhancePromptLanguage || "en";
+      } else if ($("enhancePromptLanguage")) {
+        $("enhancePromptLanguage").value = "en";
+      }
       if (typeof s.copilotMode === "boolean") {
         $("copilotMode").checked = s.copilotMode;
         if ($("copilotBtn")) $("copilotBtn").checked = s.copilotMode;
@@ -201,6 +207,7 @@
       const ids = [
         "provider", "lmBase", "ollamaBase", "openaiBase", "openaiKey", "anthropicKey", "geminiKey",
         "modelName", "chatModel", "searchUrl", "searchMode", "discoveryCount", "mode", "researchMode", "thinkingMode", "language",
+        "enhancePromptLanguage",
         "copilotMode", "fastFollowups", "autoRunDiscovery", "expAgentRelay", "expFastContextFetch", "autoTranslatePrompts", "llmParallel", "searchParallel", "maxOutTokens",
         "streamSynthesis", "robustJson", "criticMinScore", "criticAgents", "maxAutoLoops",
         "criticHardGate", "customSystem", "contextUrls"
