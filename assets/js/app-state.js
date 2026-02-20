@@ -60,6 +60,7 @@
         autoRunDiscovery: $("autoRunDiscovery")?.checked ?? false,
         expAgentRelay: $("expAgentRelay")?.checked ?? true,
         expFastContextFetch: $("expFastContextFetch")?.checked ?? false,
+        autoTranslatePrompts: $("autoTranslatePrompts")?.checked ?? true,
         llmParallel: Number($("llmParallel").value) || 2,
         searchParallel: Number($("searchParallel").value) || 4,
         maxOutTokens: Number($("maxOutTokens").value) || 1600,
@@ -100,6 +101,7 @@
       if (typeof s.autoRunDiscovery === "boolean" && $("autoRunDiscovery")) $("autoRunDiscovery").checked = s.autoRunDiscovery;
       if (typeof s.expAgentRelay === "boolean" && $("expAgentRelay")) $("expAgentRelay").checked = s.expAgentRelay;
       if (typeof s.expFastContextFetch === "boolean" && $("expFastContextFetch")) $("expFastContextFetch").checked = s.expFastContextFetch;
+      if (typeof s.autoTranslatePrompts === "boolean" && $("autoTranslatePrompts")) $("autoTranslatePrompts").checked = s.autoTranslatePrompts;
       if (s.llmParallel) $("llmParallel").value = s.llmParallel;
       if (s.searchParallel) $("searchParallel").value = s.searchParallel;
       if (s.maxOutTokens) $("maxOutTokens").value = s.maxOutTokens;
@@ -147,7 +149,7 @@
       const ids = [
         "provider", "lmBase", "ollamaBase", "openaiBase", "openaiKey", "anthropicKey", "geminiKey",
         "modelName", "searchUrl", "searchMode", "mode", "researchMode", "thinkingMode", "language",
-        "copilotMode", "fastFollowups", "autoRunDiscovery", "expAgentRelay", "expFastContextFetch", "llmParallel", "searchParallel", "maxOutTokens",
+        "copilotMode", "fastFollowups", "autoRunDiscovery", "expAgentRelay", "expFastContextFetch", "autoTranslatePrompts", "llmParallel", "searchParallel", "maxOutTokens",
         "streamSynthesis", "robustJson", "criticMinScore", "criticAgents", "maxAutoLoops",
         "criticHardGate", "customSystem", "contextUrls"
       ];
@@ -307,6 +309,8 @@
           currentDiscoveryCategory: state.currentDiscoveryCategory || "tech",
           activeView,
           isSearchCollapsed: $("searchContainer")?.classList.contains("collapsed") || false,
+          isSearchCompact: $("searchContainer")?.classList.contains("compact") || false,
+          isSearchDockedRight: $("searchContainer")?.classList.contains("dock-right") || false,
           draftQuery: $("userQuery")?.value || ""
         };
         localStorage.setItem(UI_STATE_KEY, JSON.stringify(uiSnapshot));
@@ -360,6 +364,7 @@
         settings: getCurrentSettingsSnapshot(),
         data: {
           userQuery: $("userQuery").value,
+          attachments: Array.isArray(state.attachments) ? state.attachments : [],
           answerHtml: $("answer").innerHTML,
           answerNotes: $("answerNotes").textContent || "",
           queries: state.queries,
@@ -388,6 +393,8 @@
       state.currentSessionId = s.id;
       applySettingsSnapshot(s.settings);
       $("userQuery").value = s.data?.userQuery || "";
+      state.attachments = Array.isArray(s.data?.attachments) ? s.data.attachments : [];
+      if (typeof renderAttachmentTray === "function") renderAttachmentTray();
       state.lastUserQuery = s.data?.userQuery || "";
       $("answer").innerHTML = s.data?.answerHtml || "No output yet.";
       renderAnswerNotes(s.data?.answerNotes || "No notes yet.");
@@ -411,4 +418,3 @@
       showResearchView(); // Toggle to research view on load
       saveUiState();
     }
-

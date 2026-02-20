@@ -255,6 +255,31 @@
       modal.setAttribute("aria-hidden", "true");
     }
 
+    function buildAttachmentContextBlock() {
+      const items = Array.isArray(state.attachments) ? state.attachments : [];
+      if (!items.length) return "";
+      const lines = ["Attached files context:"];
+      for (const [idx, a] of items.slice(0, 8).entries()) {
+        lines.push(`${idx + 1}. ${a.name} (${a.kind || a.type || "file"}, ${a.size || 0} bytes)`);
+        if (a.text) lines.push(`   Content excerpt: ${String(a.text).slice(0, 1800)}`);
+      }
+      return lines.join("\n");
+    }
+
+    async function prepareEnglishQuery(rawQuery, lmBase, model) {
+      const enabled = $("autoTranslatePrompts")?.checked ?? true;
+      return await maybeTranslatePromptToEnglish({
+        text: normalizeQuery(rawQuery),
+        lmBase,
+        model,
+        enabled
+      });
+    }
+
+    function composeModelQuery(englishQuery) {
+      return [normalizeQuery(englishQuery), buildAttachmentContextBlock()].filter(Boolean).join("\n\n");
+    }
+
     async function runFastFollowupPipeline(rawQuery) {
       if (state.busy) return;
       const providerIssue = validateProviderConfig();
@@ -278,6 +303,8 @@
 
       const lmBase = $("lmBase").value.trim();
       const model = $("modelName").value.trim();
+      const englishQuery = await prepareEnglishQuery(cleanQuery, lmBase, model);
+      const modelQuery = composeModelQuery(englishQuery);
       const language = $("language").value;
       const thinkingMode = $("thinkingMode").value;
       const streamSynthesis = $("streamSynthesis").checked;
@@ -310,7 +337,7 @@
         const answer = await synthesisAgent({
           lmBase,
           model,
-          userQuery: cleanQuery,
+          userQuery: modelQuery,
           language,
           customSystem: composeSystemPrompt(customSystem),
           sources: fastSources,
@@ -726,7 +753,8 @@
       streamSynthesis,
       maxOutTokens,
       customSystem,
-      cleanQuery
+      cleanQuery,
+      modelQuery
     }) {
       setBusy(true);
       state.logs = [];
@@ -772,7 +800,7 @@
         const answer = await synthesisAgent({
           lmBase,
           model,
-          userQuery: cleanQuery,
+          userQuery: modelQuery || cleanQuery,
           language,
           customSystem: composeSystemPrompt(customSystem),
           sources: quickSources,
@@ -837,13 +865,17 @@
         return;
       }
 
-      const cleanQuery = normalizeQuery(rawQuery);
-      if (!cleanQuery) {
+      const hasAttachments = Array.isArray(state.attachments) && state.attachments.length > 0;
+      let cleanQuery = normalizeQuery(rawQuery);
+      if (!cleanQuery && !hasAttachments) {
         setStatus("Please enter a query.");
         expandChat();
         return;
       }
+      if (!cleanQuery && hasAttachments) cleanQuery = "Analyze attached files";
       state.lastUserQuery = cleanQuery;
+      cleanQuery = await prepareEnglishQuery(cleanQuery, lmBase, model);
+      const modelQuery = composeModelQuery(cleanQuery);
       const resolvedMode = resolveExecutionMode(cleanQuery);
       renderExecutionModeBadge(resolvedMode);
       showResearchView();
@@ -859,7 +891,7 @@
           const answer = await synthesisAgent({
             lmBase,
             model,
-            userQuery: cleanQuery,
+            userQuery: modelQuery,
             language,
             customSystem: composeSystemPrompt(customSystem),
             sources: [],
@@ -894,7 +926,8 @@
           streamSynthesis,
           maxOutTokens,
           customSystem,
-          cleanQuery
+          cleanQuery,
+          modelQuery
         });
         return;
       }
@@ -910,6 +943,7 @@
       state.queries = [];
       state.followups = [];
       state.agentBrief = "";
+      state.attachments = [];
       state.debug = [];
       state.flow = createFlowState();
       renderLogs();
@@ -1000,7 +1034,7 @@
           const answer = await synthesisAgent({
             lmBase,
             model,
-            userQuery: cleanQuery,
+            userQuery: modelQuery,
             language: document.getElementById("language").value,
             customSystem: composeSystemPrompt(customSystem),
             sources: state.sources,
@@ -1254,7 +1288,7 @@
         const answer = await synthesisAgent({
           lmBase,
           model,
-          userQuery: cleanQuery,
+          userQuery: modelQuery,
           language: $("language").value,
           customSystem: composeSystemPrompt(customSystem),
           sources: state.sources,
@@ -1341,10 +1375,10 @@
       renderAnswerMedia();
       renderFollowups();
       renderThinking();
+      if (typeof renderAttachmentTray === "function") renderAttachmentTray();
       renderConversationTree();
       updateAnswerMeta();
       setStatus("New session ready.");
       expandChat();
       saveUiState();
     }
-

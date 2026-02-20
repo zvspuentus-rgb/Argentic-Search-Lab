@@ -19,6 +19,38 @@
         .trim();
     }
 
+    function needsEnglishTranslation(text) {
+      return /[\u0590-\u05FF\u0600-\u06FF\u0400-\u04FF]/.test(String(text || ""));
+    }
+
+    async function maybeTranslatePromptToEnglish({ text, lmBase, model, enabled = true }) {
+      const raw = normalizeQuery(text);
+      if (!enabled || !raw) return raw;
+      if (!needsEnglishTranslation(raw)) return raw;
+      try {
+        const out = await lmChat({
+          lmBase,
+          payload: {
+            model,
+            temperature: 0,
+            max_tokens: 1400,
+            messages: [
+              {
+                role: "system",
+                content: "Translate the user request into clear natural English. Preserve URLs, numbers, names, and technical terms. Return translated text only."
+              },
+              { role: "user", content: raw }
+            ]
+          }
+        });
+        const translated = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+        return translated || raw;
+      } catch (err) {
+        addDebug("translate", `Translation fallback: ${err.message}`, "warn");
+        return raw;
+      }
+    }
+
     function uniqueStrings(items) {
       const out = [];
       const seen = new Set();
@@ -744,4 +776,3 @@
         questions: uniqueStrings(Array.isArray(parsed?.questions) ? parsed.questions : []).slice(0, 6)
       };
     }
-

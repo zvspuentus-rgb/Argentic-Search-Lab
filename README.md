@@ -11,6 +11,9 @@ This repository folder is intentionally clean and contains only server/runtime f
 ## Included Features
 - `Quick / Deep / Auto` search flow in UI
 - Discovery + sessions + localStorage restore
+- Floating chat controls (minimize, compact size, dock left/right)
+- File/image attachments in chat prompt context
+- Optional auto-translation of prompts to English before model calls
 - MCP tools:
   - `search_quick`
   - `search_deep` (supports multiple queries and optional URL-context enrichment)
@@ -92,6 +95,7 @@ The original single-file app was split into maintainable files:
   - `assets/js/app-ui.js`
 
 Behavior is unchanged; this is a structural refactor for easier maintenance.
+See also: `assets/js/MODULES.md`.
 
 ## MCP Client Configuration (JSON)
 Add this block inside your `mcpServers` object:

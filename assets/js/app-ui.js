@@ -175,8 +175,14 @@
       }
 
       updateAnswerMeta();
+      renderAttachmentTray();
       setupVoiceInput();
       refreshModels();
+      const searchContainer = $("searchContainer");
+      if (searchContainer) {
+        if (uiState?.isSearchCompact) searchContainer.classList.add("compact");
+        if (uiState?.isSearchDockedRight) searchContainer.classList.add("dock-right");
+      }
       if (uiState?.isSearchCollapsed) collapseChat();
       else handleChatVisibility();
 
@@ -206,6 +212,104 @@
     function toggleSettings() {
       const modal = document.getElementById('settingsModal');
       modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function toggleChatCompact() {
+      const container = document.getElementById("searchContainer");
+      if (!container) return;
+      container.classList.toggle("compact");
+      saveUiState();
+    }
+
+    function toggleChatDock() {
+      const container = document.getElementById("searchContainer");
+      if (!container) return;
+      container.classList.toggle("dock-right");
+      saveUiState();
+    }
+
+    function openFilePicker() {
+      $("filePicker")?.click();
+    }
+
+    function renderAttachmentTray() {
+      const tray = $("attachmentTray");
+      if (!tray) return;
+      const items = Array.isArray(state.attachments) ? state.attachments : [];
+      if (!items.length) {
+        tray.style.display = "none";
+        tray.innerHTML = "";
+        updateInpState();
+        return;
+      }
+      tray.style.display = "flex";
+      tray.innerHTML = items.map((a, idx) => `
+        <span class="attachment-chip">
+          <span>${escapeHtml(a.name || "file")} (${escapeHtml(a.kind || "file")})</span>
+          <button type="button" data-remove-attachment="${idx}" aria-label="Remove attachment">×</button>
+        </span>
+      `).join("");
+      updateInpState();
+    }
+
+    function removeAttachmentAt(idx) {
+      if (!Array.isArray(state.attachments)) state.attachments = [];
+      if (idx < 0 || idx >= state.attachments.length) return;
+      state.attachments.splice(idx, 1);
+      renderAttachmentTray();
+      saveSession();
+    }
+
+    async function normalizeUploadedFile(file) {
+      const maxChars = 5000;
+      const isImage = String(file.type || "").startsWith("image/");
+      const textLike = /^(text\/|application\/(json|xml|javascript))/.test(file.type || "") ||
+        /\.(txt|md|markdown|json|csv|tsv|html|xml|js|ts|py|java|c|cpp)$/i.test(file.name || "");
+      if (isImage) {
+        return {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          kind: "image",
+          text: `Image attached: ${file.name}.`
+        };
+      }
+      if (textLike) {
+        const raw = await file.text();
+        return {
+          name: file.name,
+          size: file.size,
+          type: file.type || "text/plain",
+          kind: "text",
+          text: String(raw || "").replace(/\s+/g, " ").trim().slice(0, maxChars)
+        };
+      }
+      return {
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        kind: "file",
+        text: `Binary file attached: ${file.name}.`
+      };
+    }
+
+    async function handleFilePickerChange(e) {
+      const files = [...(e?.target?.files || [])];
+      if (!files.length) return;
+      if (!Array.isArray(state.attachments)) state.attachments = [];
+      const next = [];
+      for (const file of files.slice(0, 8)) {
+        try {
+          next.push(await normalizeUploadedFile(file));
+        } catch (err) {
+          addDebug("upload", `Failed to read ${file?.name || "file"}: ${err.message}`, "warn");
+        }
+      }
+      state.attachments = [...state.attachments, ...next].slice(0, 8);
+      renderAttachmentTray();
+      setStatus(`${next.length} attachment(s) added.`);
+      saveSession();
+      e.target.value = "";
     }
 
     // Bubble Chat Logic
@@ -287,8 +391,10 @@
     function updateInpState() {
       if (queryInput && runBtn) {
         const hasText = queryInput.value.trim().length > 0;
+        const hasAttachments = Array.isArray(state.attachments) && state.attachments.length > 0;
         runBtn.disabled = !hasText || state.busy;
-        runBtn.style.opacity = hasText ? "1" : "0.5";
+        runBtn.disabled = (!hasText && !hasAttachments) || state.busy;
+        runBtn.style.opacity = (hasText || hasAttachments) ? "1" : "0.5";
       }
     }
 
@@ -301,6 +407,15 @@
       });
       updateInpState(); // Initial check
     }
+
+    addListenerIfPresent("filePicker", "change", handleFilePickerChange);
+    addListenerIfPresent("attachmentTray", "click", (e) => {
+      const btn = e.target.closest("[data-remove-attachment]");
+      if (!btn) return;
+      const idx = Number(btn.dataset.removeAttachment);
+      if (!Number.isInteger(idx)) return;
+      removeAttachmentAt(idx);
+    });
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeDeepResearchView();

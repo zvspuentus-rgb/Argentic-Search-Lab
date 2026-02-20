@@ -33,7 +33,8 @@
       flow: createFlowState(),
       answerAnimToken: 0,
       busySince: 0,
-      executionModeResolved: "auto"
+      executionModeResolved: "auto",
+      attachments: []
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -654,4 +655,3 @@
         root.appendChild(col);
       }
     }
-
