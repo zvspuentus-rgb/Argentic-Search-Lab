@@ -1,5 +1,7 @@
 # MCP Integration Notes
 
+Main project guide: [`README.md`](README.md)
+
 Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (default).
 
 ## VS Code MCP config (`mcp.json`)
@@ -56,7 +58,8 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
       "query": "analyze this repo deeply https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
       "limit": 10,
       "include_context": true,
-      "context_max_urls": 8
+      "context_max_urls": 8,
+      "strict_repo_only": true
     }
   }
 }

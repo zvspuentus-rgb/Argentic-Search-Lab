@@ -1,4 +1,5 @@
 # Argentic Search Lab
+![Argentic Search Lab Logo](docs/logo.svg)
 
 Production-oriented local research stack with:
 - Modern web UI (`AppAgent.html`)
@@ -7,6 +8,28 @@ Production-oriented local research stack with:
 - Dockerized runtime (UI + SearXNG + MCP + Redis)
 
 The system is designed to run locally with zero mandatory cloud cost.
+
+## Quick Start (1 minute)
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)
+```
+
+Manual:
+```bash
+git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
+cd Argentic-Search-Lab
+cp .env.example .env
+docker compose up -d --build
+```
+
+Open:
+- UI: `http://localhost:8093`
+- MCP endpoint: `http://localhost:8193/mcp`
+- SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
+
+Useful links:
+- Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
+- Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
@@ -27,6 +50,8 @@ You can use it as:
 - Research Thread cards render markdown formatting (headings, lists, emphasis) for prior runs
 - Export to PDF/JSON and share flows
 - Provider-ready architecture (LM Studio default, plus Ollama/OpenAI/Anthropic/Gemini settings)
+- Zero mandatory API cost in local mode (LM Studio + local models)
+- Repo-grounded MCP retrieval (GitHub URL scoped context with `strict_repo_only`)
 
 ## Search Modes
 ### 1) Quick Search
@@ -56,8 +81,10 @@ Best for:
 - Higher-stakes answers where evidence quality matters
 
 ### Pipeline Diagram
+![Pipeline Overview](docs/pipeline.svg)
+
 ```mermaid
-flowchart LR
+flowchart TB
     A["User Query"] --> B{"Mode Resolver"}
     B -->|"Quick"| Q1["Quick Planner"]
     Q1 --> Q2["Targeted Search"]
@@ -114,6 +141,11 @@ This setting is persisted in `localStorage` and restored after refresh.
 │   ├── app.py
 │   ├── Dockerfile
 │   └── requirements.txt
+├── docs/
+│   ├── logo.svg
+│   └── pipeline.svg
+├── scripts/
+│   └── bootstrap.sh
 ├── searxng/
 │   └── settings.yml
 └── MCP_INTEGRATION.md
@@ -121,6 +153,8 @@ This setting is persisted in `localStorage` and restored after refresh.
 
 ## MCP Integration (Tool Provider)
 The MCP service is exposed as JSON-RPC 2.0 and backward-compatible HTTP endpoints.
+
+Reference: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 
 Available tools:
 - `search_quick`

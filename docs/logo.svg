@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="320" viewBox="0 0 1240 320" role="img" aria-labelledby="title desc">
+  <title id="title">Argentic Search Lab</title>
+  <desc id="desc">Logo banner for Argentic Search Lab</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f2230"/>
+      <stop offset="100%" stop-color="#1b152f"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#43d3a8"/>
+      <stop offset="100%" stop-color="#5fa8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1240" height="320" rx="24" fill="url(#bg)"/>
+  <g transform="translate(56,56)">
+    <circle cx="80" cy="104" r="64" fill="#0e2b3d" stroke="#5fa8ff" stroke-width="3"/>
+    <path d="M54 104h52M80 78v52" stroke="#43d3a8" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="180" cy="66" r="12" fill="#43d3a8"/>
+    <circle cx="210" cy="104" r="10" fill="#5fa8ff"/>
+    <circle cx="176" cy="144" r="9" fill="#ffb067"/>
+    <path d="M141 88L168 70M142 108L200 104M140 125L166 140" stroke="#9ad4ff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(320,78)">
+    <text x="0" y="52" font-size="54" font-family="Segoe UI, Arial, sans-serif" fill="#eef7ff" font-weight="700">Argentic Search Lab</text>
+    <rect x="0" y="78" width="710" height="4" rx="2" fill="url(#acc)"/>
+    <text x="0" y="126" font-size="26" font-family="Segoe UI, Arial, sans-serif" fill="#c9e5ff">Fast + Deep Research • SearXNG • MCP • Local-First</text>
+    <text x="0" y="166" font-size="21" font-family="Segoe UI, Arial, sans-serif" fill="#9fc0d8">Production-ready agentic search stack with zero mandatory cloud cost</text>
+  </g>
+</svg>

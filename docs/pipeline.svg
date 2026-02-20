@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="720" viewBox="0 0 1240 720" role="img" aria-labelledby="title desc">
+  <title id="title">Argentic Search Pipeline</title>
+  <desc id="desc">Quick and Deep pipeline overview</desc>
+  <defs>
+    <style>
+      .t { font-family: Segoe UI, Arial, sans-serif; fill: #eaf4ff; }
+      .small { font-size: 16px; }
+      .mid { font-size: 20px; font-weight: 600; }
+      .big { font-size: 28px; font-weight: 700; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9dd0ff"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="720" rx="18" fill="#09131a"/>
+  <text class="t big" x="48" y="58">Argentic Search Pipeline</text>
+  <text class="t small" x="48" y="88" opacity="0.9">Two execution modes with shared grounding and citations</text>
+
+  <rect x="48" y="128" width="220" height="76" rx="12" fill="#13364b" stroke="#5fa8ff"/>
+  <text class="t mid" x="78" y="174">User Query</text>
+
+  <rect x="320" y="128" width="260" height="76" rx="12" fill="#23351d" stroke="#8bdc65"/>
+  <text class="t mid" x="355" y="174">Mode Resolver (Auto)</text>
+
+  <line x1="268" y1="166" x2="320" y2="166" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <text class="t small" x="114" y="272">Quick Track</text>
+  <rect x="48" y="288" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
+  <text class="t small" x="88" y="328">Quick Planner</text>
+  <rect x="48" y="372" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
+  <text class="t small" x="92" y="412">Targeted Search</text>
+  <rect x="48" y="456" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
+  <text class="t small" x="86" y="496">Fast Synthesis</text>
+
+  <line x1="158" y1="354" x2="158" y2="372" stroke="#7de0b9" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="158" y1="438" x2="158" y2="456" stroke="#7de0b9" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="450" y1="204" x2="158" y2="288" stroke="#9dd0ff" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <text class="t small" x="760" y="272">Deep Track</text>
+  <rect x="650" y="288" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="722" y="323">Analyzer</text>
+  <rect x="650" y="358" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="732" y="393">Planner</text>
+  <rect x="650" y="428" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="734" y="463">Refiner</text>
+  <rect x="910" y="288" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="950" y="323">Multi-lane Search</text>
+  <rect x="910" y="358" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="1000" y="393">Critic</text>
+  <rect x="910" y="428" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
+  <text class="t small" x="952" y="463">Synthesis + Citations</text>
+
+  <line x1="760" y1="346" x2="760" y2="358" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="760" y1="416" x2="760" y2="428" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="870" y1="317" x2="910" y2="317" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1040" y1="346" x2="1040" y2="358" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1040" y1="416" x2="1040" y2="428" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="450" y1="204" x2="760" y2="288" stroke="#9dd0ff" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="588" width="520" height="80" rx="12" fill="#2f2248" stroke="#b690ff"/>
+  <text class="t mid" x="454" y="622">Final Answer + Sources + Follow-ups</text>
+  <text class="t small" x="426" y="648">Grounded output from selected mode and context policy</text>
+
+  <line x1="158" y1="522" x2="520" y2="588" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1040" y1="486" x2="720" y2="588" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
+</svg>
