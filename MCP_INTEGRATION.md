@@ -67,6 +67,10 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 - `include_context` (default `false`)
 - `context_max_urls` (default `2`)
 - `context_max_chars` (default `1400`)
+- `strict_repo_only` (default `false`; when true and repo URL exists, keep only repo-scoped sources)
+
+### `search_deep` extra arguments
+- `strict_repo_only` (default `true`; recommended for repository analysis)
 
 ## Compatibility HTTP endpoints
 - `GET /tools`

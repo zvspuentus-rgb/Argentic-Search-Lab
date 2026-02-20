@@ -193,7 +193,8 @@ Deep example (maximum coverage on the same repo):
       "query": "analyze architecture and pipeline in this repo https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
       "limit": 10,
       "include_context": true,
-      "context_max_urls": 8
+      "context_max_urls": 8,
+      "strict_repo_only": true
     }
   }
 }

@@ -24,6 +24,7 @@ class SearchInput(BaseModel):
     include_context: bool = False
     context_max_urls: int = Field(2, ge=0, le=10)
     context_max_chars: int = Field(1400, ge=500, le=6000)
+    strict_repo_only: bool = False
 
 
 class FetchInput(BaseModel):
@@ -44,6 +45,7 @@ class DeepSearchInput(BaseModel):
     include_context: bool = True
     context_max_urls: int = Field(5, ge=0, le=12)
     context_max_chars: int = Field(1800, ge=500, le=6000)
+    strict_repo_only: bool = True
 
 
 class JsonRpcRequest(BaseModel):
@@ -330,6 +332,7 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                     "include_context": {"type": "boolean", "default": False},
                     "context_max_urls": {"type": "number", "default": 2},
                     "context_max_chars": {"type": "number", "default": 1400},
+                    "strict_repo_only": {"type": "boolean", "default": False},
                 },
                 "anyOf": [{"required": ["query"]}, {"required": ["queries"]}],
             },
@@ -358,6 +361,7 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                     "include_context": {"type": "boolean", "default": True},
                     "context_max_urls": {"type": "number", "default": 5},
                     "context_max_chars": {"type": "number", "default": 1800},
+                    "strict_repo_only": {"type": "boolean", "default": True},
                 },
                 "anyOf": [{"required": ["query"]}, {"required": ["queries"]}],
             },
@@ -424,8 +428,14 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
     results: List[Dict[str, Any]] = []
     if primary_query:
         results = await searx_search(primary_query, "general", payload.limit)
+    strict_repo_only = bool(payload.strict_repo_only and repo_scopes)
     if repo_scopes:
-        results = filter_results_by_github_scope(results, repo_scopes)
+        filtered = filter_results_by_github_scope(results, repo_scopes)
+        if strict_repo_only:
+            results = filtered
+        elif filtered:
+            # Prefer repo hits, but keep fallback behavior when strict mode is off.
+            results = merge_result_rows(filtered + results, payload.limit)
 
     context_items: List[Dict[str, Any]] = []
     effective_include_context = bool(payload.include_context or explicit_urls)
@@ -452,6 +462,7 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
         "urls_detected": explicit_urls,
         "context_items": context_items,
         "repo_scope_enforced": bool(repo_scopes),
+        "strict_repo_only": strict_repo_only,
         "repo_scopes": repo_scopes,
         "analysis_hint": {
             "grounding_required": bool(explicit_urls or context_items),
@@ -484,6 +495,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
     repo_scopes = github_scope_urls(explicit_urls)
     scoped_queries = build_repo_scoped_queries(cleaned_queries, repo_scopes) if repo_scopes else cleaned_queries
     effective_lanes = ["general", "it"] if repo_scopes else lanes
+    strict_repo_only = bool(payload.strict_repo_only and repo_scopes)
 
     for query in scoped_queries:
         queries_used.append(query)
@@ -501,7 +513,11 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
                 merged.append(row)
 
     if repo_scopes:
-        merged = filter_results_by_github_scope(merged, repo_scopes)
+        filtered = filter_results_by_github_scope(merged, repo_scopes)
+        if strict_repo_only:
+            merged = filtered
+        elif filtered:
+            merged = filtered + merged
     merged = merged[: payload.limit * max(1, len(effective_lanes)) * max(1, len(scoped_queries) or 1)]
 
     context_items: List[Dict[str, Any]] = []
@@ -528,6 +544,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
         "urls_detected": explicit_urls,
         "context_items": context_items,
         "repo_scope_enforced": bool(repo_scopes),
+        "strict_repo_only": strict_repo_only,
         "repo_scopes": repo_scopes,
         "analysis_hint": {
             "grounding_required": bool(explicit_urls or context_items),
