@@ -41,6 +41,8 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
   - `urls_detected`
   - `context_items`
   - `repo_scope_enforced` (true when strict GitHub repo scope was applied)
+  - `repo_scopes` (detected GitHub owner/repo pairs)
+  - `analysis_hint` (agent-facing grounding guidance)
 
 ### GitHub repo grounding example
 ```json

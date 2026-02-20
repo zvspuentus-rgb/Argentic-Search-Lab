@@ -317,7 +317,8 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                 "MANDATORY TOOL POLICY: Do NOT call this tool unless the user explicitly requests internet/web search. "
                 "Forbidden without explicit request: proactive search, automatic lookup, background lookup, tool-discovery replies. "
                 "If user asks 'what tools are available' or asks a general question, answer without calling this tool. "
-                "Use for explicit search only (fast web lookup via SearXNG)."
+                "Use for explicit search only (fast web lookup via SearXNG). "
+                "If the user provides a URL, you MUST prioritize URL/context extraction and ground your answer on context_items/results from that URL."
             ),
             "inputSchema": {
                 "type": "object",
@@ -339,7 +340,8 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                 "MANDATORY TOOL POLICY: Do NOT call this tool unless the user explicitly requests deep research or deep web analysis. "
                 "Forbidden without explicit request: automatic deep pipeline, default research mode, tool-discovery replies. "
                 "If deep research was not explicitly requested, do not call this tool. "
-                "Use only for explicit deep research (multi-lane web+science+news)."
+                "Use only for explicit deep research (multi-lane web+science+news). "
+                "If a URL/repository is provided, scope and grounding must prioritize that URL/repository before unrelated web sources."
             ),
             "inputSchema": {
                 "type": "object",
@@ -450,6 +452,12 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
         "urls_detected": explicit_urls,
         "context_items": context_items,
         "repo_scope_enforced": bool(repo_scopes),
+        "repo_scopes": repo_scopes,
+        "analysis_hint": {
+            "grounding_required": bool(explicit_urls or context_items),
+            "priority_sources": ["context_items", "results"],
+            "do_not_claim_no_access_when_context_present": bool(context_items),
+        },
     }
 
 
@@ -520,6 +528,12 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
         "urls_detected": explicit_urls,
         "context_items": context_items,
         "repo_scope_enforced": bool(repo_scopes),
+        "repo_scopes": repo_scopes,
+        "analysis_hint": {
+            "grounding_required": bool(explicit_urls or context_items),
+            "priority_sources": ["context_items", "results"],
+            "do_not_claim_no_access_when_context_present": bool(context_items),
+        },
     }
 
 
