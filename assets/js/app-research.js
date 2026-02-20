@@ -844,6 +844,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
     async function synthesisAgent({ lmBase, model, userQuery, language, customSystem, sources, analyzer, copilotMode, maxTokens, streamOutput, onStreamText, thinkingMode, temperature }) {
       const quantAsk = /\b(volatility|correlation|sharpe|sortino|drawdown|cagr|irr|roi|risk[- ]adjusted|allocation|portfolio|backtest|stress test|scenario|valuation|forecast|investment|liquidity)\b/i.test(String(userQuery || ""));
+      const historicalYears = [...new Set((String(userQuery || "").match(/\b(19|20)\d{2}\b/g) || []))];
+      const asksCurrent = /\b(today|currently|current|now|as of today|live price)\b/i.test(String(userQuery || ""));
       const numbered = sources.map((s, idx) =>
         `[${idx + 1}] title: ${s.title}\nurl: ${s.url}\nsnippet: ${s.content}`
       ).join("\n\n");
@@ -872,6 +874,9 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           : "",
         quantAsk
           ? "Do not output hard buy/sell priority without trade-offs and uncertainty."
+          : "",
+        historicalYears.length && !asksCurrent
+          ? `User asked for historical period (${historicalYears.join(", ")}). Do not replace with current values unless explicitly asked for comparison.`
           : "",
         copilotMode ? "Include practical execution guidance and concrete next steps." : "",
         thinkingMode === "use" && state.thinking.length

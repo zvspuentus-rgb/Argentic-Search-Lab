@@ -722,8 +722,8 @@
       const hasMedia = state.mediaImages.length > 0 || state.mediaVideos.length > 0;
       const videosSection = $("mediaVideosSection");
       const imagesSection = $("mediaImagesSection");
-      if (videosSection) videosSection.style.display = state.mediaVideos.length ? "block" : "none";
-      if (imagesSection) imagesSection.style.display = state.mediaImages.length ? "block" : "none";
+      if (videosSection) videosSection.style.display = state.mediaVideos.length ? "flex" : "none";
+      if (imagesSection) imagesSection.style.display = state.mediaImages.length ? "flex" : "none";
       if (!hasMedia) {
         if (videosSection) videosSection.style.display = "none";
         if (imagesSection) imagesSection.style.display = "none";
@@ -984,7 +984,7 @@
               <button type="button" class="btn-action" data-turn-print="${escapeAttr(t.id)}">Print</button>
             </div>
             <p class="turn-query"><strong>Query:</strong> ${escapeHtml(t.query || "")}</p>
-            <pre class="turn-answer">${escapeHtml(t.answerText || "")}</pre>
+            <div class="turn-answer-html answer-body">${String(t.answerHtml || "").trim() || `<pre class="turn-answer">${escapeHtml(t.answerText || "")}</pre>`}</div>
           </div>
         `;
         root.appendChild(item);

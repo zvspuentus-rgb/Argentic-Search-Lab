@@ -507,6 +507,15 @@
       background: rgba(0, 0, 0, 0.16);
     }
 
+    .turn-answer-html {
+      max-height: 22rem;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.6rem;
+      padding: 0.65rem;
+      background: rgba(0, 0, 0, 0.16);
+    }
+
     .answer-body h1,
     .answer-body h2,
     .answer-body h3 {

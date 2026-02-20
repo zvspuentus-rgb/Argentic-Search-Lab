@@ -234,7 +234,14 @@
       return "";
     }
 
-    function runtimeDateContextLine() {
+    function extractTemporalScope(text) {
+      const src = String(text || "");
+      const years = [...new Set((src.match(/\b(19|20)\d{2}\b/g) || []).map((x) => Number(x)).filter((n) => n >= 1900 && n <= 2100))];
+      const asksCurrent = /\b(today|currently|current|now|as of today|live price)\b/i.test(src);
+      return { years, asksCurrent };
+    }
+
+    function runtimeDateContextLine(userText = "") {
       const now = new Date();
       const localDate = now.toLocaleDateString("en-US", {
         weekday: "long",
@@ -248,14 +255,27 @@
         second: "2-digit",
         hour12: false
       });
-      return `Temporal context: Today is ${localDate}. Local time is ${localTime}. Use this as the current date reference and avoid outdated year assumptions.`;
+      const scope = extractTemporalScope(userText);
+      if (scope.years.length && !scope.asksCurrent) {
+        const y = scope.years.join(", ");
+        return [
+          `Temporal context: Today is ${localDate}. Local time is ${localTime}.`,
+          `User requested historical scope (${y}).`,
+          "Strict rule: answer for that requested period and do NOT substitute current live values unless explicitly asked as comparison."
+        ].join(" ");
+      }
+      return `Temporal context: Today is ${localDate}. Local time is ${localTime}. Use this as the current date reference when the user asks for current/latest values.`;
     }
 
     function withRuntimeDateContext(payload = {}) {
       const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+      const userText = messages
+        .filter((m) => m?.role === "user")
+        .map((m) => String(m?.content || ""))
+        .join("\n");
       const injected = {
         role: "system",
-        content: runtimeDateContextLine()
+        content: runtimeDateContextLine(userText)
       };
       return { ...payload, messages: [injected, ...messages] };
     }
