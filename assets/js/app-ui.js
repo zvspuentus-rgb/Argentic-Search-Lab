@@ -612,6 +612,8 @@
         'all': ['web', 'images', 'videos'],
         'academic': ['academic'],
         'social': ['social'],
+        'github': ['web'],
+        'youtube': ['web', 'videos'],
         'media': ['images', 'videos'],
         'writing': [] // Writing skips search in many implementations
       };

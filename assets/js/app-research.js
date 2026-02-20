@@ -459,6 +459,21 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return base;
     }
 
+    function enforceFocusDomainScope(queryText) {
+      const base = normalizeQuery(queryText);
+      if (!base) return base;
+      const focus = String(window.currentFocus || "all").toLowerCase();
+      if (focus === "github") {
+        if (/site:github\.com/i.test(base)) return base;
+        return `${base} site:github.com`;
+      }
+      if (focus === "youtube") {
+        if (/site:(youtube\.com|youtu\.be)/i.test(base)) return base;
+        return `${base} (site:youtube.com OR site:youtu.be)`;
+      }
+      return base;
+    }
+
     function buildFallbackFollowups(query, language = "auto") {
       const q = String(query || "").trim();
       if (!q) return [];
@@ -741,7 +756,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
     async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web", page = 1 }) {
       const u = new URL(normalizeSearchUrl(searchUrl));
-      const scopedQuery = enforceTemporalScopeInSearchQuery(query);
+      const focusedQuery = enforceFocusDomainScope(query);
+      const scopedQuery = enforceTemporalScopeInSearchQuery(focusedQuery);
       u.searchParams.set("q", scopedQuery);
       u.searchParams.set("format", "json");
       const p = Number(page) || 1;
