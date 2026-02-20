@@ -972,6 +972,12 @@
         return;
       }
       for (const [idx, t] of state.turns.entries()) {
+        const rawHtml = String(t.answerHtml || "").trim();
+        const rawText = String(t.answerText || "").trim();
+        const hasHtmlMarkup = /<[^>]+>/.test(rawHtml);
+        const turnRenderedHtml = rawHtml
+          ? (hasHtmlMarkup ? rawHtml : markdownToSafeHtml(rawHtml))
+          : (rawText ? markdownToSafeHtml(rawText) : `<pre class="turn-answer">${escapeHtml(rawText)}</pre>`);
         const item = document.createElement("article");
         item.className = "turn-item";
         item.innerHTML = `
@@ -985,7 +991,7 @@
               <button type="button" class="btn-action" data-turn-print="${escapeAttr(t.id)}">Print</button>
             </div>
             <p class="turn-query"><strong>Query:</strong> ${escapeHtml(t.query || "")}</p>
-            <div class="turn-answer-html answer-body">${String(t.answerHtml || "").trim() || `<pre class="turn-answer">${escapeHtml(t.answerText || "")}</pre>`}</div>
+            <div class="turn-answer-html answer-body">${turnRenderedHtml}</div>
           </div>
         `;
         root.appendChild(item);

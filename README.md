@@ -24,6 +24,7 @@ You can use it as:
 - Side media context (image/video)
 - Selection-to-Ask: highlight text inside Analysis, then send a contextual follow-up query
 - Deep research timeline, source management, follow-up suggestions
+- Research Thread cards render markdown formatting (headings, lists, emphasis) for prior runs
 - Export to PDF/JSON and share flows
 - Provider-ready architecture (LM Studio default, plus Ollama/OpenAI/Anthropic/Gemini settings)
 

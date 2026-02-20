@@ -577,6 +577,20 @@
       background: rgba(0, 0, 0, 0.16);
     }
 
+    .turn-answer-html h1,
+    .turn-answer-html h2,
+    .turn-answer-html h3 {
+      margin-top: 1rem;
+      margin-bottom: 0.55rem;
+      line-height: 1.35;
+    }
+
+    .turn-answer-html p,
+    .turn-answer-html ul,
+    .turn-answer-html ol {
+      margin-bottom: 0.6rem;
+    }
+
     .answer-body h1,
     .answer-body h2,
     .answer-body h3 {
