@@ -973,6 +973,9 @@
           return;
         }
 
+        // Show media context early while synthesis is still running
+        loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
+
         const answer = await synthesisAgent({
           lmBase,
           model,
@@ -1207,6 +1210,7 @@
             Math.max(14, preset.contextSources)
           );
           renderSources();
+          loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
 
           const contextUrls = parseContextUrls($("contextUrls").value);
           if (contextUrls.length) {
@@ -1391,6 +1395,8 @@
         state.sources = ranked;
         renderSources();
         addLog("search", `Unique sources kept: ${state.sources.length}`, "ok");
+        // Start media load in parallel for faster visual feedback
+        loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
 
         if (!state.sources.length) {
           throw new Error("No sources returned from SearXNG.");

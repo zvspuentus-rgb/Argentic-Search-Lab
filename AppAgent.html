@@ -252,6 +252,10 @@
       <span class="run-stage-spinner"></span>
       <span id="runStageText">Idle</span>
     </div>
+    <div id="agentStreamMatrix" class="agent-stream-matrix" aria-hidden="true">
+      <div id="agentStreamLineA" class="matrix-line"></div>
+      <div id="agentStreamLineB" class="matrix-line"></div>
+    </div>
   </div>
 
   <!-- Settings Layer (Overlay) -->
@@ -441,6 +445,9 @@
         </section>
 
         <div class="p-3 bg-dark rounded-3 d-grid gap-2 border border-secondary">
+          <button onclick="saveSettingsToStorage(); setStatus('Settings saved for next refresh.');"
+            class="btn btn-success btn-sm fw-semibold">Save Settings</button>
+          <div id="settingsState" class="mono text-center" style="font-size: 0.72rem; color:#c8d9e6;">settings: idle</div>
           <button onclick="testConnections()" class="btn btn-outline-info btn-sm fw-bold">Test System Stack</button>
           <button onclick="fullResetAppData()" class="btn btn-outline-danger btn-sm">Full Factory Reset</button>
         </div>

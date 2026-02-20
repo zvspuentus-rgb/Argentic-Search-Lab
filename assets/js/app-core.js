@@ -41,7 +41,8 @@
       sourcesLayout: "row",
       mediaCursor: null,
       runningPreview: false,
-      runningPreviewMode: "deep"
+      runningPreviewMode: "deep",
+      matrixTicker: null
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -143,6 +144,7 @@
         pill.classList.remove("text-bg-secondary", "text-bg-success");
         pill.classList.add(on ? "text-bg-success" : "text-bg-secondary");
       }
+      toggleAgentStreamMatrix(on);
       renderRunStageIndicator();
       if (typeof updateInpState === "function") updateInpState();
     }
@@ -177,6 +179,47 @@
       const label = activeFlowLabel() || "Collection • Search • Compute • Answer";
       text.textContent = `Running: ${label}`;
       root.classList.add("active");
+    }
+
+    function randomMatrixChunk(len = 18) {
+      const chars = "01abcdef<>+-=|/\\[]{}";
+      let out = "";
+      for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    }
+
+    function renderAgentStreamMatrixTick() {
+      const root = $("agentStreamMatrix");
+      const lineA = $("agentStreamLineA");
+      const lineB = $("agentStreamLineB");
+      if (!root || !lineA || !lineB) return;
+      if (!state.busy) {
+        root.classList.remove("active");
+        return;
+      }
+      const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
+      const a = `[${active}] ${randomMatrixChunk(22)}`;
+      const b = `[TRACE] ${randomMatrixChunk(22)}`;
+      lineA.textContent = a;
+      lineB.textContent = b;
+      root.classList.add("active");
+    }
+
+    function toggleAgentStreamMatrix(on) {
+      const root = $("agentStreamMatrix");
+      if (!root) return;
+      if (!on) {
+        if (state.matrixTicker) {
+          clearInterval(state.matrixTicker);
+          state.matrixTicker = null;
+        }
+        root.classList.remove("active");
+        return;
+      }
+      renderAgentStreamMatrixTick();
+      if (!state.matrixTicker) {
+        state.matrixTicker = setInterval(renderAgentStreamMatrixTick, 220);
+      }
     }
 
     function setRunningPreview(on, mode = "deep") {
@@ -519,6 +562,11 @@
 
       const container = document.createElement("div");
       container.className = "media-scroll-container";
+      container.addEventListener("wheel", (e) => {
+        if (container.scrollHeight <= container.clientHeight + 1) return;
+        e.preventDefault();
+        container.scrollTop += e.deltaY;
+      }, { passive: false });
 
       for (const item of items.slice(0, 12)) {
         const t = item.mediaType || inferMediaType(item.url);

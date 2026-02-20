@@ -454,6 +454,34 @@
       display: flex;
     }
 
+    .agent-stream-matrix {
+      display: none;
+      margin-top: 0.25rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(120, 184, 255, 0.2);
+      background: rgba(8, 15, 19, 0.75);
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      line-height: 1.2;
+      color: #7be6b2;
+      overflow: hidden;
+    }
+
+    .agent-stream-matrix.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+
+    .matrix-line {
+      white-space: pre;
+      text-overflow: clip;
+      overflow: hidden;
+      opacity: 0.92;
+      min-height: 0.9rem;
+    }
+
     .run-stage-spinner {
       width: 10px;
       height: 10px;
