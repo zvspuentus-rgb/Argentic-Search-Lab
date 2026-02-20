@@ -42,6 +42,24 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
   - `context_items`
   - `repo_scope_enforced` (true when strict GitHub repo scope was applied)
 
+### GitHub repo grounding example
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 12,
+  "method": "tools/call",
+  "params": {
+    "name": "search_deep",
+    "arguments": {
+      "query": "analyze this repo deeply https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "limit": 10,
+      "include_context": true,
+      "context_max_urls": 8
+    }
+  }
+}
+```
+
 ### `search_quick` extra arguments (new)
 - `urls` (optional array)
 - `include_context` (default `false`)

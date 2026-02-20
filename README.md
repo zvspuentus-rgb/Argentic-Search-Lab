@@ -70,6 +70,14 @@ flowchart LR
     D4 --> D5["Critic"]
     D5 --> D6["Synthesis + Citations"]
     D6 --> D7["Copilot Follow-ups"]
+    classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef quick fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1px;
+    classDef deep fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1px;
+    classDef output fill:#2f2248,stroke:#b690ff,color:#f2eaff,stroke-width:1px;
+    class A,B entry;
+    class Q1,Q2,Q3 quick;
+    class D1,D2,D3,D4,D5,D6 deep;
+    class Q4,D7 output;
 ```
 
 ### 3) Auto
@@ -137,6 +145,82 @@ flowchart TB
     APP --> SX["SearXNG (JSON Search)"]
     MCP["MCP Server (Tool Provider)"] --> SX
     EXT["External Agent / IDE"] --> MCP
+    classDef ui fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef infra fill:#1b2d22,stroke:#43d3a8,color:#eafff6,stroke-width:1px;
+    classDef ext fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1px;
+    class UI ui;
+    class APP,SX,MCP infra;
+    class EXT ext;
+```
+
+### GitHub Repo Context (Model Grounding)
+When a user provides a GitHub repo URL, MCP now applies strict repo scope and pulls file-level context from inside that repository.
+
+What happens automatically:
+- URL is detected from query text
+- Repo scope is enforced (`github.com/<owner>/<repo>`)
+- Unrelated GitHub results are filtered out
+- Key files are fetched for context (README, Docker/config/build files, relevant source files)
+- Response includes `repo_scope_enforced`, `urls_detected`, and `context_items`
+
+Quick example (focused, fast):
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "search_quick",
+    "arguments": {
+      "query": "inspect this repository https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "limit": 6,
+      "include_context": true,
+      "context_max_urls": 3
+    }
+  }
+}
+```
+
+Deep example (maximum coverage on the same repo):
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "search_deep",
+    "arguments": {
+      "query": "analyze architecture and pipeline in this repo https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "limit": 10,
+      "include_context": true,
+      "context_max_urls": 8
+    }
+  }
+}
+```
+
+Interpretation tips for agents:
+- If `repo_scope_enforced=true`: trust this as repo-grounded retrieval
+- Prefer `context_items` for synthesis over generic web snippets
+- Use `fetch_url_context` only for extra targeted URLs not already covered
+
+### Visual Workflow (Repo URL Path)
+```mermaid
+flowchart LR
+    U["User sends GitHub URL"] --> D["URL Detector"]
+    D --> S["Repo Scope Enforcer"]
+    S --> Q["Scoped Query Builder"]
+    Q --> X["SearXNG Retrieval"]
+    S --> G["GitHub File Context Fetcher"]
+    X --> M["Merge + Deduplicate"]
+    G --> M
+    M --> O["Grounded Output for Model"]
+    classDef step fill:#132f44,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef guard fill:#23351d,stroke:#8bdc65,color:#f2ffe8,stroke-width:1px;
+    classDef out fill:#3d1f3f,stroke:#d59cff,color:#ffeefe,stroke-width:1px;
+    class U,D,Q,X,G,M step;
+    class S guard;
+    class O out;
 ```
 
 ### MCP client config snippet
