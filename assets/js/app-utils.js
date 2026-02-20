@@ -709,6 +709,12 @@
         coverageScore = Math.min(coverageScore, 50);
         overallScore = Math.min(overallScore, 50);
       }
+      if ((sources || []).length < 3) {
+        needMoreSearch = true;
+        reason = `Insufficient evidence breadth (sources<3). ${reason}`.trim();
+        coverageScore = Math.min(coverageScore, 45);
+        overallScore = Math.min(overallScore, 45);
+      }
       return {
         needMoreSearch,
         reason,

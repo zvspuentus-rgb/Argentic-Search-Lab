@@ -45,7 +45,8 @@
       matrixTicker: null,
       centerOverlayVisible: false,
       turns: [],
-      mediaObservers: {}
+      mediaObservers: {},
+      temporalScope: null
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";

@@ -432,6 +432,33 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return uniqueStrings(base).slice(0, n);
     }
 
+    function inferTemporalScope(queryText) {
+      const src = String(queryText || "");
+      const years = [...new Set((src.match(/\b(19|20)\d{2}\b/g) || []).map((x) => Number(x)).filter((n) => n >= 1900 && n <= 2100))];
+      const asksCurrent = /\b(today|current|currently|latest|now|live|as of today)\b/i.test(src);
+      const nowYear = new Date().getFullYear();
+      if (years.length && !asksCurrent) return { type: "historical", years };
+      if (asksCurrent) return { type: "current", years: [nowYear] };
+      return { type: "unspecified", years: [] };
+    }
+
+    function enforceTemporalScopeInSearchQuery(queryText) {
+      const base = normalizeQuery(queryText);
+      if (!base) return base;
+      const scope = state.temporalScope || inferTemporalScope(base);
+      if (scope.type === "historical" && scope.years.length) {
+        const y = scope.years[0];
+        if (new RegExp(`\\b${y}\\b`).test(base) && /\bhistorical\b/i.test(base)) return base;
+        return `${base} historical ${y} archived`;
+      }
+      if (scope.type === "current") {
+        const y = new Date().getFullYear();
+        if (new RegExp(`\\b${y}\\b`).test(base)) return base;
+        return `${base} ${y} latest`;
+      }
+      return base;
+    }
+
     function buildFallbackFollowups(query, language = "auto") {
       const q = String(query || "").trim();
       if (!q) return [];
@@ -498,6 +525,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         return;
       }
       const cleanQuery = normalizeQuery(rawQuery);
+      state.temporalScope = inferTemporalScope(cleanQuery);
       if (typeof archiveCurrentTurnIfNeeded === "function") {
         archiveCurrentTurnIfNeeded();
       }
@@ -713,7 +741,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
     async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web", page = 1 }) {
       const u = new URL(normalizeSearchUrl(searchUrl));
-      u.searchParams.set("q", query);
+      const scopedQuery = enforceTemporalScopeInSearchQuery(query);
+      u.searchParams.set("q", scopedQuery);
       u.searchParams.set("format", "json");
       const p = Number(page) || 1;
       if (p > 1) u.searchParams.set("pageno", String(p));
@@ -861,6 +890,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const system = [
         "You are Synthesis Agent.",
         "Create a high-signal answer from provided sources.",
+        "Ground every factual statement in the provided sources only.",
+        "Do not use prior model memory for facts when sources are present.",
         "Write a comprehensive answer, not short notes.",
         "Prefer extensive depth with practical details and concrete comparisons.",
         "Do not repeat content.",
@@ -1072,6 +1103,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       state.mediaImages = [];
       state.mediaVideos = [];
       state.mediaCursor = null;
+      state.temporalScope = null;
       state.criticReport = null;
       state.agentBrief = "";
       renderLogs();
@@ -1242,6 +1274,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         return;
       }
       if (!cleanQuery && hasAttachments) cleanQuery = "Analyze attached files";
+      state.temporalScope = inferTemporalScope(cleanQuery);
       state.lastUserQuery = cleanQuery;
       cleanQuery = await prepareEnglishQuery(cleanQuery, lmBase, model);
       const modelQuery = composeModelQuery(cleanQuery);
