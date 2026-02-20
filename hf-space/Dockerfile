@@ -3,13 +3,14 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 ARG TARGETARCH
+ARG OLLAMA_ARCH
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv ca-certificates curl zstd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \
-    arch="${TARGETARCH:-}"; \
+    arch="${OLLAMA_ARCH:-${TARGETARCH:-}}"; \
     if [ -z "$arch" ]; then \
       u="$(uname -m)"; \
       [ "$u" = "x86_64" ] && arch="amd64" || true; \
