@@ -364,6 +364,19 @@
       margin-bottom: 1.5rem;
     }
 
+    .answer-body .citation-ref {
+      color: #9fd0ff;
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(159, 208, 255, 0.6);
+      margin: 0 1px;
+      font-weight: 600;
+    }
+
+    .answer-body .citation-ref:hover {
+      color: #d7ecff;
+      border-bottom-color: #d7ecff;
+    }
+
     /* Flow Indicators */
     .flow-indicators {
       display: flex;

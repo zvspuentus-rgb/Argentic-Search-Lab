@@ -456,11 +456,24 @@
       }
     }
 
+    function mergeUniqueMedia(existing, incoming, limit = 80) {
+      const out = [];
+      const seen = new Set();
+      for (const item of [...existing, ...incoming]) {
+        const key = String(item?.url || item?.title || "").toLowerCase().trim();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
     async function loadAnswerMedia(searchUrl, query) {
       const [images, videos, web] = await Promise.all([
-        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "images" }),
-        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "videos" }),
-        searchQuery({ searchUrl, query, limit: 12, sourceProfile: "web" })
+        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "images", page: 1 }),
+        searchQuery({ searchUrl, query, limit: 10, sourceProfile: "videos", page: 1 }),
+        searchQuery({ searchUrl, query, limit: 12, sourceProfile: "web", page: 1 })
       ]);
       const webAsImages = web
         .filter((m) => !!(m.thumbnail || m.img_src))
@@ -487,8 +500,64 @@
       state.mediaImages = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "image").slice(0, 10);
       state.mediaVideos = out.filter((m) => (m.mediaType || inferMediaType(m.url)) === "video").slice(0, 10);
       state.media = [...state.mediaImages, ...state.mediaVideos];
+      state.mediaCursor = {
+        query,
+        searchUrl,
+        imagesPage: 1,
+        videosPage: 1,
+        loadingImages: false,
+        loadingVideos: false,
+        hasMoreImages: true,
+        hasMoreVideos: true
+      };
       addLog("media", `images=${state.mediaImages.length}, videos=${state.mediaVideos.length}`, (state.mediaImages.length + state.mediaVideos.length) ? "ok" : "warn");
       renderAnswerMedia();
+    }
+
+    async function loadMoreMediaForPanel(kind) {
+      const k = String(kind || "").toLowerCase();
+      if (k !== "images" && k !== "videos") return;
+      const cursor = state.mediaCursor;
+      if (!cursor?.query || !cursor?.searchUrl) return;
+      const loadingKey = k === "images" ? "loadingImages" : "loadingVideos";
+      const pageKey = k === "images" ? "imagesPage" : "videosPage";
+      const hasMoreKey = k === "images" ? "hasMoreImages" : "hasMoreVideos";
+      if (cursor[loadingKey] || cursor[hasMoreKey] === false) return;
+      cursor[loadingKey] = true;
+      const nextPage = (Number(cursor[pageKey]) || 1) + 1;
+      try {
+        const more = await searchQuery({
+          searchUrl: cursor.searchUrl,
+          query: cursor.query,
+          limit: 10,
+          sourceProfile: k,
+          page: nextPage
+        });
+        const normalized = more.map((m) => ({
+          title: String(m.title || "Untitled"),
+          url: String(m.url || ""),
+          content: String(m.content || ""),
+          thumbnail: String(m.thumbnail || ""),
+          img_src: String(m.img_src || ""),
+          mediaType: k === "images" ? "image" : "video"
+        }));
+        if (!normalized.length) {
+          cursor[hasMoreKey] = false;
+          return;
+        }
+        if (k === "images") state.mediaImages = mergeUniqueMedia(state.mediaImages, normalized, 80);
+        else state.mediaVideos = mergeUniqueMedia(state.mediaVideos, normalized, 80);
+        state.media = [...state.mediaImages, ...state.mediaVideos];
+        cursor[pageKey] = nextPage;
+        if (normalized.length < 10) cursor[hasMoreKey] = false;
+        renderAnswerMedia();
+        addLog("media", `Loaded more ${k}: +${normalized.length}`, "ok");
+      } catch (err) {
+        cursor[hasMoreKey] = false;
+        addLog("media", `Failed to load more ${k}: ${err.message}`, "warn");
+      } finally {
+        cursor[loadingKey] = false;
+      }
     }
 
     async function loadWeather() {
@@ -508,10 +577,12 @@
       }
     }
 
-    async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web" }) {
+    async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web", page = 1 }) {
       const u = new URL(normalizeSearchUrl(searchUrl));
       u.searchParams.set("q", query);
       u.searchParams.set("format", "json");
+      const p = Number(page) || 1;
+      if (p > 1) u.searchParams.set("pageno", String(p));
       if (sourceProfile === "academic") u.searchParams.set("categories", "science");
       if (sourceProfile === "social") u.searchParams.set("categories", "social media");
       if (sourceProfile === "web") u.searchParams.set("categories", "general");
@@ -851,6 +922,7 @@
       state.media = [];
       state.mediaImages = [];
       state.mediaVideos = [];
+      state.mediaCursor = null;
       state.criticReport = null;
       state.agentBrief = "";
       renderLogs();
@@ -1073,6 +1145,7 @@
       state.media = [];
       state.mediaImages = [];
       state.mediaVideos = [];
+      state.mediaCursor = null;
       state.criticReport = null;
       state.thinking = [];
       state.queries = [];
@@ -1512,6 +1585,7 @@
       state.media = [];
       state.mediaImages = [];
       state.mediaVideos = [];
+      state.mediaCursor = null;
       state.criticReport = null;
       state.thinking = [];
       state.queries = [];

@@ -219,7 +219,19 @@
           if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
           e.preventDefault();
           scroller.scrollTop += e.deltaY;
+          const nearBottom = (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
+          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
+            loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
+          }
         }, { passive: false });
+        section.addEventListener("scroll", () => {
+          const scroller = section.querySelector(".media-scroll-container");
+          if (!scroller) return;
+          const nearBottom = (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
+          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
+            loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
+          }
+        }, { passive: true, capture: true });
       });
     }
 

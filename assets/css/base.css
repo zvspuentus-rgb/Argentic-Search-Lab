@@ -438,6 +438,32 @@
       display: flex;
     }
 
+    .run-stage-indicator {
+      margin-top: 0.35rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      font-size: 0.72rem;
+      color: #d8e9f6;
+      font-family: var(--font-mono);
+      opacity: 0.92;
+    }
+
+    .run-stage-indicator.active {
+      display: flex;
+    }
+
+    .run-stage-spinner {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid rgba(120, 184, 255, 0.25);
+      border-top-color: #8bc6ff;
+      animation: runSpin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
     .chat-busy-dot {
       width: 10px;
       height: 10px;
@@ -574,4 +600,8 @@
       0% { transform: scale(1); }
       50% { transform: scale(1.07); }
       100% { transform: scale(1); }
+    }
+
+    @keyframes runSpin {
+      to { transform: rotate(360deg); }
     }

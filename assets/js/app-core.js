@@ -37,7 +37,8 @@
       executionModeResolved: "auto",
       attachments: [],
       discoveryCount: 24,
-      sourcesLayout: "row"
+      sourcesLayout: "row",
+      mediaCursor: null
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -139,6 +140,7 @@
         pill.classList.remove("text-bg-secondary", "text-bg-success");
         pill.classList.add(on ? "text-bg-success" : "text-bg-secondary");
       }
+      renderRunStageIndicator();
       if (typeof updateInpState === "function") updateInpState();
     }
 
@@ -153,6 +155,25 @@
 
     function setStatus(message) {
       $("statusText").textContent = message;
+    }
+
+    function activeFlowLabel() {
+      const active = FLOW_STAGES.find((s) => state.flow[s.id] === "active");
+      return active?.label || "";
+    }
+
+    function renderRunStageIndicator() {
+      const root = $("runStageIndicator");
+      const text = $("runStageText");
+      if (!root || !text) return;
+      if (!state.busy) {
+        root.classList.remove("active");
+        text.textContent = "Idle";
+        return;
+      }
+      const label = activeFlowLabel() || "Preparing";
+      text.textContent = `Running: ${label}`;
+      root.classList.add("active");
     }
 
     function markdownToSafeHtml(mdText) {
@@ -173,6 +194,53 @@
       if (!el) return;
       el.innerHTML = markdownToSafeHtml(mdText);
       enhanceAnswerCodeBlocks();
+      enhanceCitationLinks();
+    }
+
+    function enhanceCitationLinks() {
+      const root = $("answer");
+      if (!root) return;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const raw = String(node?.nodeValue || "");
+          if (!/\[(\d{1,3})\]/.test(raw)) return NodeFilter.FILTER_REJECT;
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          if (parent.closest("a, pre, code, button")) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        const text = String(node.nodeValue || "");
+        const parts = text.split(/(\[\d{1,3}\])/g);
+        if (parts.length <= 1) continue;
+        const frag = document.createDocumentFragment();
+        for (const part of parts) {
+          const m = part.match(/^\[(\d{1,3})\]$/);
+          if (!m) {
+            frag.appendChild(document.createTextNode(part));
+            continue;
+          }
+          const idx = Number(m[1]);
+          const src = state.sources[idx - 1];
+          if (!src?.url) {
+            frag.appendChild(document.createTextNode(part));
+            continue;
+          }
+          const a = document.createElement("a");
+          a.className = "citation-ref";
+          a.href = src.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = part;
+          a.title = src.title || src.url;
+          frag.appendChild(a);
+        }
+        node.parentNode?.replaceChild(frag, node);
+      }
     }
 
     function enhanceAnswerCodeBlocks() {
@@ -527,6 +595,7 @@
       updateFlowFromLog(stage, level);
       renderLogs();
       renderFlow();
+      renderRunStageIndicator();
     }
 
     function addDebug(stage, message, level = "ok") {
@@ -566,6 +635,7 @@
         `;
         root.appendChild(item);
       }
+      renderRunStageIndicator();
     }
 
     function renderDebug() {
