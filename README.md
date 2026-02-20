@@ -9,6 +9,20 @@ Production-oriented local research stack with:
 
 The system is designed to run locally with zero mandatory cloud cost.
 
+## Why It Is Truly Free
+- No required subscription to run the core stack.
+- Runs on your local machine (`localhost`) with local providers (LM Studio / Ollama).
+- No mandatory per-query payment wall for research flows.
+- You control performance/cost by model choice and hardware.
+
+Compared to hosted research products, this project can run fully local-first with no recurring usage fee.
+
+## Local-First Responsibility Notes
+- Quality depends on the model you choose.
+- Smaller models are faster/cheaper but may reason less deeply.
+- Larger models generally improve grounding, critique, and synthesis quality.
+- Always validate high-stakes outputs (medical/legal/financial) before acting.
+
 ## Quick Start (1 minute)
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)
@@ -30,6 +44,20 @@ Open:
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
+
+## Screenshot Guide (Project in Action)
+### macOS quick screenshot
+- Full screen: `Shift + Command + 3`
+- Area selection: `Shift + Command + 4`
+- Specific window: `Shift + Command + 4`, then press `Space`, then click the window
+
+### Full-page screenshot from browser
+- Chrome/Edge:
+1. Open DevTools (`Option + Command + I` on Mac)
+2. Open command menu (`Shift + Command + P`)
+3. Run `Capture full size screenshot`
+
+Tip: capture one image with `Discovery`, one during `Deep Research Running`, and one with final `Analysis & Synthesis`.
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
@@ -173,6 +201,8 @@ Use cases:
 - Tool calls from orchestrators with explicit search delegation
 
 ### Service Topology
+![Argentic Search Lab Logo](docs/logo.svg)
+
 ```mermaid
 flowchart TB
     UI["AppAgent UI (Web)"] --> APP["App Server (Node)"]
