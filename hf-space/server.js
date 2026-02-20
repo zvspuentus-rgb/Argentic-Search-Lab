@@ -6,7 +6,7 @@ const PORT = Number(process.env.PORT || 8080);
 const SEARX_BASE = process.env.SEARX_BASE || 'http://searxng:8080';
 const MCP_BASE = process.env.MCP_BASE || 'http://mcp:8090';
 const LMSTUDIO_BASE = process.env.LMSTUDIO_BASE || 'http://host.docker.internal:1234';
-const OLLAMA_BASE = process.env.OLLAMA_BASE || 'http://host.docker.internal:11434';
+const OLLAMA_BASE = process.env.OLLAMA_BASE || 'http://127.0.0.1:11434';
 const LIVE_DEMO_MODE = String(process.env.LIVE_DEMO_MODE || '').toLowerCase() === '1' || String(process.env.LIVE_DEMO_MODE || '').toLowerCase() === 'true';
 const LIVE_DEMO_QUERY_LIMIT = Math.max(1, Number(process.env.LIVE_DEMO_QUERY_LIMIT || 2));
 const ROOT = __dirname;

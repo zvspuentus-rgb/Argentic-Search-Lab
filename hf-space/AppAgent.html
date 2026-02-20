@@ -304,8 +304,8 @@
             <div class="col-md-6">
               <label class="form-label small text-muted">Provider</label>
               <select id="provider" class="form-select form-select-sm bg-dark text-white border-secondary">
-                <option value="lmstudio" selected>LM Studio (default)</option>
-                <option value="ollama">Ollama</option>
+                <option value="lmstudio">LM Studio</option>
+                <option value="ollama" selected>Ollama (Space default)</option>
                 <option value="openai">OpenAI</option>
                 <option value="anthropic">Anthropic</option>
                 <option value="gemini">Gemini</option>
@@ -325,7 +325,7 @@
               <label class="form-label small text-muted">Active Model Name</label>
               <div class="input-group input-group-sm">
                 <select id="modelName" class="form-select bg-dark text-white border-secondary">
-                  <option value="qwen3-coder-30b-a3b-instruct-dq-abliterated">qwen3-coder-30b-a3b (Default)</option>
+                  <option value="gemma3:1b" selected>gemma3:1b (Space default)</option>
                 </select>
                 <button class="btn btn-outline-secondary" type="button" onclick="refreshModels()">Fetch</button>
               </div>

@@ -89,10 +89,14 @@
 
     /* Dynamic Model Fetching */
     async function refreshModels() {
-      const lmBase = $("lmBase").value.trim();
+      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
+      const lmBase = $("lmBase")?.value?.trim() || "/lmstudio/v1";
+      const ollamaBase = $("ollamaBase")?.value?.trim() || "/ollama/v1";
+      const base = provider === "ollama" ? ollamaBase : lmBase;
+      const providerLabel = provider === "ollama" ? "Ollama" : "LM Studio";
       try {
-        setStatus("Fetching models from LM Studio...");
-        const res = await fetch(`${lmBase.replace(/\/$/, "")}/models`);
+        setStatus(`Fetching models from ${providerLabel}...`);
+        const res = await fetch(`${base.replace(/\/$/, "")}/models`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const models = (data.data || []).map(m => m.id);
@@ -114,8 +118,8 @@
         if (typeof syncChatModelOptions === "function") {
           syncChatModelOptions({ keepChatSelection: true });
         }
-        setStatus(`Found ${models.length} models.`);
-        addLog("health", `Fetched ${models.length} models from LM Studio.`, "ok");
+        setStatus(`Found ${models.length} models from ${providerLabel}.`);
+        addLog("health", `Fetched ${models.length} models from ${providerLabel}.`, "ok");
       } catch (err) {
         setStatus(`Model fetch failed: ${err.message}`);
         addLog("health", `Failed to fetch models: ${err.message}`, "warn");

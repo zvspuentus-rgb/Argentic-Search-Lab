@@ -1110,12 +1110,16 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function testConnections() {
+      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
       const lmBase = $("lmBase").value.trim();
+      const ollamaBase = $("ollamaBase")?.value?.trim() || "/ollama/v1";
+      const modelBase = provider === "ollama" ? ollamaBase : lmBase;
+      const modelLabel = provider === "ollama" ? "Ollama" : "LM Studio";
       const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
 
-      addLog("health", "Testing LM Studio...", "ok");
-      await fetchJson(`${lmBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: "LM Studio models" });
-      addLog("health", "LM Studio OK", "ok");
+      addLog("health", `Testing ${modelLabel}...`, "ok");
+      await fetchJson(`${modelBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: `${modelLabel} models` });
+      addLog("health", `${modelLabel} OK`, "ok");
 
       addLog("health", "Testing SearXNG...", "ok");
       const u = new URL(searchUrl);
