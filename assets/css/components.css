@@ -453,6 +453,28 @@
       }
     }
 
+    /* Settings readability */
+    #settingsModal .form-label.small.text-muted {
+      color: #d9ecff !important;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+      margin-bottom: 0.35rem;
+    }
+
+    #settingsModal .form-check.small.text-muted,
+    #settingsModal .form-check .form-check-label {
+      color: #d9ecff !important;
+      font-weight: 600;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    #settingsModal .section-title {
+      color: #f0f8ff;
+      font-weight: 800;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from {
