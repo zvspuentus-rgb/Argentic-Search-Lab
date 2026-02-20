@@ -1042,12 +1042,12 @@
             <div class="col-md-6">
               <label class="form-label small text-muted">LM Studio Base URL</label>
               <input id="lmBase" class="form-control form-control-sm bg-dark text-white border-secondary"
-                value="http://localhost:1234/v1" />
+                value="/lmstudio/v1" />
             </div>
             <div class="col-md-6">
               <label class="form-label small text-muted">Ollama Base URL</label>
               <input id="ollamaBase" class="form-control form-control-sm bg-dark text-white border-secondary"
-                value="http://localhost:11434/v1" />
+                value="/ollama/v1" />
             </div>
             <div class="col-md-6">
               <label class="form-label small text-muted">Active Model Name</label>
@@ -2452,8 +2452,8 @@
       const provider = ($("provider")?.value || "lmstudio").toLowerCase();
       const model = $("modelName")?.value?.trim() || "";
       const map = {
-        lmstudio: { provider, model, base: $("lmBase")?.value?.trim() || "http://localhost:1234/v1", apiKey: "" },
-        ollama: { provider, model, base: $("ollamaBase")?.value?.trim() || "http://localhost:11434/v1", apiKey: "" },
+        lmstudio: { provider, model, base: $("lmBase")?.value?.trim() || "/lmstudio/v1", apiKey: "" },
+        ollama: { provider, model, base: $("ollamaBase")?.value?.trim() || "/ollama/v1", apiKey: "" },
         openai: { provider, model, base: $("openaiBase")?.value?.trim() || "https://api.openai.com/v1", apiKey: $("openaiKey")?.value || "" },
         anthropic: { provider, model, base: "https://api.anthropic.com/v1", apiKey: $("anthropicKey")?.value || "" },
         gemini: { provider, model, base: "https://generativelanguage.googleapis.com/v1beta", apiKey: $("geminiKey")?.value || "" }

@@ -10,6 +10,10 @@ services:
       - PORT=8080
       - SEARX_BASE=http://searxng:8080
       - MCP_BASE=http://mcp:8090
+      - LMSTUDIO_BASE=${LMSTUDIO_BASE:-http://host.docker.internal:1234}
+      - OLLAMA_BASE=${OLLAMA_BASE:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       searxng:
         condition: service_healthy

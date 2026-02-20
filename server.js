@@ -5,6 +5,8 @@ const path = require('path');
 const PORT = Number(process.env.PORT || 8080);
 const SEARX_BASE = process.env.SEARX_BASE || 'http://searxng:8080';
 const MCP_BASE = process.env.MCP_BASE || 'http://mcp:8090';
+const LMSTUDIO_BASE = process.env.LMSTUDIO_BASE || 'http://host.docker.internal:1234';
+const OLLAMA_BASE = process.env.OLLAMA_BASE || 'http://host.docker.internal:11434';
 const ROOT = __dirname;
 
 const MIME = {
@@ -96,6 +98,8 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url.startsWith('/searxng/')) return proxy(req, res, SEARX_BASE, '/searxng');
   if (req.url.startsWith('/mcp/')) return proxy(req, res, MCP_BASE, '/mcp');
+  if (req.url.startsWith('/lmstudio/')) return proxy(req, res, LMSTUDIO_BASE, '/lmstudio');
+  if (req.url.startsWith('/ollama/')) return proxy(req, res, OLLAMA_BASE, '/ollama');
 
   return serveFile(req, res);
 });

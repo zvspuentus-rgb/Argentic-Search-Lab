@@ -56,6 +56,19 @@ Defined by `.env`:
 - `APP_PORT=8093`
 - `MCP_PORT=8193`
 - `SEARX_PORT=8393`
+- `LMSTUDIO_BASE=http://host.docker.internal:1234`
+- `OLLAMA_BASE=http://host.docker.internal:11434`
+
+## Local LM Studio / Ollama Through Docker
+The UI server now proxies local host-model endpoints via Docker:
+- `/lmstudio/*` -> `${LMSTUDIO_BASE}` (default `http://host.docker.internal:1234`)
+- `/ollama/*` -> `${OLLAMA_BASE}` (default `http://host.docker.internal:11434`)
+
+Default UI values are already set to:
+- LM Studio base: `/lmstudio/v1`
+- Ollama base: `/ollama/v1`
+
+This avoids CORS issues and works better when accessing the UI from another device on your LAN.
 
 ## MCP Client Configuration (JSON)
 Add this block inside your `mcpServers` object:
