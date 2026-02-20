@@ -19,7 +19,7 @@ if ! curl -fsS "http://${OLLAMA_HOST:-127.0.0.1:11434}/api/tags" >/dev/null 2>&1
 fi
 
 # Pull a lightweight default model, or build from custom GGUF URL if provided
-MODEL_NAME="${OLLAMA_MODEL:-gemma3:1b}"
+MODEL_NAME="${OLLAMA_MODEL:-qwen3:0.6b-q4_K_M}"
 if [ -n "${OLLAMA_GGUF_URL:-}" ]; then
   mkdir -p /app/models
   GGUF_PATH="/app/models/model.gguf"
