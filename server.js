@@ -70,12 +70,14 @@ function serveFile(req, res) {
   const rawPath = req.url === '/' ? '/AppAgent.html' : req.url;
   const safePath = path.normalize(rawPath).replace(/^\.\.(\/|\\|$)/, '');
   const filePath = path.join(ROOT, safePath);
+  const reqExt = path.extname(filePath).toLowerCase();
 
   if (!filePath.startsWith(ROOT)) return send(res, 403, 'Forbidden');
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      if (rawPath !== '/AppAgent.html') {
+      // SPA fallback only for extension-less routes, not missing static assets.
+      if (rawPath !== '/AppAgent.html' && !reqExt) {
         fs.readFile(path.join(ROOT, 'AppAgent.html'), (fallbackErr, fallback) => {
           if (fallbackErr) return send(res, 404, 'Not found');
           send(res, 200, fallback, { 'Content-Type': MIME['.html'] });
@@ -84,8 +86,7 @@ function serveFile(req, res) {
       }
       return send(res, 404, 'Not found');
     }
-    const ext = path.extname(filePath).toLowerCase();
-    send(res, 200, data, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    send(res, 200, data, { 'Content-Type': MIME[reqExt] || 'application/octet-stream' });
   });
 }
 

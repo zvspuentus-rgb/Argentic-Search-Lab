@@ -22,6 +22,12 @@ This repository folder is intentionally clean and contains only server/runtime f
 ```text
 .
 ├── AppAgent.html
+├── assets/
+│   ├── css/
+│   │   ├── base.css
+│   │   └── components.css
+│   └── js/
+│       └── app.js
 ├── Dockerfile
 ├── docker-compose.yml
 ├── server.js
@@ -69,6 +75,14 @@ Default UI values are already set to:
 - Ollama base: `/ollama/v1`
 
 This avoids CORS issues and works better when accessing the UI from another device on your LAN.
+
+## Frontend Structure
+The original single-file app was split into maintainable files:
+- HTML shell: `AppAgent.html`
+- Styles: `assets/css/base.css`, `assets/css/components.css`
+- Client logic: `assets/js/app.js`
+
+Behavior is unchanged; this is a structural refactor for easier maintenance.
 
 ## MCP Client Configuration (JSON)
 Add this block inside your `mcpServers` object:
