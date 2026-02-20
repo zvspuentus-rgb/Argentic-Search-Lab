@@ -285,7 +285,7 @@
     }
 
     async function improvePromptDraft() {
-      if (state.busy) return;
+      if (state.busy || state.promptEnhanceLock) return;
       const input = $("userQuery");
       if (!input) return;
       const draft = normalizeQuery(input.value || "");
@@ -299,7 +299,19 @@
         setStatus("LM endpoint/model is missing.");
         return;
       }
-      setStatus("Improving prompt...");
+      const improveBtn = $("improvePromptBtn");
+      const runBtn = $("runBtn");
+      state.promptEnhanceLock = true;
+      if (improveBtn) {
+        improveBtn.disabled = true;
+        improveBtn.dataset.defaultLabel = improveBtn.dataset.defaultLabel || improveBtn.textContent || "✨ Enhance Prompt";
+        improveBtn.textContent = "⏳ Enhancing...";
+      }
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.classList.add("is-processing");
+      }
+      setStatus("Processing request... improving prompt");
       try {
         const out = await lmChat({
           lmBase,
@@ -327,6 +339,16 @@
       } catch (err) {
         setStatus(`Prompt enhancement failed: ${err.message}`);
         addDebug("prompt", `Enhance failed: ${err.message}`, "warn");
+      } finally {
+        state.promptEnhanceLock = false;
+        if (improveBtn) {
+          improveBtn.disabled = false;
+          improveBtn.textContent = improveBtn.dataset.defaultLabel || "✨ Enhance Prompt";
+        }
+        if (runBtn) {
+          runBtn.classList.remove("is-processing");
+        }
+        updateInpState();
       }
     }
 
@@ -487,7 +509,7 @@
       if (queryInput && runBtn) {
         const hasText = queryInput.value.trim().length > 0;
         const hasAttachments = Array.isArray(state.attachments) && state.attachments.length > 0;
-        runBtn.disabled = (!hasText && !hasAttachments) || state.busy;
+        runBtn.disabled = (!hasText && !hasAttachments) || state.busy || state.promptEnhanceLock;
         runBtn.style.opacity = (hasText || hasAttachments) ? "1" : "0.5";
       }
     }

@@ -34,6 +34,7 @@
       answerAnimToken: 0,
       busySince: 0,
       pipelineSubmitLock: false,
+      promptEnhanceLock: false,
       executionModeResolved: "auto",
       attachments: [],
       discoveryCount: 24,
@@ -171,7 +172,7 @@
         text.textContent = "Idle";
         return;
       }
-      const label = activeFlowLabel() || "Preparing";
+      const label = activeFlowLabel() || "Collection • Search • Compute • Answer";
       text.textContent = `Running: ${label}`;
       root.classList.add("active");
     }
