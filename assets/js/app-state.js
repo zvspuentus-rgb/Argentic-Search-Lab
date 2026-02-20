@@ -491,7 +491,18 @@
       state.attachments = Array.isArray(s.data?.attachments) ? s.data.attachments : [];
       if (typeof renderAttachmentTray === "function") renderAttachmentTray();
       state.lastUserQuery = s.data?.userQuery || "";
-      $("answer").innerHTML = s.data?.answerHtml || "No output yet.";
+      const savedAnswer = String(s.data?.answerHtml || "").trim();
+      const hasHtmlMarkup = /<[^>]+>/.test(savedAnswer);
+      if (!savedAnswer) {
+        renderAnswerMarkdown("No output yet.");
+      } else if (hasHtmlMarkup) {
+        $("answer").innerHTML = savedAnswer;
+        if (typeof enhanceAnswerCodeBlocks === "function") enhanceAnswerCodeBlocks();
+        if (typeof enhanceCitationLinks === "function") enhanceCitationLinks();
+      } else {
+        // Backward compatibility: older sessions may store markdown/plain text in answerHtml.
+        renderAnswerMarkdown(savedAnswer);
+      }
       renderAnswerNotes(s.data?.answerNotes || "No notes yet.");
       state.queries = Array.isArray(s.data?.queries) ? s.data.queries : [];
       state.sources = Array.isArray(s.data?.sources) ? s.data.sources : [];

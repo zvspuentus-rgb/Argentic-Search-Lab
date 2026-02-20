@@ -583,6 +583,9 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
       setBusy(true);
       showResearchView();
+      if (typeof showCenterRequestOverlay === "function") {
+        showCenterRequestOverlay("Request in progress...");
+      }
       state.logs = [];
       state.debug = [];
       state.flow = createFlowState();
@@ -590,7 +593,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       renderFlow();
       renderDebug();
       addLog("copilot", "Fast follow-up mode: reusing existing context (no deep re-search).", "ok");
-      setStatus("Fast copilot response...");
+      setStatus("Request in progress...");
 
       try {
         let fastSources = cachedSources;
@@ -1281,9 +1284,9 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         runBtn.textContent = "⏳";
         runBtn.classList.add("is-processing");
       }
-      setStatus("Processing... working");
+      setStatus("Request in progress...");
       if (typeof showCenterRequestOverlay === "function") {
-        showCenterRequestOverlay("Processing request...");
+        showCenterRequestOverlay("Request in progress...");
       }
 
       try {

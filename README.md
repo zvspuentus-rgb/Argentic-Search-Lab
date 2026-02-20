@@ -53,6 +53,23 @@ Best for:
 - Multi-source comparisons
 - Higher-stakes answers where evidence quality matters
 
+### Pipeline Diagram
+```mermaid
+flowchart LR
+    A["User Query"] --> B{"Mode Resolver"}
+    B -->|"Quick"| Q1["Quick Planner"]
+    Q1 --> Q2["Targeted Search"]
+    Q2 --> Q3["Fast Synthesis"]
+    Q3 --> Q4["Answer + Suggestions"]
+    B -->|"Deep"| D1["Analyzer"]
+    D1 --> D2["Planner"]
+    D2 --> D3["Refiner"]
+    D3 --> D4["Multi-lane Search"]
+    D4 --> D5["Critic"]
+    D5 --> D6["Synthesis + Citations"]
+    D6 --> D7["Copilot Follow-ups"]
+```
+
 ### 3) Auto
 - Chooses mode from query intent
 - If query explicitly asks for deep/research/analysis => Deep
@@ -104,6 +121,15 @@ Use cases:
 - Agentic IDE coding assistants
 - Chat agents that need optional web search
 - Tool calls from orchestrators with explicit search delegation
+
+### Service Topology
+```mermaid
+flowchart TB
+    UI["AppAgent UI (Web)"] --> APP["App Server (Node)"]
+    APP --> SX["SearXNG (JSON Search)"]
+    MCP["MCP Server (Tool Provider)"] --> SX
+    EXT["External Agent / IDE"] --> MCP
+```
 
 ### MCP client config snippet
 Add inside your MCP client config (`mcpServers`):

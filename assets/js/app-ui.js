@@ -123,8 +123,16 @@
     addListenerIfPresent("followupsList", "click", (e) => {
       const target = e.target.closest(".followup-item");
       if (!target) return;
+      if (state.busy || state.pipelineSubmitLock) {
+        setStatus("A request is already running...");
+        return;
+      }
       const q = target.dataset.query || target.textContent || "";
       $("userQuery").value = q.trim();
+      setStatus("Request in progress...");
+      if (typeof showCenterRequestOverlay === "function") {
+        showCenterRequestOverlay("Request in progress...");
+      }
       if ($("fastFollowups")?.checked) {
         runFastFollowupPipeline(q);
       } else {

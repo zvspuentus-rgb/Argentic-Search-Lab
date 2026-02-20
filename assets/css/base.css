@@ -514,10 +514,12 @@
       justify-content: center;
       z-index: 2500;
       pointer-events: none;
+      background: rgba(5, 10, 14, 0.38);
     }
 
     .request-center-overlay.show {
       display: flex;
+      pointer-events: auto;
     }
 
     .request-center-card {
