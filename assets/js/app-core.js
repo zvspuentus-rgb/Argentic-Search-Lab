@@ -44,7 +44,8 @@
       runningPreviewMode: "deep",
       matrixTicker: null,
       centerOverlayVisible: false,
-      turns: []
+      turns: [],
+      mediaObservers: {}
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -231,8 +232,9 @@
     function renderAnalysisLiveFxTick(activeText, lineAText, lineBText) {
       const root = $("analysisLiveFx");
       const stream = $("analysisLiveStream");
+      const stream2 = $("analysisLiveStreamSecondary");
       const label = $("analysisLiveAgent");
-      if (!root || !stream || !label) return;
+      if (!root || !stream || !stream2 || !label) return;
       if (!state.busy) {
         root.classList.remove("active");
         return;
@@ -249,6 +251,18 @@
         ...state.logs.slice(0, 10).map((x) => compactLogLine(x, "TRACE"))
       ].slice(0, 12);
       stream.innerHTML = liveLines.map((line) => `<div class="analysis-live-line">${escapeHtml(line)}</div>`).join("");
+      const packetLines = state.logs
+        .filter((x) => {
+          const s = String(x?.stage || "").toLowerCase();
+          return s && s !== "synthesis" && s !== "writing" && s !== "done";
+        })
+        .slice(0, 12)
+        .map((x) => compactLogLine(x, "PACK"));
+      stream2.innerHTML = packetLines
+        .concat(packetLines.length ? [] : [`[${active}] ${randomMatrixChunk(26)}`])
+        .slice(0, 12)
+        .map((line) => `<div class="analysis-live-line">${escapeHtml(line)}</div>`)
+        .join("");
       root.classList.add("active");
     }
 
@@ -626,6 +640,10 @@
     function renderMediaList(rootId, items, emptyText) {
       const root = $(rootId);
       if (!root) return;
+      if (state.mediaObservers[rootId]) {
+        try { state.mediaObservers[rootId].disconnect(); } catch {}
+        delete state.mediaObservers[rootId];
+      }
       root.innerHTML = "";
       if (!items.length) {
         root.innerHTML = `<div class="mono" style="color:#9db0bc">${escapeHtml(emptyText)}</div>`;
@@ -635,32 +653,23 @@
       const container = document.createElement("div");
       container.className = "media-scroll-container";
       const kind = /Videos/i.test(rootId) ? "videos" : /Images/i.test(rootId) ? "images" : "";
-      const inSidecar = !!root.closest(".media-sidecar");
-      container.addEventListener("wheel", (e) => {
-        if (inSidecar) e.preventDefault();
-        const hasOverflow = container.scrollHeight > container.clientHeight + 1;
-        if (hasOverflow) {
-          container.scrollTop += e.deltaY;
-        } else if (inSidecar && e.deltaY !== 0) {
-          container.scrollTop += e.deltaY;
-        }
-        if (e.deltaY > 0 && kind && typeof loadMoreMediaForPanel === "function") {
-          const nearBottom = !hasOverflow || (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
-          if (nearBottom) loadMoreMediaForPanel(kind);
-        }
-      }, { passive: false });
 
       for (const item of items.slice(0, 80)) {
         container.appendChild(createMediaCard(item));
       }
       if (kind) {
-        container.addEventListener("scroll", () => {
-          const hasOverflow = container.scrollHeight > container.clientHeight + 1;
-          const nearBottom = !hasOverflow || (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
-          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
-            loadMoreMediaForPanel(kind);
-          }
-        }, { passive: true });
+        const sentinel = document.createElement("div");
+        sentinel.className = "media-load-sentinel";
+        container.appendChild(sentinel);
+        if (typeof IntersectionObserver === "function" && typeof loadMoreMediaForPanel === "function") {
+          const obs = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) loadMoreMediaForPanel(kind);
+            }
+          }, { root: container, threshold: 0.2 });
+          obs.observe(sentinel);
+          state.mediaObservers[rootId] = obs;
+        }
       }
       root.appendChild(container);
     }
@@ -694,21 +703,17 @@
       if (!root || !list.length) return false;
       const container = root.querySelector(".media-scroll-container");
       if (!container) return false;
-      const beforeBottomGap = container.scrollHeight - container.scrollTop;
+      const sentinel = container.querySelector(".media-load-sentinel");
       const seen = new Set([...container.querySelectorAll(".media-card")].map((el) => String(el.dataset.mediaKey || "").trim()).filter(Boolean));
       let added = 0;
       for (const item of list) {
         const key = String(item.url || item.title || "").toLowerCase().trim();
         if (!key || seen.has(key)) continue;
         seen.add(key);
-        container.appendChild(createMediaCard(item));
+        const card = createMediaCard(item);
+        if (sentinel) container.insertBefore(card, sentinel);
+        else container.appendChild(card);
         added += 1;
-      }
-      if (added) {
-        const hasOverflow = container.scrollHeight > container.clientHeight + 1;
-        if (hasOverflow) {
-          container.scrollTop = Math.max(0, container.scrollHeight - beforeBottomGap);
-        }
       }
       return added > 0;
     }
@@ -967,7 +972,7 @@
       }
       for (const [idx, t] of state.turns.entries()) {
         const item = document.createElement("article");
-        item.className = `turn-item ${idx === 0 ? "open" : ""}`;
+        item.className = "turn-item";
         item.innerHTML = `
           <button type="button" class="turn-head" data-turn-toggle="${escapeAttr(t.id)}">
             <span class="turn-title">${escapeHtml(t.query || "Untitled query")}</span>
@@ -1012,6 +1017,20 @@
           openTurnPrintWindow(turn);
         }
       };
+    }
+
+    async function copyAnalysisText() {
+      const text = getCurrentAnswerText();
+      if (!text) {
+        setStatus("No analysis text to copy.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("Analysis copied.");
+      } catch {
+        setStatus("Copy failed.");
+      }
     }
 
     function openTurnPrintWindow(turn) {

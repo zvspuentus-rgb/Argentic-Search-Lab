@@ -123,7 +123,10 @@
       <div class="d-flex flex-column gap-4">
         <!-- Answer Card -->
         <section class="card">
-          <div class="section-title">Analysis & Synthesis</div>
+          <div class="section-title d-flex justify-content-between align-items-center">
+            <span>Analysis & Synthesis</span>
+            <button type="button" class="btn-action" onclick="copyAnalysisText()">Copy Analysis</button>
+          </div>
           <div id="analysisLiveFx" class="analysis-live-fx" aria-hidden="true">
             <div class="analysis-live-head">
               <span class="analysis-live-dot"></span>
@@ -131,6 +134,11 @@
               <span>LIVE AGENT STREAM</span>
             </div>
             <div id="analysisLiveStream" class="analysis-live-stream"></div>
+            <div class="analysis-live-head mt-2">
+              <span class="analysis-live-dot"></span>
+              <span>AGENT PACKETS</span>
+            </div>
+            <div id="analysisLiveStreamSecondary" class="analysis-live-stream"></div>
           </div>
           <div id="answer" class="answer-body">
             <!-- Dynamic Answer content -->

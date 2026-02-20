@@ -498,6 +498,9 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         return;
       }
       const cleanQuery = normalizeQuery(rawQuery);
+      if (typeof archiveCurrentTurnIfNeeded === "function") {
+        archiveCurrentTurnIfNeeded();
+      }
       if (!cleanQuery) {
         setStatus("Please enter a query.");
         return;

@@ -145,6 +145,10 @@
     renderDiscovery();
     bindSettingsPersistence();
     (async () => {
+      try {
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      } catch { }
+      window.scrollTo(0, 0);
       loadSettingsFromStorage();
       if ($("settingsState")) $("settingsState").textContent = "settings: loaded";
       loadSessionsFromStorage();
@@ -217,27 +221,9 @@
         section.addEventListener("wheel", (e) => {
           const scroller = section.querySelector(".media-scroll-container");
           if (!scroller) return;
-          e.preventDefault();
           const hasOverflow = scroller.scrollHeight > scroller.clientHeight + 1;
-          if (hasOverflow) {
-            scroller.scrollTop += e.deltaY;
-          } else if (e.deltaY !== 0) {
-            scroller.scrollTop += e.deltaY;
-          }
-          const nearBottom = !hasOverflow || (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
-          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
-            loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
-          }
-        }, { passive: false });
-        section.addEventListener("scroll", () => {
-          const scroller = section.querySelector(".media-scroll-container");
-          if (!scroller) return;
-          const hasOverflow = scroller.scrollHeight > scroller.clientHeight + 1;
-          const nearBottom = !hasOverflow || (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
-          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
-            loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
-          }
-        }, { passive: true, capture: true });
+          if (hasOverflow) e.stopPropagation();
+        }, { passive: true });
       });
     }
 
