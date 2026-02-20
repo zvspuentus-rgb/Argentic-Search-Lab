@@ -216,9 +216,11 @@
         section.addEventListener("wheel", (e) => {
           const scroller = section.querySelector(".media-scroll-container");
           if (!scroller) return;
+          e.preventDefault();
           const hasOverflow = scroller.scrollHeight > scroller.clientHeight + 1;
           if (hasOverflow) {
-            e.preventDefault();
+            scroller.scrollTop += e.deltaY;
+          } else if (e.deltaY !== 0) {
             scroller.scrollTop += e.deltaY;
           }
           const nearBottom = !hasOverflow || (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);

@@ -66,6 +66,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      pointer-events: auto;
     }
 
     .media-sidecar-left {
@@ -231,7 +232,7 @@
 
     .media-sidecar .media-scroll-container {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       overflow-y: auto;
       overflow-x: hidden;
       height: 100%;
@@ -245,12 +246,22 @@
       touch-action: pan-y;
     }
 
+    @media (max-width: 1480px) {
+      .media-sidecar .media-scroll-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
     .media-sidecar > div[id^="answerMedia"] {
       display: flex;
       flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.65rem;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 0.28rem;
     }
 
     .media-scroll-container::-webkit-scrollbar {

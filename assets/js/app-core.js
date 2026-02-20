@@ -190,13 +190,25 @@
       return out;
     }
 
+    function compactLogLine(entry, fallbackTag = "TRACE") {
+      if (!entry) return `[${fallbackTag}] ${randomMatrixChunk(24)}`;
+      const tag = String(entry.stage || fallbackTag).toUpperCase().slice(0, 12);
+      const msg = String(entry.message || "")
+        .replace(/\s+/g, " ")
+        .replace(/[^\p{L}\p{N}\s:;,.!?()[\]{}<>+\-_/|#@]/gu, "")
+        .trim()
+        .slice(0, 82);
+      if (!msg) return `[${tag}] ${randomMatrixChunk(24)}`;
+      return `[${tag}] ${msg}`;
+    }
+
     function renderAgentStreamMatrixTick() {
       const root = $("agentStreamMatrix");
       const lineA = $("agentStreamLineA");
       const lineB = $("agentStreamLineB");
       const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
-      const a = `[${active}] ${randomMatrixChunk(22)}`;
-      const b = `[TRACE] ${randomMatrixChunk(22)}`;
+      const a = compactLogLine(state.logs[0], active);
+      const b = compactLogLine(state.logs[1], "TRACE");
       if (root && lineA && lineB) {
         if (!state.busy) {
           root.classList.remove("active");
@@ -618,10 +630,13 @@
       const container = document.createElement("div");
       container.className = "media-scroll-container";
       const kind = /Videos/i.test(rootId) ? "videos" : /Images/i.test(rootId) ? "images" : "";
+      const inSidecar = !!root.closest(".media-sidecar");
       container.addEventListener("wheel", (e) => {
+        if (inSidecar) e.preventDefault();
         const hasOverflow = container.scrollHeight > container.clientHeight + 1;
         if (hasOverflow) {
-          e.preventDefault();
+          container.scrollTop += e.deltaY;
+        } else if (inSidecar && e.deltaY !== 0) {
           container.scrollTop += e.deltaY;
         }
         if (e.deltaY > 0 && kind && typeof loadMoreMediaForPanel === "function") {
