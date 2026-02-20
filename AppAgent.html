@@ -144,7 +144,7 @@
   <div id="searchContainer" class="search-container collapsed">
 
     <form id="searchForm" onsubmit="event.preventDefault(); runPipeline();">
-      <div class="search-box">
+      <div id="searchBox" class="search-box">
         <div class="search-box-header">
           <div class="search-shell-title">Ask Deep Technical</div>
           <div class="search-shell-actions">
@@ -158,6 +158,13 @@
         <input id="filePicker" type="file" multiple style="display:none"
           accept=".txt,.md,.markdown,.json,.csv,.tsv,.html,.xml,.js,.ts,.py,.java,.c,.cpp,.pdf,image/*" />
         <div id="attachmentTray" class="attachment-tray" style="display:none"></div>
+        <div class="search-tools-row">
+          <button type="button" class="btn-action" onclick="openFilePicker()" title="Attach files or images">📎 Attach</button>
+          <button type="button" class="btn-action" onclick="improvePromptDraft()" title="Improve current prompt">✨ Enhance Prompt</button>
+          <button type="button" class="btn-action" id="micBtn">🎤 Voice</button>
+          <span id="voiceState" class="small text-muted align-self-center"
+            style="font-family: var(--font-mono); font-size: 0.7rem;">mic off</span>
+        </div>
 
         <div class="search-focus-row">
           <button type="button" class="focus-btn active" onclick="setSearchFocus('all', this)">🌐 All</button>
@@ -169,7 +176,6 @@
 
         <div class="search-actions">
           <div class="d-flex gap-2">
-            <button type="button" class="btn-action" onclick="openFilePicker()" title="Attach files or images">📎 Attach</button>
             <select id="searchMode" class="btn-action" title="Execution Mode">
               <option value="auto" selected>Auto</option>
               <option value="quick">Quick</option>
@@ -197,9 +203,6 @@
               <input class="form-check-input ms-0" type="checkbox" id="fastFollowups" checked>
               <label class="form-check-label small" for="fastFollowups">Fast Copilot</label>
             </div>
-            <button type="button" class="btn-action" id="micBtn">🎤 Voice</button>
-            <span id="voiceState" class="small text-muted align-self-center d-none d-md-block"
-              style="font-family: var(--font-mono); font-size: 0.7rem;">mic off</span>
           </div>
           <div class="d-flex gap-2 align-items-center">
             <div id="busyPill" class="badge rounded-pill text-bg-secondary mono"
@@ -208,6 +211,10 @@
               style="font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2);">auto</div>
             <button type="submit" id="runBtn" class="btn-send">↑</button>
           </div>
+        </div>
+        <div id="chatBusyOverlay" class="chat-busy-overlay" aria-hidden="true">
+          <span class="chat-busy-dot"></span>
+          <span>Processing request...</span>
         </div>
       </div>
     </form>

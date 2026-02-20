@@ -111,17 +111,26 @@
     function setBusy(on) {
       state.busy = on;
       state.busySince = on ? Date.now() : 0;
+      const searchBox = $("searchBox");
+      if (searchBox) searchBox.classList.toggle("is-busy", !!on);
       if ($("runBtn")) {
         $("runBtn").disabled = on || ($("userQuery")?.value.trim().length === 0);
       }
       if ($("testBtn")) $("testBtn").disabled = on;
-      // ... (other disabled states)
+      const form = $("searchForm");
+      if (form) {
+        form.querySelectorAll("button, select, textarea, input").forEach((el) => {
+          if (el.id === "runBtn") return;
+          el.disabled = !!on;
+        });
+      }
       const pill = $("busyPill");
       if (pill) {
         pill.textContent = on ? "running" : "idle";
         pill.classList.remove("text-bg-secondary", "text-bg-success");
         pill.classList.add(on ? "text-bg-success" : "text-bg-secondary");
       }
+      if (typeof updateInpState === "function") updateInpState();
     }
 
     function recoverFromStuckBusy() {

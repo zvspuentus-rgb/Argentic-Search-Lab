@@ -86,6 +86,21 @@
 
     function explainDiscoveryItem(item) {
       if (!item || state.busy) return;
+      const autoRun = $("autoRunDiscovery")?.checked;
+      const input = $("userQuery");
+      $("contextUrls").value = item.url || "";
+
+      if (autoRun) {
+        // Auto-run should not inject a long editable template and run simultaneously.
+        const directQuery = normalizeQuery(`${item.title || ""}\n${item.content || ""}`) || (item.title || "Summarize this source");
+        input.value = directQuery;
+        input.style.height = "auto";
+        input.style.height = (input.scrollHeight) + "px";
+        setStatus("Running discovery item...");
+        runPipeline();
+        return;
+      }
+
       const focus = [
         "Explain this article in a practical way:",
         `Title: ${item.title || "-"}`,
@@ -98,18 +113,11 @@
         "3) Is it reliable and why",
         "4) Smart follow-up questions"
       ].join("\n");
-      const input = $("userQuery");
       input.value = focus;
       input.style.height = 'auto';
       input.style.height = (input.scrollHeight) + 'px';
-      $("contextUrls").value = item.url || "";
-      const autoRun = $("autoRunDiscovery")?.checked;
-      if (autoRun) {
-        runPipeline();
-      } else {
-        expandChat();
-        setStatus("Discovery item loaded. Edit the prompt or press send.");
-      }
+      expandChat();
+      setStatus("Discovery item loaded. Edit the prompt or press send.");
     }
 
     function exportResearchPdf() {

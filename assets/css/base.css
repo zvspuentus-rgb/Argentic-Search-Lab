@@ -110,7 +110,7 @@
       left: 50%;
       transform: translateX(-50%);
       width: 100%;
-      max-width: 800px;
+      max-width: 760px;
       padding: 0 1.5rem;
       z-index: 1100;
       /* Ensure it stays above everything */
@@ -133,6 +133,7 @@
     }
 
     .search-box {
+      position: relative;
       background: rgba(22, 34, 42, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 1.5rem;
@@ -220,6 +221,14 @@
       margin-top: 0.15rem;
     }
 
+    .search-tools-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.1rem;
+    }
+
     .attachment-chip {
       display: inline-flex;
       align-items: center;
@@ -275,6 +284,11 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .search-actions > .d-flex {
+      flex-wrap: wrap;
     }
 
     .btn-action {
@@ -321,6 +335,36 @@
       background: #2a4a3f;
       cursor: not-allowed;
       transform: none;
+    }
+
+    .chat-busy-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 1.5rem;
+      background: rgba(8, 12, 16, 0.74);
+      backdrop-filter: blur(2px);
+      z-index: 8;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      color: #d9e9f5;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      pointer-events: all;
+    }
+
+    .search-box.is-busy .chat-busy-overlay {
+      display: flex;
+    }
+
+    .chat-busy-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 0 0 rgba(67, 211, 168, 0.9);
+      animation: pulseDot 1s infinite;
     }
 
     /* Floating Chat Bubble UX */
@@ -423,4 +467,16 @@
       background: #2a4a3f;
       cursor: not-allowed;
       transform: none;
+    }
+
+    @keyframes pulseDot {
+      0% {
+        box-shadow: 0 0 0 0 rgba(67, 211, 168, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(67, 211, 168, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(67, 211, 168, 0);
+      }
     }

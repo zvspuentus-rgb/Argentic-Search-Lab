@@ -232,6 +232,52 @@
       $("filePicker")?.click();
     }
 
+    async function improvePromptDraft() {
+      if (state.busy) return;
+      const input = $("userQuery");
+      if (!input) return;
+      const draft = normalizeQuery(input.value || "");
+      if (!draft) {
+        setStatus("Write a draft prompt first.");
+        return;
+      }
+      const lmBase = $("lmBase")?.value?.trim() || "";
+      const model = $("modelName")?.value?.trim() || "";
+      if (!lmBase || !model) {
+        setStatus("LM endpoint/model is missing.");
+        return;
+      }
+      setStatus("Improving prompt...");
+      try {
+        const out = await lmChat({
+          lmBase,
+          payload: {
+            model,
+            temperature: 0.2,
+            max_tokens: 900,
+            messages: [
+              {
+                role: "system",
+                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent and constraints. Return only the improved prompt."
+              },
+              { role: "user", content: draft }
+            ]
+          }
+        });
+        const improved = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+        if (!improved) throw new Error("No improved prompt returned.");
+        input.value = improved;
+        input.style.height = "auto";
+        input.style.height = (input.scrollHeight) + "px";
+        updateInpState();
+        saveUiState();
+        setStatus("Prompt improved.");
+      } catch (err) {
+        setStatus(`Prompt enhancement failed: ${err.message}`);
+        addDebug("prompt", `Enhance failed: ${err.message}`, "warn");
+      }
+    }
+
     function renderAttachmentTray() {
       const tray = $("attachmentTray");
       if (!tray) return;
