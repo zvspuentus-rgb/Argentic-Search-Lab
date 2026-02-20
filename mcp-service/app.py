@@ -13,6 +13,7 @@ app = FastAPI(title="AppAgent MCP Tool Service", version="1.0.0")
 SEARX_BASE = "http://searxng:8080"
 MCP_PROTOCOL_VERSION = "2024-11-05"
 URL_RX = re.compile(r"(https?://[^\s<>'\"`]+)", re.IGNORECASE)
+GITHUB_REPO_RX = re.compile(r"^/([^/]+)/([^/]+)(?:/|$)")
 
 
 class SearchInput(BaseModel):
@@ -118,6 +119,91 @@ def split_query_and_urls(text: str) -> Dict[str, Any]:
     return {"query": cleaned, "urls": urls}
 
 
+def parse_github_repo(url: str) -> Optional[Dict[str, str]]:
+    try:
+        p = urlparse(url)
+    except Exception:
+        return None
+    if p.netloc.lower() not in {"github.com", "www.github.com"}:
+        return None
+    m = GITHUB_REPO_RX.match(p.path or "")
+    if not m:
+        return None
+    owner = (m.group(1) or "").strip()
+    repo = (m.group(2) or "").strip()
+    if not owner or not repo:
+        return None
+    return {"owner": owner, "repo": repo}
+
+
+def github_scope_urls(urls: List[str]) -> List[Dict[str, str]]:
+    out: List[Dict[str, str]] = []
+    seen = set()
+    for u in urls or []:
+        parsed = parse_github_repo(u)
+        if not parsed:
+            continue
+        key = f"{parsed['owner'].lower()}/{parsed['repo'].lower()}"
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(parsed)
+    return out
+
+
+def filter_results_by_github_scope(results: List[Dict[str, Any]], scopes: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    if not scopes:
+        return results
+    prefixes = [f"https://github.com/{s['owner']}/{s['repo']}".lower() for s in scopes]
+    out: List[Dict[str, Any]] = []
+    for row in results:
+        u = str(row.get("url", "")).lower()
+        if any(u.startswith(pref) for pref in prefixes):
+            out.append(row)
+    return out
+
+
+def build_repo_scoped_queries(base_queries: List[str], scopes: List[Dict[str, str]]) -> List[str]:
+    if not scopes:
+        return base_queries
+    out: List[str] = []
+    seen = set()
+    seeds = base_queries or ["project structure main files architecture readme"]
+    for q in seeds:
+        for s in scopes:
+            scoped = f"site:github.com/{s['owner']}/{s['repo']} {q}"
+            key = scoped.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(scoped)
+    return out
+
+
+def merge_result_rows(rows: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    seen = set()
+    for row in rows:
+        key = str(row.get("url") or row.get("title") or "").strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+        if len(out) >= max(1, int(limit)):
+            break
+    return out
+
+
+def context_items_to_results(context_items: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for c in context_items[: max(1, int(limit))]:
+        url = str(c.get("url", ""))
+        raw = str(c.get("context", ""))
+        title = url.split("/")[-1] or "GitHub file context"
+        out.append({"title": f"Repo Context: {title}", "url": url, "content": compact_text(raw, 260)})
+    return out
+
+
 def collect_queries(query: Optional[str], queries: List[str]) -> List[str]:
     merged: List[str] = []
     for q in ([query] if query else []) + (queries or []):
@@ -169,6 +255,58 @@ async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) ->
             continue
         out.append({"url": u, "context": c})
     return out
+
+
+async def fetch_github_repo_context(owner: str, repo: str, max_files: int, max_chars_per_file: int) -> List[Dict[str, Any]]:
+    max_files = max(1, min(20, int(max_files)))
+    max_chars_per_file = max(500, min(5000, int(max_chars_per_file)))
+    async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
+        repo_res = await client.get(f"https://api.github.com/repos/{owner}/{repo}")
+        if repo_res.status_code != 200:
+            return []
+        repo_info = repo_res.json()
+        branch = repo_info.get("default_branch") or "main"
+        tree_res = await client.get(f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}", params={"recursive": "1"})
+        if tree_res.status_code != 200:
+            return []
+        tree = tree_res.json().get("tree", []) or []
+
+    preferred: List[str] = []
+    others: List[str] = []
+    for node in tree:
+        if node.get("type") != "blob":
+            continue
+        path = str(node.get("path", ""))
+        if not path:
+            continue
+        lower = path.lower()
+        if re.search(r"(readme|dockerfile|compose|package\.json|requirements\.txt|pyproject\.toml|setup\.py|go\.mod|cargo\.toml|pom\.xml|build\.gradle)", lower):
+            preferred.append(path)
+        elif re.search(r"\.(md|txt|py|js|ts|tsx|jsx|json|yml|yaml|toml)$", lower):
+            others.append(path)
+    selected = (preferred + others)[:max_files]
+    if not selected:
+        return []
+
+    contexts: List[Dict[str, Any]] = []
+    async with httpx.AsyncClient(timeout=25, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
+        tasks = [client.get(f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}") for path in selected]
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+    for path, res in zip(selected, responses):
+        if isinstance(res, Exception):
+            continue
+        if getattr(res, "status_code", 0) != 200:
+            continue
+        snippet = compact_text(getattr(res, "text", ""), max_chars_per_file)
+        if not snippet:
+            continue
+        contexts.append(
+            {
+                "url": f"https://github.com/{owner}/{repo}/blob/{branch}/{path}",
+                "context": f"[GitHub file: {path}] {snippet}",
+            }
+        )
+    return contexts
 
 
 def mcp_tools_payload() -> List[Dict[str, Any]]:
@@ -278,23 +416,40 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
         explicit_urls.extend(split["urls"])
     explicit_urls = unique_urls(explicit_urls)
 
-    primary_query = cleaned_queries[0] if cleaned_queries else ""
+    repo_scopes = github_scope_urls(explicit_urls)
+    scoped_queries = build_repo_scoped_queries(cleaned_queries, repo_scopes) if repo_scopes else cleaned_queries
+    primary_query = scoped_queries[0] if scoped_queries else ""
     results: List[Dict[str, Any]] = []
     if primary_query:
         results = await searx_search(primary_query, "general", payload.limit)
+    if repo_scopes:
+        results = filter_results_by_github_scope(results, repo_scopes)
 
     context_items: List[Dict[str, Any]] = []
-    if payload.include_context and payload.context_max_urls > 0:
+    effective_include_context = bool(payload.include_context or explicit_urls)
+    if effective_include_context and payload.context_max_urls > 0:
         url_pool = explicit_urls + [r.get("url", "") for r in results if r.get("url")]
         context_items = await fetch_context_items(url_pool, payload.context_max_urls, payload.context_max_chars)
+        for scope in repo_scopes:
+            repo_ctx = await fetch_github_repo_context(
+                scope["owner"],
+                scope["repo"],
+                max_files=min(10, payload.context_max_urls * 3),
+                max_chars_per_file=min(2000, payload.context_max_chars),
+            )
+            context_items.extend(repo_ctx)
+    if repo_scopes:
+        results = merge_result_rows(results + context_items_to_results(context_items, payload.limit), payload.limit)
 
     return {
         "mode": "quick",
         "query": primary_query,
+        "queries_used": scoped_queries[:1],
         "count": len(results),
         "results": results,
         "urls_detected": explicit_urls,
         "context_items": context_items,
+        "repo_scope_enforced": bool(repo_scopes),
     }
 
 
@@ -318,10 +473,13 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
             cleaned_queries.append(cleaned)
 
     explicit_urls = unique_urls(explicit_urls)
+    repo_scopes = github_scope_urls(explicit_urls)
+    scoped_queries = build_repo_scoped_queries(cleaned_queries, repo_scopes) if repo_scopes else cleaned_queries
+    effective_lanes = ["general", "it"] if repo_scopes else lanes
 
-    for query in cleaned_queries:
+    for query in scoped_queries:
         queries_used.append(query)
-        tasks = [searx_search(query, lane, max(3, payload.limit)) for lane in lanes]
+        tasks = [searx_search(query, lane, max(3, payload.limit)) for lane in effective_lanes]
         lane_results = await asyncio.gather(*tasks, return_exceptions=True)
         for rows in lane_results:
             if isinstance(rows, Exception):
@@ -334,21 +492,34 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
                 row["matched_query"] = query
                 merged.append(row)
 
-    merged = merged[: payload.limit * max(1, len(lanes)) * max(1, len(cleaned_queries) or 1)]
+    if repo_scopes:
+        merged = filter_results_by_github_scope(merged, repo_scopes)
+    merged = merged[: payload.limit * max(1, len(effective_lanes)) * max(1, len(scoped_queries) or 1)]
 
     context_items: List[Dict[str, Any]] = []
     if payload.include_context and payload.context_max_urls > 0:
         urls = explicit_urls + [r.get("url", "") for r in merged if r.get("url")]
         context_items = await fetch_context_items(urls, payload.context_max_urls, payload.context_max_chars)
+        for scope in repo_scopes:
+            repo_ctx = await fetch_github_repo_context(
+                scope["owner"],
+                scope["repo"],
+                max_files=min(12, payload.context_max_urls * 3),
+                max_chars_per_file=min(2400, payload.context_max_chars),
+            )
+            context_items.extend(repo_ctx)
+    if repo_scopes:
+        merged = merge_result_rows(merged + context_items_to_results(context_items, payload.limit * max(1, len(effective_lanes))), payload.limit * max(1, len(effective_lanes)))
 
     return {
         "mode": "deep",
         "queries_used": queries_used,
-        "lanes_used": lanes,
+        "lanes_used": effective_lanes,
         "count": len(merged),
         "results": merged,
         "urls_detected": explicit_urls,
         "context_items": context_items,
+        "repo_scope_enforced": bool(repo_scopes),
     }
 
 

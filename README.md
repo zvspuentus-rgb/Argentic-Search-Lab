@@ -123,6 +123,7 @@ MCP deep/quick now support URL-aware research:
 - Detect URLs embedded inside query text
 - Accept explicit `urls` argument
 - Return `context_items` (cleaned page extracts) and `urls_detected`
+- For GitHub repo URLs: enforce repo-scoped retrieval and pull key file context from inside the repository
 
 Use cases:
 - Agentic IDE coding assistants

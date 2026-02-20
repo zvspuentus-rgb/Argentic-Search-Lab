@@ -36,9 +36,11 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 ### URL-aware behavior (new)
 - If the query text itself contains one or more URLs, MCP auto-detects them.
 - In deep mode, MCP can fetch cleaned page context from those URLs (and from top results) when `include_context=true`.
+- For GitHub repo URLs, MCP applies strict repo scope (`site:github.com/<owner>/<repo>`), filters unrelated GitHub results, and extracts important repo files (README/config/source samples).
 - Response now includes:
   - `urls_detected`
   - `context_items`
+  - `repo_scope_enforced` (true when strict GitHub repo scope was applied)
 
 ### `search_quick` extra arguments (new)
 - `urls` (optional array)
