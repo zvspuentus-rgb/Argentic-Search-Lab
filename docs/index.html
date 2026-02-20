@@ -8,9 +8,16 @@
   <link rel="stylesheet" href="site.css" />
 </head>
 <body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
   <main class="wrap">
-    <section class="hero">
+    <section class="hero reveal">
       <img class="hero-logo" src="logo.svg" alt="Argentic Search Lab" />
+      <div class="hero-actions">
+        <a class="cta primary" href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab" target="_blank" rel="noreferrer">Open Repository</a>
+        <a class="cta" href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab/blob/main/MCP_INTEGRATION.md" target="_blank" rel="noreferrer">MCP Integration</a>
+      </div>
       <div class="badges">
         <span class="badge free">TRULY FREE (LOCAL-FIRST)</span>
         <span class="badge">FAST + DEEP RESEARCH</span>
@@ -19,67 +26,124 @@
       </div>
     </section>
 
-    <section class="grid cols-3">
-      <article class="card">
-        <h3>Why this project matters</h3>
+    <section class="stats reveal">
+      <article class="stat card">
+        <div class="stat-num" data-target="3">0</div>
+        <div class="stat-label">Core Services</div>
+      </article>
+      <article class="stat card">
+        <div class="stat-num" data-target="3">0</div>
+        <div class="stat-label">MCP Tools</div>
+      </article>
+      <article class="stat card">
+        <div class="stat-num" data-target="2">0</div>
+        <div class="stat-label">Search Modes</div>
+      </article>
+      <article class="stat card">
+        <div class="stat-num" data-target="0">0</div>
+        <div class="stat-label">Mandatory Cloud Cost</div>
+      </article>
+    </section>
+
+    <section class="grid cols-3 reveal">
+      <article class="card feature">
+        <h3>Why this project is different</h3>
         <ul>
-          <li>Runs locally on <code>localhost</code> with no mandatory subscription.</li>
-          <li>Fast search path for speed, deep path for quality.</li>
-          <li>Grounded research via MCP + URL context.</li>
+          <li>Runs on <code>localhost</code> with no mandatory subscription.</li>
+          <li>Fast path for quick answers, deep path for heavy research.</li>
+          <li>Grounded output with MCP + URL context + citations.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card feature">
         <h3>How to get best quality</h3>
         <ul>
-          <li>LM Studio is recommended for local parallel requests.</li>
-          <li>Use stronger models for better synthesis/critique.</li>
-          <li>Use <code>strict_repo_only=true</code> for GitHub repo analysis.</li>
+          <li>Use LM Studio for local parallel model requests.</li>
+          <li>Pick model size by hardware and quality target.</li>
+          <li>Use <code>strict_repo_only=true</code> for repo analysis.</li>
         </ul>
       </article>
-      <article class="card">
-        <h3>What you can demo fast</h3>
+      <article class="card feature">
+        <h3>What you can demo in minutes</h3>
         <ul>
-          <li>Discovery to Deep Research flow.</li>
-          <li>MCP quick/deep tool calls.</li>
-          <li>Repo URL grounding with file-level context.</li>
+          <li>Discovery -> Deep Research flow.</li>
+          <li>Quick follow-ups with context reuse.</li>
+          <li>GitHub URL grounding to file-level evidence.</li>
         </ul>
       </article>
     </section>
 
-    <h2 class="section">Quick Install</h2>
-    <section class="card">
-      <div class="commands">
-        <div class="cmd">
-          <div class="cmd-head">
-            <strong>One-command bootstrap</strong>
-            <button class="copy" onclick="copyFromElement('cmd-bootstrap', this)">Copy</button>
+    <h2 class="section reveal">Quick Install</h2>
+    <section class="card reveal">
+      <div class="tabs" role="tablist" aria-label="Install Commands">
+        <button class="tab active" data-tab="install-bootstrap">Bootstrap</button>
+        <button class="tab" data-tab="install-manual">Manual</button>
+      </div>
+      <div class="tab-panels">
+        <div class="tab-panel active" id="install-bootstrap">
+          <div class="cmd">
+            <div class="cmd-head">
+              <strong>One-command bootstrap</strong>
+              <button class="copy" onclick="copyFromElement('cmd-bootstrap', this)">Copy</button>
+            </div>
+            <pre id="cmd-bootstrap">bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)</pre>
           </div>
-          <pre id="cmd-bootstrap">bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)</pre>
         </div>
-        <div class="cmd">
-          <div class="cmd-head">
-            <strong>Manual install</strong>
-            <button class="copy" onclick="copyFromElement('cmd-manual', this)">Copy</button>
-          </div>
-          <pre id="cmd-manual">git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
+        <div class="tab-panel" id="install-manual">
+          <div class="cmd">
+            <div class="cmd-head">
+              <strong>Manual install</strong>
+              <button class="copy" onclick="copyFromElement('cmd-manual', this)">Copy</button>
+            </div>
+            <pre id="cmd-manual">git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
 cd Argentic-Search-Lab
 cp .env.example .env
 docker compose up -d --build</pre>
+          </div>
         </div>
       </div>
       <p class="note">Default endpoints: UI <code>http://localhost:8093</code> · MCP <code>http://localhost:8193/mcp</code> · SearXNG <code>http://localhost:8393/search?q=test&format=json</code></p>
     </section>
 
-    <h2 class="section">Search Pipeline</h2>
-    <img class="img" src="pipeline.svg" alt="Pipeline Diagram" />
+    <h2 class="section reveal">Mode Explorer</h2>
+    <section class="card reveal">
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="quick">Quick Search</button>
+        <button class="mode-btn" data-mode="deep">Deep Research</button>
+      </div>
+      <div class="mode-panels">
+        <article class="mode-panel active" id="mode-quick">
+          <h3>Quick Search</h3>
+          <p>Designed for low-latency answers with minimum orchestration and faster turnaround.</p>
+          <ul>
+            <li>Minimal planning loop</li>
+            <li>Targeted search fan-out</li>
+            <li>Fast synthesis and follow-up readiness</li>
+          </ul>
+        </article>
+        <article class="mode-panel" id="mode-deep">
+          <h3>Deep Research</h3>
+          <p>Runs full multi-agent pipeline for quality, coverage, and grounded synthesis.</p>
+          <ul>
+            <li>Analyzer -> Planner -> Refiner</li>
+            <li>Multi-lane search + critic gate</li>
+            <li>Synthesis with citations and copilot follow-ups</li>
+          </ul>
+        </article>
+      </div>
+    </section>
 
-    <h2 class="section">MCP Tooling</h2>
-    <section class="grid cols-2">
+    <h2 class="section reveal">Search Pipeline</h2>
+    <section class="reveal">
+      <img class="img" src="pipeline.svg" alt="Pipeline Diagram" />
+    </section>
+
+    <h2 class="section reveal">MCP Tooling</h2>
+    <section class="grid cols-2 reveal">
       <article class="card">
-        <h3>JSON-RPC call example (deep)</h3>
+        <h3>JSON-RPC call (deep, repo-grounded)</h3>
         <div class="cmd">
           <div class="cmd-head">
-            <strong>Repo-grounded deep call</strong>
+            <strong>Deep MCP call</strong>
             <button class="copy" onclick="copyFromElement('cmd-mcp', this)">Copy</button>
           </div>
           <pre id="cmd-mcp">{
@@ -100,13 +164,29 @@ docker compose up -d --build</pre>
         </div>
       </article>
       <article class="card">
-        <h3>MCP flow</h3>
+        <h3>MCP flow map</h3>
         <img class="img" src="mcp-flow.svg" alt="MCP Flow" />
       </article>
     </section>
 
-    <h2 class="section">Links</h2>
-    <section class="card">
+    <h2 class="section reveal">FAQ</h2>
+    <section class="card faq reveal">
+      <details>
+        <summary>Is this really free to use?</summary>
+        <p>Yes. The core stack runs locally with no mandatory subscription or per-query fee wall.</p>
+      </details>
+      <details>
+        <summary>How is quality controlled?</summary>
+        <p>Quality depends on model choice and mode. Deep Research with stronger local models yields better grounded answers.</p>
+      </details>
+      <details>
+        <summary>When should I use strict_repo_only?</summary>
+        <p>Use it whenever you analyze a specific GitHub repository and want only repo-scoped evidence.</p>
+      </details>
+    </section>
+
+    <h2 class="section reveal">Links</h2>
+    <section class="card reveal">
       <ul>
         <li><a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab" target="_blank" rel="noreferrer">Repository</a></li>
         <li><a href="https://github.com/zvspuentus-rgb/Argentic-Search-Lab/blob/main/README.md" target="_blank" rel="noreferrer">README</a></li>
