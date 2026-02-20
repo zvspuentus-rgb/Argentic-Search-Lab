@@ -7,6 +7,8 @@ const SEARX_BASE = process.env.SEARX_BASE || 'http://searxng:8080';
 const MCP_BASE = process.env.MCP_BASE || 'http://mcp:8090';
 const LMSTUDIO_BASE = process.env.LMSTUDIO_BASE || 'http://host.docker.internal:1234';
 const OLLAMA_BASE = process.env.OLLAMA_BASE || 'http://host.docker.internal:11434';
+const LIVE_DEMO_MODE = String(process.env.LIVE_DEMO_MODE || '').toLowerCase() === '1' || String(process.env.LIVE_DEMO_MODE || '').toLowerCase() === 'true';
+const LIVE_DEMO_QUERY_LIMIT = Math.max(1, Number(process.env.LIVE_DEMO_QUERY_LIMIT || 2));
 const ROOT = __dirname;
 
 const MIME = {
@@ -24,6 +26,30 @@ const MIME = {
 function send(res, status, body, headers = {}) {
   res.writeHead(status, { 'Cache-Control': 'no-store', ...headers });
   res.end(body);
+}
+
+function parseCookies(req) {
+  const raw = String(req.headers.cookie || '');
+  const out = {};
+  raw.split(';').forEach((part) => {
+    const idx = part.indexOf('=');
+    if (idx < 0) return;
+    const k = part.slice(0, idx).trim();
+    const v = part.slice(idx + 1).trim();
+    if (!k) return;
+    out[k] = decodeURIComponent(v);
+  });
+  return out;
+}
+
+function getDemoUsed(req) {
+  const c = parseCookies(req);
+  const used = Number(c.hf_demo_queries || 0);
+  return Number.isFinite(used) ? Math.max(0, used) : 0;
+}
+
+function buildDemoCookie(value) {
+  return `hf_demo_queries=${encodeURIComponent(String(value))}; Path=/; Max-Age=2592000; SameSite=Lax`;
 }
 
 async function proxy(req, res, base, stripPrefix) {
@@ -94,6 +120,48 @@ const server = http.createServer(async (req, res) => {
   if (req.url === '/health') {
     return send(res, 200, JSON.stringify({ ok: true, service: 'app-ui' }), {
       'Content-Type': 'application/json; charset=utf-8'
+    });
+  }
+
+  if (req.url === '/demo/quota') {
+    const used = getDemoUsed(req);
+    const remaining = LIVE_DEMO_MODE ? Math.max(0, LIVE_DEMO_QUERY_LIMIT - used) : null;
+    return send(res, 200, JSON.stringify({
+      enabled: LIVE_DEMO_MODE,
+      limit: LIVE_DEMO_MODE ? LIVE_DEMO_QUERY_LIMIT : null,
+      used: LIVE_DEMO_MODE ? used : null,
+      remaining
+    }), {
+      'Content-Type': 'application/json; charset=utf-8'
+    });
+  }
+
+  if (req.url === '/demo/consume' && req.method === 'POST') {
+    if (!LIVE_DEMO_MODE) {
+      return send(res, 200, JSON.stringify({ ok: true, enabled: false }), {
+        'Content-Type': 'application/json; charset=utf-8'
+      });
+    }
+    const used = getDemoUsed(req);
+    if (used >= LIVE_DEMO_QUERY_LIMIT) {
+      return send(res, 429, JSON.stringify({
+        ok: false,
+        error: 'demo_quota_exceeded',
+        message: `Live Demo limit reached (${LIVE_DEMO_QUERY_LIMIT} queries).`
+      }), {
+        'Content-Type': 'application/json; charset=utf-8'
+      });
+    }
+    const next = used + 1;
+    return send(res, 200, JSON.stringify({
+      ok: true,
+      enabled: true,
+      limit: LIVE_DEMO_QUERY_LIMIT,
+      used: next,
+      remaining: Math.max(0, LIVE_DEMO_QUERY_LIMIT - next)
+    }), {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Set-Cookie': buildDemoCookie(next)
     });
   }
 

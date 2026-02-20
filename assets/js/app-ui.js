@@ -193,6 +193,7 @@
       renderAttachmentTray();
       setupVoiceInput();
       refreshModels();
+      if (typeof refreshDemoQuota === "function") await refreshDemoQuota();
       const searchContainer = $("searchContainer");
       if (searchContainer) {
         if (uiState?.isSearchCompact) searchContainer.classList.add("compact");

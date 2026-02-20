@@ -327,6 +327,16 @@ Configured via `.env`:
 - `LMSTUDIO_BASE=http://host.docker.internal:1234`
 - `OLLAMA_BASE=http://host.docker.internal:11434`
 
+### Live Demo quota mode (for Hugging Face/hosted demos)
+Optional server-side cookie quota (does not affect local installs unless enabled):
+- `LIVE_DEMO_MODE=true`
+- `LIVE_DEMO_QUERY_LIMIT=2`
+
+Behavior:
+- Each user cookie can run up to `LIVE_DEMO_QUERY_LIMIT` search executions.
+- After limit is reached, new runs are blocked with a clear status message.
+- Local/self-host users remain unaffected when `LIVE_DEMO_MODE` is not enabled.
+
 ## Provider Routing Notes
 The UI server proxies local providers to avoid browser CORS issues:
 - `/lmstudio/*` -> `${LMSTUDIO_BASE}`

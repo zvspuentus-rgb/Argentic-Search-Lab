@@ -46,7 +46,13 @@
       centerOverlayVisible: false,
       turns: [],
       mediaObservers: {},
-      temporalScope: null
+      temporalScope: null,
+      demoQuota: {
+        enabled: false,
+        limit: null,
+        used: null,
+        remaining: null
+      }
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -165,6 +171,54 @@
 
     function setStatus(message) {
       $("statusText").textContent = message;
+    }
+
+    async function refreshDemoQuota() {
+      try {
+        const res = await fetch("/demo/quota", { cache: "no-store" });
+        if (!res.ok) return null;
+        const data = await res.json();
+        state.demoQuota = {
+          enabled: !!data.enabled,
+          limit: data.limit,
+          used: data.used,
+          remaining: data.remaining
+        };
+        if (state.demoQuota.enabled && typeof state.demoQuota.remaining === "number") {
+          setStatus(`Live Demo quota: ${state.demoQuota.remaining}/${state.demoQuota.limit} queries remaining`);
+        }
+        return state.demoQuota;
+      } catch {
+        return null;
+      }
+    }
+
+    async function consumeDemoQuota() {
+      const quota = state.demoQuota || {};
+      if (!quota.enabled) return true;
+      try {
+        const res = await fetch("/demo/consume", { method: "POST" });
+        if (res.status === 429) {
+          const err = await res.json().catch(() => ({}));
+          setStatus(err.message || "Live Demo quota reached.");
+          return false;
+        }
+        if (!res.ok) {
+          setStatus("Live Demo quota check failed.");
+          return false;
+        }
+        const data = await res.json();
+        state.demoQuota = {
+          enabled: !!data.enabled,
+          limit: data.limit,
+          used: data.used,
+          remaining: data.remaining
+        };
+        return true;
+      } catch {
+        setStatus("Live Demo quota check failed.");
+        return false;
+      }
     }
 
     function activeFlowLabel() {

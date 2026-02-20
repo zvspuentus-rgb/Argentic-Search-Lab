@@ -544,6 +544,10 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         setStatus("A request is already running...");
         return;
       }
+      if (typeof consumeDemoQuota === "function") {
+        const ok = await consumeDemoQuota();
+        if (!ok) return;
+      }
       const providerIssue = validateProviderConfig();
       if (providerIssue) {
         state.flow = createFlowState();
@@ -1274,6 +1278,10 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         setStatus("A request is already running...");
         addLog("health", "Blocked duplicate run while pipeline is active.", "warn");
         return;
+      }
+      if (typeof consumeDemoQuota === "function") {
+        const ok = await consumeDemoQuota();
+        if (!ok) return;
       }
       state.pipelineSubmitLock = true;
       const runBtn = $("runBtn");
