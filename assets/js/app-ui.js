@@ -648,6 +648,114 @@
       }
     }
 
+    let selectedAnalysisText = "";
+    let selectionAskBox = null;
+    let selectionAskInput = null;
+
+    function ensureSelectionAskBox() {
+      if (selectionAskBox) return selectionAskBox;
+      const box = document.createElement("div");
+      box.id = "selectionAskBox";
+      box.className = "selection-ask-box";
+      box.innerHTML = `
+        <div class="selection-ask-title">Selected text context</div>
+        <textarea id="selectionAskInput" class="selection-ask-input" rows="2" placeholder="Ask agent about this selection..."></textarea>
+        <div class="selection-ask-actions">
+          <button type="button" id="selectionAskRun" class="btn-action">Ask Agent</button>
+          <button type="button" id="selectionAskCancel" class="btn-action">Close</button>
+        </div>
+      `;
+      document.body.appendChild(box);
+      selectionAskBox = box;
+      selectionAskInput = box.querySelector("#selectionAskInput");
+
+      const runBtn = box.querySelector("#selectionAskRun");
+      const cancelBtn = box.querySelector("#selectionAskCancel");
+      if (runBtn) {
+        runBtn.addEventListener("click", () => {
+          if (state.busy || state.pipelineSubmitLock) {
+            setStatus("A request is already running...");
+            return;
+          }
+          const snippet = String(selectedAnalysisText || "").trim();
+          if (!snippet) return;
+          const question = String(selectionAskInput?.value || "").trim() || "Investigate this selected context and explain it clearly with updated evidence.";
+          const composedQuery = [
+            "Use this selected excerpt from the current analysis as context.",
+            "",
+            "Selected excerpt:",
+            `\"\"\"${snippet.slice(0, 1800)}\"\"\"`,
+            "",
+            `Task: ${question}`,
+            "",
+            "Return a focused answer with citations and do not invent facts."
+          ].join("\n");
+          $("userQuery").value = composedQuery;
+          if (typeof updateInpState === "function") updateInpState();
+          setStatus("Request in progress...");
+          hideSelectionAskBox();
+          try {
+            const sel = window.getSelection?.();
+            if (sel && typeof sel.removeAllRanges === "function") sel.removeAllRanges();
+          } catch { }
+          runPipeline();
+        });
+      }
+      if (cancelBtn) cancelBtn.addEventListener("click", hideSelectionAskBox);
+      return box;
+    }
+
+    function hideSelectionAskBox() {
+      if (!selectionAskBox) return;
+      selectionAskBox.classList.remove("show");
+    }
+
+    function isSelectionInsideAnswer() {
+      const answer = $("answer");
+      const sel = window.getSelection?.();
+      if (!answer || !sel || !sel.rangeCount || sel.isCollapsed) return null;
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      if (!answer.contains(container)) return null;
+      const text = String(sel.toString() || "").replace(/\s+/g, " ").trim();
+      if (text.length < 8) return null;
+      const rect = range.getBoundingClientRect();
+      if (!rect || (!rect.width && !rect.height)) return null;
+      return { text, rect };
+    }
+
+    function positionSelectionAskBox(rect) {
+      const box = ensureSelectionAskBox();
+      const vw = window.innerWidth || document.documentElement.clientWidth || 1280;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 720;
+      box.style.visibility = "hidden";
+      box.classList.add("show");
+      const w = box.offsetWidth || 340;
+      const h = box.offsetHeight || 140;
+      const top = Math.max(12, Math.min(vh - h - 12, rect.bottom + 10));
+      const left = Math.max(12, Math.min(vw - w - 12, rect.left + (rect.width / 2) - (w / 2)));
+      box.style.top = `${top + window.scrollY}px`;
+      box.style.left = `${left + window.scrollX}px`;
+      box.style.visibility = "visible";
+    }
+
+    function handleAnswerSelectionUi() {
+      if (state.busy) {
+        hideSelectionAskBox();
+        return;
+      }
+      const data = isSelectionInsideAnswer();
+      if (!data) {
+        hideSelectionAskBox();
+        return;
+      }
+      selectedAnalysisText = data.text;
+      if (selectionAskInput && !selectionAskInput.value.trim()) {
+        selectionAskInput.value = "Check this part deeper and validate with current sources.";
+      }
+      positionSelectionAskBox(data.rect);
+    }
+
     // Auto-resize textarea and manage send button state
     const queryInput = document.getElementById('userQuery');
     if (queryInput) {
@@ -675,6 +783,21 @@
     addListenerIfPresent("deepViewModal", "click", (e) => {
       if (e.target && e.target.id === "deepViewModal") closeDeepResearchView();
     });
+
+    document.addEventListener("selectionchange", () => {
+      clearTimeout(handleAnswerSelectionUi._timer);
+      handleAnswerSelectionUi._timer = setTimeout(handleAnswerSelectionUi, 60);
+    });
+    document.addEventListener("mousedown", (e) => {
+      if (!selectionAskBox || !selectionAskBox.classList.contains("show")) return;
+      if (selectionAskBox.contains(e.target)) return;
+      const answer = $("answer");
+      if (answer?.contains(e.target)) return;
+      hideSelectionAskBox();
+    });
+    window.addEventListener("scroll", () => {
+      if (selectionAskBox?.classList.contains("show")) hideSelectionAskBox();
+    }, { passive: true });
 
     // Settings Bridge (Removed conflicting loops)
     // Buttons now call actual backend functions directly

@@ -22,6 +22,7 @@ You can use it as:
 - Session history with local restore (`localStorage`)
 - Prompt enhancement with configurable output language
 - Side media context (image/video)
+- Selection-to-Ask: highlight text inside Analysis, then send a contextual follow-up query
 - Deep research timeline, source management, follow-up suggestions
 - Export to PDF/JSON and share flows
 - Provider-ready architecture (LM Studio default, plus Ollama/OpenAI/Anthropic/Gemini settings)

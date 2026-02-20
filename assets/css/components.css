@@ -370,6 +370,67 @@
       color: #f1f7fb;
     }
 
+    .selection-ask-box {
+      position: absolute;
+      z-index: 2600;
+      width: min(360px, calc(100vw - 24px));
+      display: none;
+      padding: 0.7rem;
+      border-radius: 0.8rem;
+      border: 1px solid rgba(120, 184, 255, 0.45);
+      background: rgba(9, 18, 24, 0.94);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+    }
+
+    .selection-ask-box.show {
+      display: block;
+    }
+
+    .selection-ask-title {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.4px;
+      color: #a8c8de;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .selection-ask-input {
+      width: 100%;
+      min-height: 56px;
+      max-height: 120px;
+      resize: vertical;
+      border-radius: 0.55rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.03);
+      color: #e9f6ff;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.55rem;
+      line-height: 1.35;
+      outline: none;
+    }
+
+    .selection-ask-input:focus {
+      border-color: rgba(120, 184, 255, 0.75);
+      box-shadow: 0 0 0 2px rgba(120, 184, 255, 0.2);
+    }
+
+    .selection-ask-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.45rem;
+      justify-content: flex-end;
+    }
+
+    .selection-ask-actions .btn-action {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.68rem;
+      min-height: 28px;
+      border-radius: 0.6rem;
+    }
+
     .analysis-live-fx {
       display: none;
       margin: -0.35rem 0 0.75rem;
