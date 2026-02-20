@@ -121,8 +121,79 @@
     }
 
     function exportResearchPdf() {
-      showResearchView();
-      window.print();
+      const title = normalizeQuery($("userQuery")?.value || "").slice(0, 140) || "Research Report";
+      const summary = String($("answer")?.innerText || "No answer yet.").trim();
+      const sources = (state.sources || []).slice(0, 30);
+      const followups = (state.followups || []).slice(0, 10);
+      const timeline = (state.logs || []).slice(0, 80);
+      const critic = state.criticReport || null;
+      const now = new Date();
+      const stamp = now.toLocaleString();
+
+      const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Research PDF</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 28px; color:#0b1116; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    h2 { margin: 22px 0 8px; font-size: 16px; border-bottom: 1px solid #dbe3ea; padding-bottom: 4px; }
+    .meta { font-size: 12px; color:#516271; margin-bottom: 12px; }
+    .block { margin-bottom: 12px; white-space: pre-wrap; line-height: 1.5; font-size: 13px; }
+    .kpi { display:flex; gap:14px; flex-wrap:wrap; margin: 8px 0 14px; }
+    .chip { font-size: 12px; border:1px solid #cfd9e2; border-radius: 999px; padding: 4px 9px; }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    li { margin-bottom: 6px; font-size: 13px; line-height: 1.35; }
+    a { color:#1c5f94; text-decoration: none; }
+    @media print { a { color:#0b1116; text-decoration: none; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <div class="meta">Generated: ${escapeHtml(stamp)}</div>
+
+  <h2>Executive Summary</h2>
+  <div class="block">${escapeHtml(summary.slice(0, 12000) || "No summary available.")}</div>
+
+  <h2>Research Metrics</h2>
+  <div class="kpi">
+    <span class="chip">Sources: ${sources.length}</span>
+    <span class="chip">Follow-ups: ${followups.length}</span>
+    <span class="chip">Timeline Events: ${timeline.length}</span>
+    <span class="chip">Quality Score: ${Number(critic?.overallScore || 0)}/100</span>
+  </div>
+
+  <h2>Top Sources</h2>
+  <ul>
+    ${sources.map((s, i) => `<li><strong>[${i + 1}] ${escapeHtml(s.title || "Untitled")}</strong><br/><a href="${escapeAttr(s.url || "")}" target="_blank">${escapeHtml(s.url || "")}</a><br/>${escapeHtml(String(s.content || "").slice(0, 240))}</li>`).join("") || "<li>No sources captured.</li>"}
+  </ul>
+
+  <h2>Suggested Follow-ups</h2>
+  <ul>
+    ${followups.map((q) => `<li>${escapeHtml(q)}</li>`).join("") || "<li>No follow-up suggestions.</li>"}
+  </ul>
+
+  <h2>Execution Timeline</h2>
+  <ul>
+    ${timeline.map((l) => `<li>[${escapeHtml(l.stage || "-")}] ${escapeHtml(l.message || "")}</li>`).join("") || "<li>No timeline events.</li>"}
+  </ul>
+</body>
+</html>`;
+
+      const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
+      if (!w) {
+        setStatus("Popup blocked. Allow popups to export PDF.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => {
+        w.print();
+      }, 250);
     }
 
     function exportCurrentSessionJson() {

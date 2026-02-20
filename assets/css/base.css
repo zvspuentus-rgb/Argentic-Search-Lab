@@ -482,6 +482,30 @@
       min-height: 0.9rem;
     }
 
+    .mini-toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 2400;
+      background: rgba(10, 20, 27, 0.92);
+      border: 1px solid rgba(120, 184, 255, 0.45);
+      color: #def1ff;
+      border-radius: 0.65rem;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+      transform: translateY(14px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.22s ease;
+    }
+
+    .mini-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
     .run-stage-spinner {
       width: 10px;
       height: 10px;

@@ -568,7 +568,7 @@
         container.scrollTop += e.deltaY;
       }, { passive: false });
 
-      for (const item of items.slice(0, 12)) {
+      for (const item of items.slice(0, 80)) {
         const t = item.mediaType || inferMediaType(item.url);
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);
@@ -583,6 +583,16 @@
           </div>
         `;
         container.appendChild(card);
+      }
+      const kind = /Videos/i.test(rootId) ? "videos" : /Images/i.test(rootId) ? "images" : "";
+      if (kind) {
+        container.addEventListener("scroll", () => {
+          if (container.scrollHeight <= container.clientHeight + 1) return;
+          const nearBottom = (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
+          if (nearBottom && typeof loadMoreMediaForPanel === "function") {
+            loadMoreMediaForPanel(kind);
+          }
+        }, { passive: true });
       }
       root.appendChild(container);
     }

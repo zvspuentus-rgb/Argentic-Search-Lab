@@ -445,7 +445,7 @@
         </section>
 
         <div class="p-3 bg-dark rounded-3 d-grid gap-2 border border-secondary">
-          <button onclick="saveSettingsToStorage(); setStatus('Settings saved for next refresh.');"
+          <button onclick="saveSettingsWithToast();"
             class="btn btn-success btn-sm fw-semibold">Save Settings</button>
           <div id="settingsState" class="mono text-center" style="font-size: 0.72rem; color:#c8d9e6;">settings: idle</div>
           <button onclick="testConnections()" class="btn btn-outline-info btn-sm fw-bold">Test System Stack</button>
@@ -473,6 +473,8 @@
       <div id="deepViewBody"></div>
     </div>
   </div>
+
+  <div id="miniToast" class="mini-toast" role="status" aria-live="polite"></div>
 
   <!-- Hidden Compatibility Layer (Ensures existing JS logic never breaks) -->
   <div style="display: none;" aria-hidden="true">

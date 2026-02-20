@@ -260,6 +260,23 @@
       modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
     }
 
+    function showMiniToast(message = "Saved") {
+      const toast = $("miniToast");
+      if (!toast) return;
+      toast.textContent = String(message || "Saved");
+      toast.classList.add("show");
+      clearTimeout(showMiniToast._timer);
+      showMiniToast._timer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1700);
+    }
+
+    function saveSettingsWithToast() {
+      saveSettingsToStorage();
+      setStatus("Settings saved for next refresh.");
+      showMiniToast("Settings saved");
+    }
+
     function toggleChatCompact() {
       const container = document.getElementById("searchContainer");
       if (!container) return;
