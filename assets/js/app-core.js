@@ -42,7 +42,8 @@
       mediaCursor: null,
       runningPreview: false,
       runningPreviewMode: "deep",
-      matrixTicker: null
+      matrixTicker: null,
+      centerOverlayVisible: false
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -146,6 +147,7 @@
       }
       toggleAgentStreamMatrix(on);
       renderRunStageIndicator();
+      if (!on) hideCenterRequestOverlay();
       if (typeof updateInpState === "function") updateInpState();
     }
 
@@ -192,28 +194,57 @@
       const root = $("agentStreamMatrix");
       const lineA = $("agentStreamLineA");
       const lineB = $("agentStreamLineB");
-      if (!root || !lineA || !lineB) return;
+      const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
+      const a = `[${active}] ${randomMatrixChunk(22)}`;
+      const b = `[TRACE] ${randomMatrixChunk(22)}`;
+      if (root && lineA && lineB) {
+        if (!state.busy) {
+          root.classList.remove("active");
+        } else {
+          lineA.textContent = a;
+          lineB.textContent = b;
+          root.classList.add("active");
+        }
+      }
+      renderAnalysisLiveFxTick(active, a, b);
+    }
+
+    function shouldShowAnalysisLiveFx() {
+      if (!state.busy) return false;
+      return state.runningPreviewMode === "deep" || state.executionModeResolved === "deep";
+    }
+
+    function renderAnalysisLiveFxTick(activeText, lineAText, lineBText) {
+      const root = $("analysisLiveFx");
+      const lineA = $("analysisLiveLineA");
+      const lineB = $("analysisLiveLineB");
+      const label = $("analysisLiveAgent");
+      if (!root || !lineA || !lineB || !label) return;
       if (!state.busy) {
         root.classList.remove("active");
         return;
       }
-      const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
-      const a = `[${active}] ${randomMatrixChunk(22)}`;
-      const b = `[TRACE] ${randomMatrixChunk(22)}`;
-      lineA.textContent = a;
-      lineB.textContent = b;
+      if (!shouldShowAnalysisLiveFx()) {
+        root.classList.remove("active");
+        return;
+      }
+      const active = String(activeText || (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10));
+      label.textContent = active;
+      lineA.textContent = lineAText || `[${active}] ${randomMatrixChunk(22)}`;
+      lineB.textContent = lineBText || `[TRACE] ${randomMatrixChunk(22)}`;
       root.classList.add("active");
     }
 
     function toggleAgentStreamMatrix(on) {
       const root = $("agentStreamMatrix");
-      if (!root) return;
+      const analysisRoot = $("analysisLiveFx");
       if (!on) {
         if (state.matrixTicker) {
           clearInterval(state.matrixTicker);
           state.matrixTicker = null;
         }
-        root.classList.remove("active");
+        if (root) root.classList.remove("active");
+        if (analysisRoot) analysisRoot.classList.remove("active");
         return;
       }
       renderAgentStreamMatrixTick();
@@ -225,6 +256,30 @@
     function setRunningPreview(on, mode = "deep") {
       state.runningPreview = !!on;
       state.runningPreviewMode = mode || "deep";
+      if (!state.runningPreview) {
+        const analysisRoot = $("analysisLiveFx");
+        if (analysisRoot) analysisRoot.classList.remove("active");
+      } else {
+        renderAgentStreamMatrixTick();
+      }
+    }
+
+    function showCenterRequestOverlay(message = "Processing request...") {
+      const root = $("requestCenterOverlay");
+      const text = $("requestCenterText");
+      if (!root) return;
+      if (text) text.textContent = String(message || "Processing request...");
+      root.classList.add("show");
+      root.setAttribute("aria-hidden", "false");
+      state.centerOverlayVisible = true;
+    }
+
+    function hideCenterRequestOverlay() {
+      const root = $("requestCenterOverlay");
+      if (!root) return;
+      root.classList.remove("show");
+      root.setAttribute("aria-hidden", "true");
+      state.centerOverlayVisible = false;
     }
 
     function buildRunningMarkdown() {
@@ -562,10 +617,17 @@
 
       const container = document.createElement("div");
       container.className = "media-scroll-container";
+      const kind = /Videos/i.test(rootId) ? "videos" : /Images/i.test(rootId) ? "images" : "";
       container.addEventListener("wheel", (e) => {
-        if (container.scrollHeight <= container.clientHeight + 1) return;
-        e.preventDefault();
-        container.scrollTop += e.deltaY;
+        const hasOverflow = container.scrollHeight > container.clientHeight + 1;
+        if (hasOverflow) {
+          e.preventDefault();
+          container.scrollTop += e.deltaY;
+        }
+        if (e.deltaY > 0 && kind && typeof loadMoreMediaForPanel === "function") {
+          const nearBottom = !hasOverflow || (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
+          if (nearBottom) loadMoreMediaForPanel(kind);
+        }
       }, { passive: false });
 
       for (const item of items.slice(0, 80)) {
@@ -584,11 +646,10 @@
         `;
         container.appendChild(card);
       }
-      const kind = /Videos/i.test(rootId) ? "videos" : /Images/i.test(rootId) ? "images" : "";
       if (kind) {
         container.addEventListener("scroll", () => {
-          if (container.scrollHeight <= container.clientHeight + 1) return;
-          const nearBottom = (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
+          const hasOverflow = container.scrollHeight > container.clientHeight + 1;
+          const nearBottom = !hasOverflow || (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 120);
           if (nearBottom && typeof loadMoreMediaForPanel === "function") {
             loadMoreMediaForPanel(kind);
           }
@@ -682,6 +743,7 @@
     }
 
     function addLog(stage, message, level = "ok") {
+      if (state.centerOverlayVisible) hideCenterRequestOverlay();
       state.logs.unshift({ stage, message, level, time: nowTag() });
       updateFlowFromLog(stage, level);
       renderLogs();

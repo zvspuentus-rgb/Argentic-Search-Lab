@@ -352,6 +352,56 @@
       color: #f1f7fb;
     }
 
+    .analysis-live-fx {
+      display: none;
+      margin: -0.35rem 0 0.75rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 0.8rem;
+      border: 1px solid rgba(117, 214, 166, 0.28);
+      background: rgba(7, 16, 13, 0.72);
+      font-family: var(--font-mono);
+    }
+
+    .analysis-live-fx.active {
+      display: block;
+    }
+
+    .analysis-live-head {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.64rem;
+      color: #92f0b9;
+      letter-spacing: 0.35px;
+      margin-bottom: 0.38rem;
+      opacity: 0.95;
+    }
+
+    .analysis-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7cf8c0;
+      box-shadow: 0 0 0 0 rgba(124, 248, 192, 0.65);
+      animation: pulseDot 1s infinite;
+    }
+
+    .analysis-live-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.42rem;
+    }
+
+    .analysis-live-line {
+      font-size: 0.6rem;
+      color: #6ceca8;
+      min-height: 0.9rem;
+      white-space: pre;
+      overflow: hidden;
+      text-overflow: clip;
+      opacity: 0.92;
+    }
+
     .answer-body h1,
     .answer-body h2,
     .answer-body h3 {

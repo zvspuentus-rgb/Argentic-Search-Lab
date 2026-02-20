@@ -1121,6 +1121,9 @@
         runBtn.classList.add("is-processing");
       }
       setStatus("Processing... working");
+      if (typeof showCenterRequestOverlay === "function") {
+        showCenterRequestOverlay("Processing request...");
+      }
 
       try {
 

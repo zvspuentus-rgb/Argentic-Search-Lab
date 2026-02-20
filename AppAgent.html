@@ -113,6 +113,17 @@
         <!-- Answer Card -->
         <section class="card">
           <div class="section-title">Analysis & Synthesis</div>
+          <div id="analysisLiveFx" class="analysis-live-fx" aria-hidden="true">
+            <div class="analysis-live-head">
+              <span class="analysis-live-dot"></span>
+              <span id="analysisLiveAgent">ANALYZER</span>
+              <span>LIVE AGENT STREAM</span>
+            </div>
+            <div class="analysis-live-grid">
+              <div id="analysisLiveLineA" class="analysis-live-line"></div>
+              <div id="analysisLiveLineB" class="analysis-live-line"></div>
+            </div>
+          </div>
           <div id="answer" class="answer-body">
             <!-- Dynamic Answer content -->
           </div>
@@ -475,6 +486,12 @@
   </div>
 
   <div id="miniToast" class="mini-toast" role="status" aria-live="polite"></div>
+  <div id="requestCenterOverlay" class="request-center-overlay" aria-hidden="true">
+    <div class="request-center-card">
+      <span class="request-center-spinner"></span>
+      <span id="requestCenterText">Processing request...</span>
+    </div>
+  </div>
 
   <!-- Hidden Compatibility Layer (Ensures existing JS logic never breaks) -->
   <div style="display: none;" aria-hidden="true">

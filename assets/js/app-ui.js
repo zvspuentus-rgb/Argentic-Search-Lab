@@ -216,10 +216,12 @@
         section.addEventListener("wheel", (e) => {
           const scroller = section.querySelector(".media-scroll-container");
           if (!scroller) return;
-          if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
-          e.preventDefault();
-          scroller.scrollTop += e.deltaY;
-          const nearBottom = (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
+          const hasOverflow = scroller.scrollHeight > scroller.clientHeight + 1;
+          if (hasOverflow) {
+            e.preventDefault();
+            scroller.scrollTop += e.deltaY;
+          }
+          const nearBottom = !hasOverflow || (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
           if (nearBottom && typeof loadMoreMediaForPanel === "function") {
             loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
           }
@@ -227,7 +229,8 @@
         section.addEventListener("scroll", () => {
           const scroller = section.querySelector(".media-scroll-container");
           if (!scroller) return;
-          const nearBottom = (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
+          const hasOverflow = scroller.scrollHeight > scroller.clientHeight + 1;
+          const nearBottom = !hasOverflow || (scroller.scrollTop + scroller.clientHeight) >= (scroller.scrollHeight - 120);
           if (nearBottom && typeof loadMoreMediaForPanel === "function") {
             loadMoreMediaForPanel(id === "mediaVideosSection" ? "videos" : "images");
           }
