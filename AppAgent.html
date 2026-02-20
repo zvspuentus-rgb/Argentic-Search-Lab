@@ -145,6 +145,14 @@
 
     <form id="searchForm" onsubmit="event.preventDefault(); runPipeline();">
       <div class="search-box">
+        <div class="search-box-header">
+          <div class="search-shell-title">Ask Deep Technical</div>
+          <div class="search-shell-actions">
+            <button type="button" class="btn-action btn-shell-control" onclick="toggleChatCompact()" title="Compact/Expanded size">↔ Size</button>
+            <button type="button" class="btn-action btn-shell-control" onclick="toggleChatDock()" title="Dock left/right">⇄ Dock</button>
+            <button type="button" class="btn-action btn-shell-control" onclick="collapseChat()" title="Minimize chat">✕</button>
+          </div>
+        </div>
         <textarea id="userQuery" class="search-input" rows="1" placeholder="Ask a deep technical question..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); runPipeline(); }"></textarea>
         <input id="filePicker" type="file" multiple style="display:none"
@@ -161,9 +169,6 @@
 
         <div class="search-actions">
           <div class="d-flex gap-2">
-            <button type="button" class="btn-action" onclick="collapseChat()" title="Minimize chat">⤬</button>
-            <button type="button" class="btn-action" onclick="toggleChatCompact()" title="Compact/Expanded size">↔ Size</button>
-            <button type="button" class="btn-action" onclick="toggleChatDock()" title="Dock left/right">⇄ Dock</button>
             <button type="button" class="btn-action" onclick="openFilePicker()" title="Attach files or images">📎 Attach</button>
             <select id="searchMode" class="btn-action" title="Execution Mode">
               <option value="auto" selected>Auto</option>

@@ -384,20 +384,19 @@
       saveUiState();
     }
 
-    // Auto-resize textarea and manage send button state
-    const queryInput = document.getElementById('userQuery');
-    const runBtn = document.getElementById('runBtn');
-
     function updateInpState() {
+      const queryInput = document.getElementById('userQuery');
+      const runBtn = document.getElementById('runBtn');
       if (queryInput && runBtn) {
         const hasText = queryInput.value.trim().length > 0;
         const hasAttachments = Array.isArray(state.attachments) && state.attachments.length > 0;
-        runBtn.disabled = !hasText || state.busy;
         runBtn.disabled = (!hasText && !hasAttachments) || state.busy;
         runBtn.style.opacity = (hasText || hasAttachments) ? "1" : "0.5";
       }
     }
 
+    // Auto-resize textarea and manage send button state
+    const queryInput = document.getElementById('userQuery');
     if (queryInput) {
       queryInput.addEventListener('input', function () {
         this.style.height = 'auto';
