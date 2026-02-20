@@ -205,14 +205,47 @@
       return "";
     }
 
+    function runtimeDateContextLine() {
+      const now = new Date();
+      const localDate = now.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+      const localTime = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+      return `Temporal context: Today is ${localDate}. Local time is ${localTime}. Use this as the current date reference and avoid outdated year assumptions.`;
+    }
+
+    function withRuntimeDateContext(payload = {}) {
+      const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+      const injected = {
+        role: "system",
+        content: runtimeDateContextLine()
+      };
+      return { ...payload, messages: [injected, ...messages] };
+    }
+
     async function lmChat({ lmBase, payload }) {
       const runtime = getProviderRuntime();
       const base = runtime.base || lmBase;
       const scope = runtime.provider;
+      const payloadWithCtx = withRuntimeDateContext(payload);
 
       if (runtime.provider === "anthropic") {
         if (!runtime.apiKey) throw new Error("Anthropic key is missing.");
-        const firstUser = (payload?.messages || []).find((m) => m.role === "user")?.content || "";
+        const firstUser = (payloadWithCtx?.messages || []).find((m) => m.role === "user")?.content || "";
+        const systemText = (payloadWithCtx?.messages || [])
+          .filter((m) => m.role === "system")
+          .map((m) => String(m.content || ""))
+          .join("\n\n")
+          .trim();
+        const mergedUser = [systemText, String(firstUser || "")].filter(Boolean).join("\n\n");
         const raw = await fetchJson(`${base.replace(/\/$/, "")}/messages`, {
           method: "POST",
           headers: {
@@ -222,8 +255,8 @@
           },
           body: JSON.stringify({
             model: runtime.model || "claude-3-5-sonnet-latest",
-            max_tokens: payload.max_tokens || 1200,
-            messages: [{ role: "user", content: String(firstUser || "") }]
+            max_tokens: payloadWithCtx.max_tokens || 1200,
+            messages: [{ role: "user", content: mergedUser }]
           })
         }, { scope, label: "Anthropic messages" });
         const parsed = extractChatContent(raw, runtime.provider);
@@ -232,13 +265,19 @@
 
       if (runtime.provider === "gemini") {
         if (!runtime.apiKey) throw new Error("Gemini key is missing.");
-        const firstUser = (payload?.messages || []).find((m) => m.role === "user")?.content || "";
+        const firstUser = (payloadWithCtx?.messages || []).find((m) => m.role === "user")?.content || "";
+        const systemText = (payloadWithCtx?.messages || [])
+          .filter((m) => m.role === "system")
+          .map((m) => String(m.content || ""))
+          .join("\n\n")
+          .trim();
+        const mergedUser = [systemText, String(firstUser || "")].filter(Boolean).join("\n\n");
         const url = `${base.replace(/\/$/, "")}/models/${encodeURIComponent(runtime.model || "gemini-1.5-pro")}:generateContent?key=${encodeURIComponent(runtime.apiKey)}`;
         const raw = await fetchJson(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: String(firstUser || "") }] }]
+            contents: [{ role: "user", parts: [{ text: mergedUser }] }]
           })
         }, { scope, label: "Gemini generateContent" });
         const parsed = extractChatContent(raw, runtime.provider);
@@ -251,14 +290,15 @@
       return fetchJson(url, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payloadWithCtx)
       }, { scope, label: `${runtime.provider} chat/completions` });
     }
 
     async function lmChatStream({ lmBase, payload, onText }) {
       const runtime = getProviderRuntime();
+      const payloadWithCtx = withRuntimeDateContext(payload);
       if (runtime.provider === "anthropic" || runtime.provider === "gemini") {
-        const oneShot = await lmChat({ lmBase, payload });
+        const oneShot = await lmChat({ lmBase, payload: payloadWithCtx });
         const content = String(oneShot?.choices?.[0]?.message?.content || "");
         if (typeof onText === "function") onText(content);
         return { content, reasoning: "" };
@@ -268,7 +308,7 @@
       const headers = { "Content-Type": "application/json" };
       if (runtime.provider === "openai" && runtime.apiKey) headers.Authorization = `Bearer ${runtime.apiKey}`;
       const url = `${base.replace(/\/$/, "")}/chat/completions`;
-      const finalPayload = { ...payload, stream: true };
+      const finalPayload = { ...payloadWithCtx, stream: true };
       addDebug(runtime.provider, `REQ POST ${url}\nbody: ${JSON.stringify(finalPayload).slice(0, 650)}`, "ok");
       const res = await fetch(url, {
         method: "POST",
