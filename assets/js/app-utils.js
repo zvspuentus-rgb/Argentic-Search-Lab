@@ -81,6 +81,7 @@
       if (/(wikipedia\.org|ibm\.com|huggingface\.co|langchain\.com|python\.org)/.test(domain)) score += 2;
       if (WEAK_DOMAIN_RX.test(domain)) score -= 3;
       if (/(course|catalog|academy|marketing|sponsored|event|bootcamp)/i.test(source.title)) score -= 3;
+      if (/(forecast|prediction|price target|opinion)/i.test(source.title) && !/\b(data|dataset|methodology|table|report)\b/i.test(source.content || "")) score -= 1.4;
 
       const len = String(source.content || "").trim().length;
       if (len > 260) score += 1.2;
@@ -132,6 +133,34 @@
         .map((s) => ({ ...s, _score: scoreSource(s, analyzer) }))
         .sort((a, b) => b._score - a._score)
         .map(({ _score, ...rest }) => rest);
+    }
+
+    function isQuantitativeQuery(text) {
+      const q = String(text || "").toLowerCase();
+      if (!q) return false;
+      return /\b(volatility|correlation|sharpe|sortino|drawdown|cagr|irr|roi|alpha|beta|risk[- ]adjusted|allocation|portfolio|backtest|stress test|scenario|valuation|forecast|investment|liquidity)\b/.test(q);
+    }
+
+    function hasNumericEvidenceInSources(sources = []) {
+      const joined = sources
+        .slice(0, 12)
+        .map((s) => `${s?.title || ""} ${s?.content || ""}`)
+        .join(" ")
+        .toLowerCase();
+      const hasNumber = /\b\d+([.,]\d+)?%?\b/.test(joined);
+      const hasMetricWord = /\b(volatility|correlation|drawdown|cagr|yield|inflation|rate|return|std|standard deviation|sharpe|risk)\b/.test(joined);
+      return hasNumber && hasMetricWord;
+    }
+
+    function buildQuantFollowups(userQuery, maxFollowUpQueries = 2) {
+      const base = normalizeQuery(userQuery);
+      const templates = [
+        `${base} historical volatility and max drawdown with explicit numbers by period`,
+        `${base} correlation matrix and rolling correlation with numeric values`,
+        `${base} risk-adjusted returns (Sharpe/Sortino) and assumptions`,
+        `${base} scenario analysis (bull/base/bear) with quantified ranges`
+      ];
+      return uniqueStrings(templates).slice(0, Math.max(1, maxFollowUpQueries));
     }
 
     async function mapWithConcurrency(items, limit, worker) {
@@ -374,6 +403,7 @@
     }
 
     async function plannerAgent({ lmBase, model, query, maxQueries, stylePrompt = "" }) {
+      const quantMode = isQuantitativeQuery(query);
       const schema = {
         type: "object",
         additionalProperties: false,
@@ -401,6 +431,9 @@
               "Ignore noisy separators like <<<<<<.",
               "Prefer official documentation, GitHub repositories, release notes, and engineering blogs.",
               "Avoid generic listicles and low-signal sources.",
+              quantMode
+                ? "Query is quantitative: include queries that target numeric datasets, historical time-series, and methodology pages (not only narrative articles)."
+                : "",
               "Return strict JSON only.",
               stylePrompt || ""
             ].filter(Boolean).join(" ")
@@ -476,6 +509,7 @@
     }
 
     async function refinerAgent({ lmBase, model, userQuery, initialQueries, maxQueries }) {
+      const quantMode = isQuantitativeQuery(userQuery);
       const schema = {
         type: "object",
         additionalProperties: false,
@@ -497,7 +531,12 @@
         messages: [
           {
             role: "system",
-            content: "You are Refiner Agent. Improve query quality, remove duplicates, maximize coverage. Favor high-authority technical sources. Return strict JSON only."
+            content: [
+              "You are Refiner Agent. Improve query quality, remove duplicates, maximize coverage.",
+              "Favor high-authority technical sources.",
+              quantMode ? "User asks quantitative analysis: ensure at least one query explicitly asks for numeric metrics and historical data." : "",
+              "Return strict JSON only."
+            ].filter(Boolean).join(" ")
           },
           {
             role: "user",
@@ -522,11 +561,20 @@
       });
       return {
         notes: String(parsed?.notes || "fallback"),
-        queries: uniqueStrings(Array.isArray(parsed?.queries) ? parsed.queries : initialQueries).slice(0, maxQueries)
+        queries: (() => {
+          const base = uniqueStrings(Array.isArray(parsed?.queries) ? parsed.queries : initialQueries).slice(0, maxQueries);
+          if (!quantMode) return base;
+          const hasMetricQuery = base.some((q) => /\b(volatility|correlation|drawdown|cagr|sharpe|scenario|risk[- ]adjusted)\b/i.test(q));
+          if (hasMetricQuery) return base;
+          const extra = `${normalizeQuery(userQuery)} quantitative metrics volatility correlation drawdown`;
+          return uniqueStrings([...base, extra]).slice(0, maxQueries);
+        })()
       };
     }
 
     async function criticAgent({ lmBase, model, userQuery, currentQueries, sources, maxFollowUpQueries, stylePrompt = "" }) {
+      const quantMode = isQuantitativeQuery(userQuery);
+      const hasNumericEvidence = hasNumericEvidenceInSources(sources);
       const schema = {
         type: "object",
         additionalProperties: false,
@@ -584,6 +632,9 @@
               "Score source quality, coverage, and freshness from 0-100.",
               "Detect contradictions and missing angles.",
               "If confidence is not strong, demand more retrieval with high-value follow-up queries.",
+              quantMode
+                ? "For quantitative asks, require explicit numeric evidence. If metrics are missing, force needMoreSearch=true."
+                : "",
               "Be strict, not optimistic.",
               stylePrompt || "",
               "Return strict JSON only."
@@ -620,16 +671,34 @@
           contradictions: []
         }
       });
+      let needMoreSearch = !!parsed?.needMoreSearch;
+      let reason = String(parsed?.reason || "fallback");
+      let followUpQueries = uniqueStrings(Array.isArray(parsed?.followUpQueries) ? parsed.followUpQueries : []).slice(0, maxFollowUpQueries);
+      let sourceQualityScore = Math.max(0, Math.min(100, Number(parsed?.sourceQualityScore) || 40));
+      let coverageScore = Math.max(0, Math.min(100, Number(parsed?.coverageScore) || 40));
+      let freshnessScore = Math.max(0, Math.min(100, Number(parsed?.freshnessScore) || 40));
+      let overallScore = Math.max(0, Math.min(100, Number(parsed?.overallScore) || 40));
+      const missingAngles = uniqueStrings(Array.isArray(parsed?.missingAngles) ? parsed.missingAngles : []).slice(0, 6);
+      const contradictions = uniqueStrings(Array.isArray(parsed?.contradictions) ? parsed.contradictions : []).slice(0, 5);
+
+      if (quantMode && !hasNumericEvidence) {
+        needMoreSearch = true;
+        reason = `Missing numeric evidence for quantitative request. ${reason}`.trim();
+        followUpQueries = uniqueStrings([...followUpQueries, ...buildQuantFollowups(userQuery, maxFollowUpQueries)]).slice(0, maxFollowUpQueries);
+        sourceQualityScore = Math.min(sourceQualityScore, 55);
+        coverageScore = Math.min(coverageScore, 50);
+        overallScore = Math.min(overallScore, 50);
+      }
       return {
-        needMoreSearch: !!parsed?.needMoreSearch,
-        reason: String(parsed?.reason || "fallback"),
-        followUpQueries: uniqueStrings(Array.isArray(parsed?.followUpQueries) ? parsed.followUpQueries : []).slice(0, maxFollowUpQueries),
-        sourceQualityScore: Math.max(0, Math.min(100, Number(parsed?.sourceQualityScore) || 40)),
-        coverageScore: Math.max(0, Math.min(100, Number(parsed?.coverageScore) || 40)),
-        freshnessScore: Math.max(0, Math.min(100, Number(parsed?.freshnessScore) || 40)),
-        overallScore: Math.max(0, Math.min(100, Number(parsed?.overallScore) || 40)),
-        missingAngles: uniqueStrings(Array.isArray(parsed?.missingAngles) ? parsed.missingAngles : []).slice(0, 6),
-        contradictions: uniqueStrings(Array.isArray(parsed?.contradictions) ? parsed.contradictions : []).slice(0, 5)
+        needMoreSearch,
+        reason,
+        followUpQueries,
+        sourceQualityScore,
+        coverageScore,
+        freshnessScore,
+        overallScore,
+        missingAngles,
+        contradictions
       };
     }
 

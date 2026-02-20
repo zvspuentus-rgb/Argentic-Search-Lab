@@ -840,6 +840,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function synthesisAgent({ lmBase, model, userQuery, language, customSystem, sources, analyzer, copilotMode, maxTokens, streamOutput, onStreamText, thinkingMode, temperature }) {
+      const quantAsk = /\b(volatility|correlation|sharpe|sortino|drawdown|cagr|irr|roi|risk[- ]adjusted|allocation|portfolio|backtest|stress test|scenario|valuation|forecast|investment|liquidity)\b/i.test(String(userQuery || ""));
       const numbered = sources.map((s, idx) =>
         `[${idx + 1}] title: ${s.title}\nurl: ${s.url}\nsnippet: ${s.content}`
       ).join("\n\n");
@@ -860,7 +861,15 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         "Do not repeat content.",
         "Be specific and evidence-first.",
         "Citations are mandatory for factual claims.",
+        "Never invent metrics, percentages, correlations, dates, or statistics.",
+        "If a requested metric is missing in sources, explicitly mark it as 'not available from current evidence'.",
         "Prefer direct, practical recommendations over generic text.",
+        quantAsk
+          ? "This is a quantitative/comparative request: include a compact decision matrix (asset/options x criteria) and make recommendation conditional on risk profile and time horizon."
+          : "",
+        quantAsk
+          ? "Do not output hard buy/sell priority without trade-offs and uncertainty."
+          : "",
         copilotMode ? "Include practical execution guidance and concrete next steps." : "",
         thinkingMode === "use" && state.thinking.length
           ? `You may use these internal reasoning hints:\n${state.thinking.slice(0, 4).map((x) => `${x.stage}: ${x.text.slice(0, 700)}`).join("\n\n")}`
@@ -935,7 +944,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
                 "Sources:",
                 numbered,
                 "",
-                "Return a long, structured markdown answer with citations [n]."
+                "Return a long, structured markdown answer with citations [n].",
+                quantAsk ? "Include: (1) evidence-backed metrics section, (2) decision matrix, (3) conditional recommendation." : ""
               ].join("\n")
             }
           ]
