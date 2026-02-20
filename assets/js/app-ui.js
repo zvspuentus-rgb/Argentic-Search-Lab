@@ -138,6 +138,7 @@
     renderQueries();
     renderSources();
     renderAnswerMedia();
+    renderTurns();
     bindMediaSidecarScrollIsolation();
     renderFollowups();
     renderThinking();

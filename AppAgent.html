@@ -91,12 +91,23 @@
             <button type="button" class="btn-action" onclick="openDeepResearchView()">🧠 Deep View</button>
             <button type="button" class="btn-action" onclick="exportResearchPdf()">🧾 Export PDF</button>
             <button type="button" class="btn-action" onclick="exportCurrentSessionJson()">💾 Export JSON</button>
+            <button type="button" class="btn-action" onclick="exportAllTurnsPdf()">🧾 Export All PDF</button>
+            <button type="button" class="btn-action" onclick="exportAllTurnsJson()">💾 Export All JSON</button>
             <button type="button" class="btn-action" onclick="shareResearchSummary()">📤 Share</button>
           </div>
         </div>
 
       <!-- Execution Progress -->
       <div id="agentFlow" class="flow-indicators"></div>
+
+      <section id="threadSection">
+        <div class="section-title">
+          <span>Research Thread</span>
+          <span id="threadCountBadge" class="badge rounded-pill"
+            style="background: rgba(255,255,255,0.05); color: var(--accent-secondary);">0</span>
+        </div>
+        <div id="threadTurnsList" class="turns-list"></div>
+      </section>
 
       <!-- Sources Section -->
       <section id="sourcesView">
@@ -119,10 +130,7 @@
               <span id="analysisLiveAgent">ANALYZER</span>
               <span>LIVE AGENT STREAM</span>
             </div>
-            <div class="analysis-live-grid">
-              <div id="analysisLiveLineA" class="analysis-live-line"></div>
-              <div id="analysisLiveLineB" class="analysis-live-line"></div>
-            </div>
+            <div id="analysisLiveStream" class="analysis-live-stream"></div>
           </div>
           <div id="answer" class="answer-body">
             <!-- Dynamic Answer content -->

@@ -467,6 +467,7 @@
           mediaVideos: state.mediaVideos,
           criticReport: state.criticReport,
           followups: state.followups,
+          turns: state.turns || [],
           agentBrief: state.agentBrief || "",
           thinking: state.thinking,
           logs: state.logs.slice(0, 120)
@@ -498,6 +499,7 @@
       state.mediaVideos = Array.isArray(s.data?.mediaVideos) ? s.data.mediaVideos : [];
       state.criticReport = s.data?.criticReport || null;
       state.followups = Array.isArray(s.data?.followups) ? s.data.followups : [];
+      state.turns = Array.isArray(s.data?.turns) ? s.data.turns : [];
       state.agentBrief = String(s.data?.agentBrief || "");
       state.thinking = Array.isArray(s.data?.thinking) ? s.data.thinking : [];
       state.logs = Array.isArray(s.data?.logs) ? s.data.logs : [];
@@ -505,6 +507,7 @@
       renderSources();
       renderAnswerMedia();
       renderFollowups();
+      renderTurns();
       renderThinking();
       renderLogs();
       renderConversationTree();

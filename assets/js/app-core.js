@@ -43,7 +43,8 @@
       runningPreview: false,
       runningPreviewMode: "deep",
       matrixTicker: null,
-      centerOverlayVisible: false
+      centerOverlayVisible: false,
+      turns: []
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
@@ -229,10 +230,9 @@
 
     function renderAnalysisLiveFxTick(activeText, lineAText, lineBText) {
       const root = $("analysisLiveFx");
-      const lineA = $("analysisLiveLineA");
-      const lineB = $("analysisLiveLineB");
+      const stream = $("analysisLiveStream");
       const label = $("analysisLiveAgent");
-      if (!root || !lineA || !lineB || !label) return;
+      if (!root || !stream || !label) return;
       if (!state.busy) {
         root.classList.remove("active");
         return;
@@ -243,8 +243,12 @@
       }
       const active = String(activeText || (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10));
       label.textContent = active;
-      lineA.textContent = lineAText || `[${active}] ${randomMatrixChunk(22)}`;
-      lineB.textContent = lineBText || `[TRACE] ${randomMatrixChunk(22)}`;
+      const liveLines = [
+        lineAText || `[${active}] ${randomMatrixChunk(22)}`,
+        lineBText || `[TRACE] ${randomMatrixChunk(22)}`,
+        ...state.logs.slice(0, 10).map((x) => compactLogLine(x, "TRACE"))
+      ].slice(0, 12);
+      stream.innerHTML = liveLines.map((line) => `<div class="analysis-live-line">${escapeHtml(line)}</div>`).join("");
       root.classList.add("active");
     }
 
@@ -647,20 +651,7 @@
       }, { passive: false });
 
       for (const item of items.slice(0, 80)) {
-        const t = item.mediaType || inferMediaType(item.url);
-        const thumb = previewImageForUrl(item);
-        const icon = faviconForUrl(item.url);
-        const card = document.createElement("article");
-        card.className = "media-card";
-        card.innerHTML = `
-          ${thumb ? `<img class="media-thumb" src="${escapeAttr(thumb)}" alt="${escapeAttr(item.title || "media")}" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : '<div class="media-thumb"></div>'}
-          <div class="media-body">
-            <div class="media-label">${escapeHtml(t)}</div>
-            <h4 class="media-title">${escapeHtml(item.title || "Untitled")}</h4>
-            <a class="media-link" href="${escapeAttr(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.url || "")}</a>
-          </div>
-        `;
-        container.appendChild(card);
+        container.appendChild(createMediaCard(item));
       }
       if (kind) {
         container.addEventListener("scroll", () => {
@@ -672,6 +663,54 @@
         }, { passive: true });
       }
       root.appendChild(container);
+    }
+
+    function mediaRootIdForKind(kind) {
+      return String(kind || "").toLowerCase() === "videos" ? "answerMediaVideosGridLeft" : "answerMediaImagesGridRight";
+    }
+
+    function createMediaCard(item) {
+      const t = item.mediaType || inferMediaType(item.url);
+      const thumb = previewImageForUrl(item);
+      const icon = faviconForUrl(item.url);
+      const card = document.createElement("article");
+      card.className = "media-card";
+      const mediaKey = String(item.url || item.title || "").toLowerCase().trim();
+      if (mediaKey) card.dataset.mediaKey = mediaKey;
+      card.innerHTML = `
+        ${thumb ? `<img class="media-thumb" src="${escapeAttr(thumb)}" alt="${escapeAttr(item.title || "media")}" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : '<div class="media-thumb"></div>'}
+        <div class="media-body">
+          <div class="media-label">${escapeHtml(t)}</div>
+          <h4 class="media-title">${escapeHtml(item.title || "Untitled")}</h4>
+          <a class="media-link" href="${escapeAttr(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.url || "")}</a>
+        </div>
+      `;
+      return card;
+    }
+
+    function appendMediaCards(kind, newItems) {
+      const root = $(mediaRootIdForKind(kind));
+      const list = Array.isArray(newItems) ? newItems : [];
+      if (!root || !list.length) return false;
+      const container = root.querySelector(".media-scroll-container");
+      if (!container) return false;
+      const beforeBottomGap = container.scrollHeight - container.scrollTop;
+      const seen = new Set([...container.querySelectorAll(".media-card")].map((el) => String(el.dataset.mediaKey || "").trim()).filter(Boolean));
+      let added = 0;
+      for (const item of list) {
+        const key = String(item.url || item.title || "").toLowerCase().trim();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        container.appendChild(createMediaCard(item));
+        added += 1;
+      }
+      if (added) {
+        const hasOverflow = container.scrollHeight > container.clientHeight + 1;
+        if (hasOverflow) {
+          container.scrollTop = Math.max(0, container.scrollHeight - beforeBottomGap);
+        }
+      }
+      return added > 0;
     }
 
     function renderAnswerMedia() {
@@ -887,6 +926,103 @@
         btn.dataset.query = q;
         root.appendChild(btn);
       }
+    }
+
+    function getCurrentAnswerText() {
+      const raw = String($("answer")?.innerText || "").replace(/\s+/g, " ").trim();
+      if (!raw || /^No output yet\.?$/i.test(raw)) return "";
+      if (/^Deep Research Running/i.test(raw)) return "";
+      return raw;
+    }
+
+    function archiveCurrentTurnIfNeeded() {
+      const query = normalizeQuery($("userQuery")?.value || state.lastUserQuery || "");
+      const answerText = getCurrentAnswerText();
+      if (!query || !answerText) return;
+      const duplicate = state.turns[0] && state.turns[0].query === query && state.turns[0].answerText === answerText;
+      if (duplicate) return;
+      const turn = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        query,
+        answerText: answerText.slice(0, 12000),
+        answerHtml: $("answer")?.innerHTML || "",
+        createdAt: new Date().toLocaleString(),
+        sources: (state.sources || []).slice(0, 24),
+        followups: (state.followups || []).slice(0, 8)
+      };
+      state.turns.unshift(turn);
+      if (state.turns.length > 60) state.turns.length = 60;
+      renderTurns();
+    }
+
+    function renderTurns() {
+      const root = $("threadTurnsList");
+      const badge = $("threadCountBadge");
+      if (badge) badge.textContent = String((state.turns || []).length);
+      if (!root) return;
+      root.innerHTML = "";
+      if (!state.turns.length) {
+        root.innerHTML = '<div class="mono" style="color:#9db0bc">No completed runs yet.</div>';
+        return;
+      }
+      for (const [idx, t] of state.turns.entries()) {
+        const item = document.createElement("article");
+        item.className = `turn-item ${idx === 0 ? "open" : ""}`;
+        item.innerHTML = `
+          <button type="button" class="turn-head" data-turn-toggle="${escapeAttr(t.id)}">
+            <span class="turn-title">${escapeHtml(t.query || "Untitled query")}</span>
+            <span class="turn-meta">${escapeHtml(t.createdAt || "")}</span>
+          </button>
+          <div class="turn-body">
+            <div class="turn-actions">
+              <button type="button" class="btn-action" data-turn-copy="${escapeAttr(t.id)}">Copy</button>
+              <button type="button" class="btn-action" data-turn-print="${escapeAttr(t.id)}">Print</button>
+            </div>
+            <p class="turn-query"><strong>Query:</strong> ${escapeHtml(t.query || "")}</p>
+            <pre class="turn-answer">${escapeHtml(t.answerText || "")}</pre>
+          </div>
+        `;
+        root.appendChild(item);
+      }
+      root.onclick = async (e) => {
+        const toggle = e.target.closest("[data-turn-toggle]");
+        if (toggle) {
+          const item = toggle.closest(".turn-item");
+          if (item) item.classList.toggle("open");
+          return;
+        }
+        const copyBtn = e.target.closest("[data-turn-copy]");
+        if (copyBtn) {
+          const id = copyBtn.getAttribute("data-turn-copy");
+          const turn = state.turns.find((x) => x.id === id);
+          if (!turn) return;
+          try {
+            await navigator.clipboard.writeText(`${turn.query}\n\n${turn.answerText}`);
+            setStatus("Turn copied.");
+          } catch {
+            setStatus("Copy failed.");
+          }
+          return;
+        }
+        const printBtn = e.target.closest("[data-turn-print]");
+        if (printBtn) {
+          const id = printBtn.getAttribute("data-turn-print");
+          const turn = state.turns.find((x) => x.id === id);
+          if (!turn) return;
+          openTurnPrintWindow(turn);
+        }
+      };
+    }
+
+    function openTurnPrintWindow(turn) {
+      const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
+      if (!w) return;
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(turn.query || "Research Turn")}</title><style>body{font-family:Arial,sans-serif;margin:26px;color:#0d1217}h1{font-size:20px;margin:0 0 8px}.meta{font-size:12px;color:#5a6b79;margin-bottom:12px}pre{white-space:pre-wrap;line-height:1.5;font-size:13px;border:1px solid #d8e2ea;border-radius:8px;padding:10px;background:#f7fafc}</style></head><body><h1>${escapeHtml(turn.query || "Research Turn")}</h1><div class="meta">${escapeHtml(turn.createdAt || "")}</div><pre>${escapeHtml(turn.answerText || "")}</pre></body></html>`;
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 220);
     }
 
     function renderDiscovery() {

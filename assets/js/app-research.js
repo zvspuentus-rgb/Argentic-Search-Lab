@@ -221,6 +221,65 @@
       setStatus("Session exported as JSON.");
     }
 
+    function exportAllTurnsJson() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        sessionId: state.currentSessionId || null,
+        settings: getCurrentSettingsSnapshot(),
+        turns: (state.turns || []).map((t) => ({
+          id: t.id,
+          createdAt: t.createdAt,
+          query: t.query,
+          answerText: t.answerText,
+          sources: t.sources || [],
+          followups: t.followups || []
+        }))
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().replaceAll(":", "-");
+      a.href = url;
+      a.download = `agentic-thread-${stamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus("All turns exported as JSON.");
+    }
+
+    function exportAllTurnsPdf() {
+      const turns = (state.turns || []).slice();
+      if (!turns.length) {
+        setStatus("No completed turns to export.");
+        return;
+      }
+      const html = `<!doctype html>
+<html><head><meta charset="utf-8"><title>Research Thread PDF</title>
+<style>
+body{font-family:Arial,sans-serif;margin:26px;color:#0e1318}
+h1{font-size:22px;margin:0 0 8px}
+.meta{font-size:12px;color:#5a6b79;margin-bottom:12px}
+.turn{border:1px solid #d8e2ea;border-radius:10px;padding:12px;margin-bottom:12px}
+.q{font-size:14px;font-weight:700;margin:0 0 8px}
+.t{font-size:12px;color:#5a6b79;margin-bottom:8px}
+pre{white-space:pre-wrap;line-height:1.5;font-size:12px;background:#f7fafc;border-radius:8px;padding:10px;margin:0}
+</style></head><body>
+<h1>Research Thread Export</h1>
+<div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div>
+${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${escapeHtml(turn.query || "Untitled query")}</div><div class="t">${escapeHtml(turn.createdAt || "")}</div><pre>${escapeHtml(turn.answerText || "")}</pre></section>`).join("")}
+</body></html>`;
+      const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
+      if (!w) {
+        setStatus("Popup blocked. Allow popups to export PDF.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 250);
+      setStatus("All turns PDF view opened.");
+    }
+
     async function shareResearchSummary() {
       const title = normalizeQuery($("userQuery")?.value || "").slice(0, 90) || "AppAgent Research";
       const answer = String($("answer")?.textContent || "").replace(/\s+/g, " ").trim();
@@ -621,7 +680,8 @@
         state.media = [...state.mediaImages, ...state.mediaVideos];
         cursor[pageKey] = nextPage;
         if (normalized.length < 10) cursor[hasMoreKey] = false;
-        renderAnswerMedia();
+        const appended = typeof appendMediaCards === "function" ? appendMediaCards(k, normalized) : false;
+        if (!appended) renderAnswerMedia();
         addLog("media", `Loaded more ${k}: +${normalized.length}`, "ok");
       } catch (err) {
         cursor[hasMoreKey] = false;
@@ -1169,6 +1229,9 @@
       const modelQuery = composeModelQuery(cleanQuery);
       const resolvedMode = resolveExecutionMode(cleanQuery);
       renderExecutionModeBadge(resolvedMode);
+      if (typeof archiveCurrentTurnIfNeeded === "function") {
+        archiveCurrentTurnIfNeeded();
+      }
       showResearchView();
       expandChat();
       saveUiState();
@@ -1688,6 +1751,7 @@
       state.thinking = [];
       state.queries = [];
       state.followups = [];
+      state.turns = [];
       state.agentBrief = "";
       state.debug = [];
       state.flow = createFlowState();
@@ -1698,6 +1762,7 @@
       renderSources();
       renderAnswerMedia();
       renderFollowups();
+      renderTurns();
       renderThinking();
       if (typeof renderAttachmentTray === "function") renderAttachmentTray();
       renderSessions();
