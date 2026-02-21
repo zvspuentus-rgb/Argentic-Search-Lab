@@ -3,7 +3,7 @@ set -euo pipefail
 
 MODEL_PATH="${LLAMA_MODEL_PATH:-/data/models/model.gguf}"
 MODEL_URL="${LLAMA_MODEL_URL:-}"
-MODEL_NAME="${LLAMA_MODEL_NAME:-qwen2.5-0.5b-instruct-q4_k_m}"
+MODEL_NAME="${LLAMA_MODEL_NAME:-qwen3-0.6b-presinq-q4_k_s}"
 LLAMA_HOST="${LLAMA_HOST:-127.0.0.1}"
 LLAMA_PORT="${LLAMA_PORT:-11434}"
 LLAMA_CTX_SIZE="${LLAMA_CTX_SIZE:-2048}"

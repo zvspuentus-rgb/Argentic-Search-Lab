@@ -16,7 +16,7 @@ Notes:
 - Default runtime in this Space:
   - Provider: `ollama` (OpenAI-compatible endpoint from llama.cpp)
   - Base URL: `/ollama/v1`
-  - Model: `qwen2.5-0.5b-instruct-q4_k_m`
+  - Model: `qwen3-0.6b-presinq-q4_k_s`
 - Optional custom GGUF (recommended for tuning speed/quality):
   - Set `LLAMA_MODEL_URL` to your `.gguf` URL.
   - Set `LLAMA_MODEL_NAME` to the exposed model alias.
