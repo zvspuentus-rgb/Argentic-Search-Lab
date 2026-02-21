@@ -8,15 +8,15 @@ app_port: 7860
 pinned: false
 ---
 
-Live demo of Argentic Search Lab (UI + MCP proxy + internal Ollama model) with demo quota mode.
+Live demo of Argentic Search Lab (UI + MCP proxy + internal llama.cpp model server) with demo quota mode.
 
 Notes:
 - This live demo is intentionally limited to 2 interactions per browser cookie.
 - For full performance and unlimited use, run locally from GitHub.
 - Default runtime in this Space:
-  - Provider: `ollama`
+  - Provider: `ollama` (OpenAI-compatible endpoint from llama.cpp)
   - Base URL: `/ollama/v1`
-  - Model: `qwen3:0.6b-q4_K_M`
-- Optional custom GGUF:
-  - Set `OLLAMA_GGUF_URL` in Space Variables.
-  - Keep `OLLAMA_MODEL` as your target model name.
+  - Model: `qwen2.5-0.5b-instruct-q4_k_m`
+- Optional custom GGUF (recommended for tuning speed/quality):
+  - Set `LLAMA_MODEL_URL` to your `.gguf` URL.
+  - Set `LLAMA_MODEL_NAME` to the exposed model alias.
