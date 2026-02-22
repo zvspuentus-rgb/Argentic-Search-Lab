@@ -52,6 +52,98 @@ function buildDemoCookie(value) {
   return `hf_demo_queries=${encodeURIComponent(String(value))}; Path=/; Max-Age=2592000; SameSite=Lax`;
 }
 
+async function readJsonBody(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf8');
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', () => resolve({}));
+  });
+}
+
+function toSearxJson(query, items) {
+  const results = Array.isArray(items) ? items.map((r) => ({
+    title: r.title || r.url || 'Untitled',
+    url: r.url || '',
+    content: r.content || ''
+  })) : [];
+  return {
+    query: query || '',
+    number_of_results: results.length,
+    results
+  };
+}
+
+async function handleSearxWithFallback(req, res) {
+  // 1) Try configured SearX first
+  try {
+    const targetPath = req.url.replace('/searxng', '') || '/';
+    const url = `${SEARX_BASE}${targetPath}`;
+    const body = await new Promise((resolve) => {
+      if (req.method === 'GET' || req.method === 'HEAD') return resolve(undefined);
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', () => resolve(undefined));
+    });
+    const headers = { ...req.headers };
+    delete headers.host;
+    const upstream = await fetch(url, { method: req.method, headers, body, redirect: 'follow' });
+    if (upstream.ok) {
+      const outHeaders = {};
+      upstream.headers.forEach((v, k) => {
+        if (k.toLowerCase() === 'content-encoding') return;
+        outHeaders[k] = v;
+      });
+      res.writeHead(upstream.status, outHeaders);
+      if (!upstream.body) return res.end();
+      for await (const chunk of upstream.body) res.write(chunk);
+      return res.end();
+    }
+  } catch {
+    // fall through
+  }
+
+  // 2) Fallback via MCP quick tool (returns stable JSON shape)
+  try {
+    const u = new URL(req.url, 'http://localhost');
+    const query = (u.searchParams.get('q') || '').trim();
+    if (!query) {
+      return send(res, 400, JSON.stringify({ error: 'missing_query', message: 'q is required' }), {
+        'Content-Type': 'application/json; charset=utf-8'
+      });
+    }
+    const payload = { query, limit: 10 };
+    const mcpRes = await fetch(`${MCP_BASE}/tools/search_quick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!mcpRes.ok) {
+      const txt = await mcpRes.text().catch(() => '');
+      return send(res, 502, JSON.stringify({ error: 'searx_fallback_failed', message: txt.slice(0, 260) }), {
+        'Content-Type': 'application/json; charset=utf-8'
+      });
+    }
+    const mcpJson = await mcpRes.json();
+    const normalized = toSearxJson(query, mcpJson?.results || []);
+    return send(res, 200, JSON.stringify(normalized), {
+      'Content-Type': 'application/json; charset=utf-8'
+    });
+  } catch (err) {
+    return send(res, 502, JSON.stringify({ error: 'proxy_failed', message: err.message }), {
+      'Content-Type': 'application/json; charset=utf-8'
+    });
+  }
+}
+
 async function proxy(req, res, base, stripPrefix) {
   try {
     const targetPath = req.url.replace(stripPrefix, '') || '/';
@@ -165,7 +257,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  if (req.url.startsWith('/searxng/')) return proxy(req, res, SEARX_BASE, '/searxng');
+  if (req.url.startsWith('/searxng/')) return handleSearxWithFallback(req, res);
   if (req.url.startsWith('/mcp/')) return proxy(req, res, MCP_BASE, '/mcp');
   if (req.url.startsWith('/lmstudio/')) return proxy(req, res, LMSTUDIO_BASE, '/lmstudio');
   if (req.url.startsWith('/ollama/')) return proxy(req, res, OLLAMA_BASE, '/ollama');

@@ -208,8 +208,16 @@
     }
 
     function getProviderRuntime() {
-      const provider = ($("provider")?.value || "lmstudio").toLowerCase();
-      const model = $("modelName")?.value?.trim() || "";
+      const cfg = (typeof window !== "undefined" && window.__HF_SPACE_CONFIG) ? window.__HF_SPACE_CONFIG : {};
+      const quickOnly = !!cfg.quickOnly;
+      const forcedProvider = String(cfg.singleProvider || "").trim().toLowerCase();
+      const forcedModel = String(cfg.singleModel || "").trim();
+      const provider = quickOnly
+        ? (forcedProvider || "ollama")
+        : (($("provider")?.value || "ollama").toLowerCase());
+      const model = quickOnly
+        ? (forcedModel || $("modelName")?.value?.trim() || "")
+        : ($("modelName")?.value?.trim() || "");
       const map = {
         lmstudio: { provider, model, base: $("lmBase")?.value?.trim() || "/lmstudio/v1", apiKey: "" },
         ollama: { provider, model, base: $("ollamaBase")?.value?.trim() || "/ollama/v1", apiKey: "" },
@@ -217,7 +225,7 @@
         anthropic: { provider, model, base: "https://api.anthropic.com/v1", apiKey: $("anthropicKey")?.value || "" },
         gemini: { provider, model, base: "https://generativelanguage.googleapis.com/v1beta", apiKey: $("geminiKey")?.value || "" }
       };
-      return map[provider] || map.lmstudio;
+      return map[provider] || map.ollama;
     }
 
     function normalizeLlmParallelForProvider(rawParallel) {
