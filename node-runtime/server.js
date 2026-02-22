@@ -8,6 +8,9 @@ const PORT = Number(process.env.PORT || 3093);
 const SEARX_BASE = (process.env.SEARX_BASE || 'http://localhost:8394').replace(/\/$/, '');
 const LMSTUDIO_BASE = (process.env.LMSTUDIO_BASE || 'http://localhost:1234').replace(/\/$/, '');
 const OLLAMA_BASE = (process.env.OLLAMA_BASE || 'http://localhost:11434').replace(/\/$/, '');
+const OPENAI_BASE = (process.env.OPENAI_BASE || 'https://api.openai.com/v1').replace(/\/$/, '');
+const ANTHROPIC_BASE = (process.env.ANTHROPIC_BASE || 'https://api.anthropic.com/v1').replace(/\/$/, '');
+const GEMINI_BASE = (process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/$/, '');
 const APP_ROOT = path.resolve(__dirname, '..');
 const URL_RX = /(https?:\/\/[^\s<>'"`]+)/gi;
 
@@ -372,12 +375,18 @@ app.get('/runtime/config', (req, res) => {
       provider: 'lmstudio',
       searchUrl,
       lmBase: ensureV1(LMSTUDIO_BASE),
-      ollamaBase: ensureV1(OLLAMA_BASE)
+      ollamaBase: ensureV1(OLLAMA_BASE),
+      openaiBase: '/openai',
+      anthropicBase: '/anthropic',
+      geminiBase: '/gemini'
     },
     upstream: {
       searx: SEARX_BASE,
       lmstudio: LMSTUDIO_BASE,
-      ollama: OLLAMA_BASE
+      ollama: OLLAMA_BASE,
+      openai: OPENAI_BASE,
+      anthropic: ANTHROPIC_BASE,
+      gemini: GEMINI_BASE
     },
     current_date: currentDateContext()
   });
@@ -412,6 +421,18 @@ app.all('/ollama/*', async (req, res) => {
 
 app.all('/searxng/*', async (req, res) => {
   await proxyRequest(req, res, SEARX_BASE, '/searxng');
+});
+
+app.all('/openai/*', async (req, res) => {
+  await proxyRequest(req, res, OPENAI_BASE, '/openai');
+});
+
+app.all('/anthropic/*', async (req, res) => {
+  await proxyRequest(req, res, ANTHROPIC_BASE, '/anthropic');
+});
+
+app.all('/gemini/*', async (req, res) => {
+  await proxyRequest(req, res, GEMINI_BASE, '/gemini');
 });
 
 app.post('/mcp', async (req, res) => {

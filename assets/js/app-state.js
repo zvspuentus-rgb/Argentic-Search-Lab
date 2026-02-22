@@ -88,6 +88,27 @@
           $("ollamaBase").value = ext.ollamaBase;
         }
       }
+      if ($("openaiBase")) {
+        const cur = String(s.openaiBase || $("openaiBase").value || "").trim();
+        if (!cur || isDockerInternalLike(cur) || /api\.openai\.com\/v1$/i.test(cur)) {
+          s.openaiBase = "/openai";
+          $("openaiBase").value = "/openai";
+        }
+      }
+      if ($("anthropicBase")) {
+        const cur = String(s.anthropicBase || $("anthropicBase").value || "").trim();
+        if (!cur || isDockerInternalLike(cur) || /api\.anthropic\.com\/v1$/i.test(cur)) {
+          s.anthropicBase = "/anthropic";
+          $("anthropicBase").value = "/anthropic";
+        }
+      }
+      if ($("geminiBase")) {
+        const cur = String(s.geminiBase || $("geminiBase").value || "").trim();
+        if (!cur || isDockerInternalLike(cur) || /generativelanguage\.googleapis\.com\/v1beta$/i.test(cur)) {
+          s.geminiBase = "/gemini";
+          $("geminiBase").value = "/gemini";
+        }
+      }
       return s;
     }
 
@@ -114,6 +135,9 @@
         setIfDocker("searchUrl", d.searchUrl || ext.searchUrl);
         setIfDocker("lmBase", d.lmBase || ext.lmBase);
         setIfDocker("ollamaBase", d.ollamaBase || ext.ollamaBase);
+        setIfDocker("openaiBase", d.openaiBase || "/openai");
+        setIfDocker("anthropicBase", d.anthropicBase || "/anthropic");
+        setIfDocker("geminiBase", d.geminiBase || "/gemini");
 
         if (changed.value) saveSettingsToStorage();
       } catch {
@@ -127,6 +151,8 @@
         lmBase: $("lmBase").value.trim(),
         ollamaBase: $("ollamaBase")?.value?.trim() || "",
         openaiBase: $("openaiBase")?.value?.trim() || "",
+        anthropicBase: $("anthropicBase")?.value?.trim() || "",
+        geminiBase: $("geminiBase")?.value?.trim() || "",
         openaiKey: $("openaiKey")?.value || "",
         anthropicKey: $("anthropicKey")?.value || "",
         geminiKey: $("geminiKey")?.value || "",
@@ -167,6 +193,8 @@
       if (s.lmBase) $("lmBase").value = s.lmBase;
       if (typeof s.ollamaBase === "string" && $("ollamaBase")) $("ollamaBase").value = s.ollamaBase;
       if (typeof s.openaiBase === "string" && $("openaiBase")) $("openaiBase").value = s.openaiBase;
+      if (typeof s.anthropicBase === "string" && $("anthropicBase")) $("anthropicBase").value = s.anthropicBase;
+      if (typeof s.geminiBase === "string" && $("geminiBase")) $("geminiBase").value = s.geminiBase;
       if (typeof s.openaiKey === "string" && $("openaiKey")) $("openaiKey").value = s.openaiKey;
       if (typeof s.anthropicKey === "string" && $("anthropicKey")) $("anthropicKey").value = s.anthropicKey;
       if (typeof s.geminiKey === "string" && $("geminiKey")) $("geminiKey").value = s.geminiKey;
@@ -289,7 +317,7 @@
 
     function bindSettingsPersistence() {
       const ids = [
-        "provider", "lmBase", "ollamaBase", "openaiBase", "openaiKey", "anthropicKey", "geminiKey",
+        "provider", "lmBase", "ollamaBase", "openaiBase", "anthropicBase", "geminiBase", "openaiKey", "anthropicKey", "geminiKey",
         "modelName", "chatModel", "searchUrl", "searchMode", "discoveryCount", "mode", "researchMode", "thinkingMode", "language",
         "enhancePromptLanguage",
         "copilotMode", "fastFollowups", "autoRunDiscovery", "expAgentRelay", "expFastContextFetch", "autoTranslatePrompts", "llmParallel", "searchParallel", "maxOutTokens",

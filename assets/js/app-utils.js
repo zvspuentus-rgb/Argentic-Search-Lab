@@ -213,9 +213,9 @@
       const map = {
         lmstudio: { provider, model, base: $("lmBase")?.value?.trim() || "/lmstudio/v1", apiKey: "" },
         ollama: { provider, model, base: $("ollamaBase")?.value?.trim() || "/ollama/v1", apiKey: "" },
-        openai: { provider, model, base: $("openaiBase")?.value?.trim() || "https://api.openai.com/v1", apiKey: $("openaiKey")?.value || "" },
-        anthropic: { provider, model, base: "https://api.anthropic.com/v1", apiKey: $("anthropicKey")?.value || "" },
-        gemini: { provider, model, base: "https://generativelanguage.googleapis.com/v1beta", apiKey: $("geminiKey")?.value || "" }
+        openai: { provider, model, base: $("openaiBase")?.value?.trim() || "/openai", apiKey: $("openaiKey")?.value || "" },
+        anthropic: { provider, model, base: $("anthropicBase")?.value?.trim() || "/anthropic", apiKey: $("anthropicKey")?.value || "" },
+        gemini: { provider, model, base: $("geminiBase")?.value?.trim() || "/gemini", apiKey: $("geminiKey")?.value || "" }
       };
       return map[provider] || map.lmstudio;
     }
