@@ -120,6 +120,51 @@
       setStatus("Discovery item loaded. Edit the prompt or press send.");
     }
 
+    function printHtmlDocument(html, { statusMessage = "Print dialog opened." } = {}) {
+      const frame = document.createElement("iframe");
+      frame.setAttribute("aria-hidden", "true");
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      frame.style.opacity = "0";
+      document.body.appendChild(frame);
+
+      const cleanup = () => {
+        setTimeout(() => {
+          try { frame.remove(); } catch { }
+        }, 1200);
+      };
+
+      const doc = frame.contentWindow?.document;
+      if (!doc || !frame.contentWindow) {
+        cleanup();
+        setStatus("Print failed in this browser.");
+        return;
+      }
+
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      const runPrint = () => {
+        try {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          setStatus(statusMessage);
+        } catch {
+          setStatus("Print failed in this browser.");
+        } finally {
+          cleanup();
+        }
+      };
+
+      if (doc.readyState === "complete") setTimeout(runPrint, 120);
+      else frame.onload = () => setTimeout(runPrint, 120);
+    }
+
     function exportResearchPdf() {
       const title = normalizeQuery($("userQuery")?.value || "").slice(0, 140) || "Research Report";
       const summary = String($("answer")?.innerText || "No answer yet.").trim();
@@ -182,18 +227,7 @@
 </body>
 </html>`;
 
-      const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
-      if (!w) {
-        setStatus("Popup blocked. Allow popups to export PDF.");
-        return;
-      }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      setTimeout(() => {
-        w.print();
-      }, 250);
+      printHtmlDocument(html, { statusMessage: "Print dialog opened (save as PDF)." });
     }
 
     function exportCurrentSessionJson() {
@@ -267,17 +301,7 @@ pre{white-space:pre-wrap;line-height:1.5;font-size:12px;background:#f7fafc;borde
 <div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div>
 ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${escapeHtml(turn.query || "Untitled query")}</div><div class="t">${escapeHtml(turn.createdAt || "")}</div><pre>${escapeHtml(turn.answerText || "")}</pre></section>`).join("")}
 </body></html>`;
-      const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
-      if (!w) {
-        setStatus("Popup blocked. Allow popups to export PDF.");
-        return;
-      }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      setTimeout(() => w.print(), 250);
-      setStatus("All turns PDF view opened.");
+      printHtmlDocument(html, { statusMessage: "Print dialog opened for all turns (save as PDF)." });
     }
 
     async function shareResearchSummary() {
