@@ -38,6 +38,22 @@ argentic up
 - Pipeline: `../docs/pipeline.svg`
 - MCP flow: `../docs/mcp-flow.svg`
 
+```mermaid
+flowchart LR
+    C["MCP Client"] --> R{"Choose Tool"}
+    R --> Q["search_quick"]
+    R --> D["search_deep"]
+    R --> F["fetch_url_context"]
+
+    Q --> QO["Fast web results"]
+    D --> DO["Deep multi-lane synthesis"]
+    F --> FO["URL/repo-grounded context"]
+
+    QO --> O["Final response"]
+    DO --> O
+    FO --> O
+```
+
 ## LLM Routing
 - `/lmstudio/*` is proxied to `LMSTUDIO_BASE` (default `http://localhost:1234`)
 - `/ollama/*` is proxied to `OLLAMA_BASE` (default `http://localhost:11434`)

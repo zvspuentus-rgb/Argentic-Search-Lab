@@ -45,6 +45,30 @@ flowchart LR
 Tool policy and JSON config examples:
 - [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 
+### MCP Visual Workflow (Tool Branches)
+```mermaid
+flowchart TB
+    A["Client / Agent Request"] --> B{"Intent Router"}
+    B -->|"Fast lookup"| Q["search_quick"]
+    B -->|"Deep research"| D["search_deep"]
+    B -->|"Specific URL inspect"| U["fetch_url_context"]
+
+    Q --> Q1["SearXNG fast query"]
+    Q1 --> Q2["Top results + optional context"]
+    Q2 --> OUT["Grounded answer to user"]
+
+    D --> D1["Multi-query planning"]
+    D1 --> D2["Parallel lanes (general/science/news)"]
+    D2 --> D3["Context merge + dedupe"]
+    D3 --> OUT
+
+    U --> U1{"GitHub URL?"}
+    U1 -->|"Yes"| U2["Repo-aware traversal (index + related files)"]
+    U1 -->|"No"| U3["Single URL clean extract"]
+    U2 --> OUT
+    U3 --> OUT
+```
+
 ## Search + LLM Routing
 - Search endpoint is internal to app runtime, exposed externally at `:8394` and app proxy `/searxng/*`.
 - LLM proxy routes:
