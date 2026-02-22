@@ -273,8 +273,13 @@
     }
 
     function saveSettingsWithToast() {
+      try {
+        if (document.activeElement && typeof document.activeElement.blur === "function") {
+          document.activeElement.blur();
+        }
+      } catch { }
       saveSettingsToStorage();
-      setStatus("Settings saved for next refresh.");
+      setStatus("Settings applied and saved.");
       showMiniToast("Settings saved");
     }
 

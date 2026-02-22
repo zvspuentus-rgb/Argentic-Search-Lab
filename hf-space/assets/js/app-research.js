@@ -563,6 +563,24 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return map[String(code || "").toLowerCase()] || "";
     }
 
+    function getEffectiveMaxOutTokens() {
+      const fromInput = Number($("maxOutTokens")?.value);
+      if (Number.isFinite(fromInput) && fromInput > 0) {
+        return Math.max(256, Math.min(4096, fromInput));
+      }
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const fromSettings = Number(parsed?.maxOutTokens);
+          if (Number.isFinite(fromSettings) && fromSettings > 0) {
+            return Math.max(256, Math.min(4096, fromSettings));
+          }
+        }
+      } catch { }
+      return 1600;
+    }
+
     async function runFastFollowupPipeline(rawQuery) {
       if (state.busy) {
         setStatus("A request is already running...");
@@ -605,7 +623,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const language = $("language").value;
       const thinkingMode = $("thinkingMode").value;
       const streamSynthesis = $("streamSynthesis").checked;
-      const maxOutTokens = Math.max(256, Math.min(4096, Number($("maxOutTokens").value) || 1600));
+      const maxOutTokens = getEffectiveMaxOutTokens();
       const customSystem = $("customSystem").value.trim();
       const fastContextFetch = $("expFastContextFetch")?.checked;
 
@@ -617,9 +635,11 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       state.logs = [];
       state.debug = [];
       state.flow = createFlowState();
+      state.followups = [];
       renderLogs();
       renderFlow();
       renderDebug();
+      renderFollowups();
       addLog("copilot", "Fast follow-up mode: reusing existing context (no deep re-search).", "ok");
       setStatus("Request in progress...");
 
@@ -671,7 +691,23 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         }
         const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
         await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
-        state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 5);
+        try {
+          if ($("copilotBtn")?.checked) {
+            const follow = await followupQuestionsAgent({
+              lmBase,
+              model,
+              userQuery: cleanQuery,
+              answer,
+              language
+            });
+            state.followups = uniqueStrings(follow.questions || []).slice(0, 6);
+          }
+        } catch (err) {
+          addLog("copilot", `Fast follow-up generation failed: ${err.message}`, "warn");
+        }
+        if (!state.followups.length) {
+          state.followups = buildFallbackFollowups(cleanQuery, language).slice(0, 6);
+        }
         renderFollowups();
 
         state.lastUserQuery = cleanQuery;
@@ -1338,7 +1374,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const sourceProfiles = getSelectedSourceProfiles();
       const copilotMode = $("copilotMode").checked;
       const streamSynthesis = $("streamSynthesis").checked;
-      const maxOutTokens = Math.max(256, Math.min(4096, Number($("maxOutTokens").value) || 1600));
+      const maxOutTokens = getEffectiveMaxOutTokens();
       const criticMinScore = Math.max(0, Math.min(100, Number($("criticMinScore").value) || 60));
       const criticAgents = Math.max(1, Math.min(3, Number($("criticAgents").value) || 3));
       const maxAutoLoops = Math.max(0, Math.min(3, Number($("maxAutoLoops").value) || 1));
