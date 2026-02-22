@@ -20,7 +20,6 @@ It runs as a single Node.js service (UI + MCP tools).
 ```bash
 cd node-runtime
 npm install
-npm run setup:search
 ```
 
 ## Run
@@ -33,6 +32,11 @@ npm run start:all
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
 - SearXNG: `http://localhost:8393/search?q=test&format=json`
+
+`start:all` behavior:
+- If SearXNG is not running, it auto-starts it locally.
+- If SearXNG already runs on `localhost:8393`, it reuses it.
+- No manual port input is required for default setup.
 
 ## Optional manual mode
 If you already have an external SearXNG:
