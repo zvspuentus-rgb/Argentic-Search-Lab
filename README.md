@@ -59,14 +59,18 @@ bash ./scripts/bootstrap-node-runtime.sh
 
 Run:
 ```bash
-cd node-runtime
-npm run start:all
+argentic up
 ```
 
 Open:
 - UI: `http://localhost:3093`
 - MCP endpoint: `http://localhost:3093/mcp`
 - SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
+
+CLI:
+- `argentic status`
+- `argentic down`
+- `argentic up` runs in foreground. Press `Ctrl+C` to stop the Node server and cleanup services started by this run.
 
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)

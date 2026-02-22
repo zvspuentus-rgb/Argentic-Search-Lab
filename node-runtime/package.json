@@ -5,9 +5,15 @@
   "description": "Node.js runtime for AppAgent UI + MCP tools",
   "main": "server.js",
   "type": "commonjs",
+  "bin": {
+    "argentic": "./bin/argentic"
+  },
   "scripts": {
     "setup:search": "bash ./scripts/setup-searxng.sh",
     "start:all": "bash ./scripts/start-all.sh",
+    "argentic:up": "argentic up",
+    "argentic:down": "argentic down",
+    "argentic:status": "argentic status",
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js"
   },

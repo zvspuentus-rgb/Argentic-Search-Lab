@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+RUN_DIR="$ROOT_DIR/.run"
+NODE_PID_FILE="$RUN_DIR/node.pid"
+CONTAINER_NAME="${SEARX_CONTAINER_NAME:-appagent-searxng-node}"
+NODE_PORT="${PORT:-3093}"
+SEARX_PORT="${SEARX_PORT:-8393}"
+
+cmd="${1:-up}"
+
+case "$cmd" in
+  up|start)
+    exec "$ROOT_DIR/scripts/start-all.sh"
+    ;;
+  down|stop)
+    if [[ -f "$NODE_PID_FILE" ]]; then
+      pid="$(cat "$NODE_PID_FILE" || true)"
+      if [[ -n "$pid" ]] && kill -0 "$pid" >/dev/null 2>&1; then
+        kill "$pid" >/dev/null 2>&1 || true
+      fi
+      rm -f "$NODE_PID_FILE"
+    else
+      lsof -ti tcp:"$NODE_PORT" | xargs -r kill -9
+    fi
+    if command -v docker >/dev/null 2>&1; then
+      docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    fi
+    echo "[argentic] stopped"
+    ;;
+  status)
+    if curl -fsS "http://localhost:${NODE_PORT}/health" >/dev/null 2>&1; then
+      echo "[argentic] UI/MCP: up (http://localhost:${NODE_PORT})"
+    else
+      echo "[argentic] UI/MCP: down"
+    fi
+
+    if curl -fsS "http://localhost:${SEARX_PORT}/search?q=health&format=json" >/dev/null 2>&1; then
+      echo "[argentic] SearXNG: up (http://localhost:${SEARX_PORT})"
+    else
+      echo "[argentic] SearXNG: down"
+    fi
+    ;;
+  *)
+    echo "Usage: argentic [up|down|status]"
+    exit 1
+    ;;
+esac

@@ -20,11 +20,12 @@ It runs as a single Node.js service (UI + MCP tools).
 ```bash
 cd node-runtime
 npm install
+npm link
 ```
 
 ## Run
 ```bash
-npm run start:all
+argentic up
 ```
 
 ## Access
@@ -37,6 +38,12 @@ npm run start:all
 - If SearXNG is not running, it auto-starts it locally.
 - If SearXNG already runs on `localhost:8393`, it reuses it.
 - No manual port input is required for default setup.
+
+CLI commands:
+- `argentic up`  -> start UI + MCP + Search
+- `argentic status` -> show service status
+- `argentic down` -> stop services started by CLI
+- `argentic up` runs in foreground. Press `Ctrl+C` to stop.
 
 ## Optional manual mode
 If you already have an external SearXNG:

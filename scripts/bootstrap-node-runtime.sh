@@ -21,8 +21,11 @@ cd "$NODE_DIR"
 echo "[bootstrap-node-runtime] npm install"
 npm install
 
+echo "[bootstrap-node-runtime] npm link (install argentic CLI)"
+npm link
+
 echo "[bootstrap-node-runtime] setup local SearXNG"
 npm run setup:search
 
 echo "[bootstrap-node-runtime] done"
-echo "Run: cd node-runtime && npm run start:all"
+echo "Run: argentic up"
