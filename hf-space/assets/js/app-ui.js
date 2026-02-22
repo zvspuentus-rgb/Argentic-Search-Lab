@@ -374,6 +374,17 @@
         .replace(/^\s*\d+\.\s+/gm, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
+      // Drop common wrapper/meta lines some models prepend for prompt-enhancement tasks.
+      out = out
+        .replace(/^\s*research\s*prompt\s*:\s*/im, "")
+        .replace(/^\s*\**\s*research\s*prompt\s*:\s*\**\s*$/gim, "")
+        .replace(/^\s*\**\s*word\s*count\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*target\s*language\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*historical\s*scope\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*constraints\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*key\s*entities\s*:\s*.*$/gim, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
       return clampEnhancedPrompt(out);
     }
 

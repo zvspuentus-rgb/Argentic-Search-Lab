@@ -379,7 +379,29 @@
         .replace(/^\s*\d+\.\s+/gm, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
+      // Drop common wrapper/meta lines some models prepend for prompt-enhancement tasks.
+      out = out
+        .replace(/^\s*research\s*prompt\s*:\s*/im, "")
+        .replace(/^\s*\**\s*research\s*prompt\s*:\s*\**\s*$/gim, "")
+        .replace(/^\s*\**\s*word\s*count\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*target\s*language\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*historical\s*scope\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*constraints\s*:\s*.*$/gim, "")
+        .replace(/^\s*\**\s*key\s*entities\s*:\s*.*$/gim, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
       return clampEnhancedPrompt(out);
+    }
+
+    function filterEnhanceStreamDeltaByLanguage(delta, targetLang = "en") {
+      const raw = String(delta || "");
+      if (!raw) return "";
+      const lang = String(targetLang || "en").toLowerCase();
+      if (lang === "en") {
+        // For English target, hide Hebrew intermediate tokens to prevent "flip" effect mid-stream.
+        return raw.replace(/[\u0590-\u05FF]+/g, " ");
+      }
+      return raw;
     }
 
     function looksLikeClarificationQuestions(text) {
@@ -550,6 +572,7 @@
       try {
         const targetLang = String($("enhancePromptLanguage")?.value || "en").toLowerCase();
         let streamedText = "";
+        let streamedPreviewText = "";
         input.value = "";
         const streamed = await lmChatStream({
           lmBase,
@@ -575,7 +598,8 @@
           },
           onText: (delta) => {
             streamedText += String(delta || "");
-            input.value = normalizeEnhancedPromptForTextarea(streamedText);
+            streamedPreviewText += filterEnhanceStreamDeltaByLanguage(delta, targetLang);
+            input.value = normalizeEnhancedPromptForTextarea(streamedPreviewText);
             input.style.height = "auto";
             input.style.height = (input.scrollHeight) + "px";
             updateInpState();
