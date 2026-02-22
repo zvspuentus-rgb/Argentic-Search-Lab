@@ -1,67 +1,95 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="720" viewBox="0 0 1240 720" role="img" aria-labelledby="title desc">
-  <title id="title">Argentic Search Pipeline</title>
-  <desc id="desc">Quick and Deep pipeline overview</desc>
+<svg width="1400" height="560" viewBox="0 0 1400 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Argentic Search Lab pipeline">
   <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0b1626"/>
+      <stop offset="100%" stop-color="#101a2f"/>
+    </linearGradient>
+    <linearGradient id="quick" x1="0" x2="1">
+      <stop offset="0%" stop-color="#123b31"/>
+      <stop offset="100%" stop-color="#1d5a4a"/>
+    </linearGradient>
+    <linearGradient id="deep" x1="0" x2="1">
+      <stop offset="0%" stop-color="#472311"/>
+      <stop offset="100%" stop-color="#6a3418"/>
+    </linearGradient>
+    <linearGradient id="entry" x1="0" x2="1">
+      <stop offset="0%" stop-color="#14314a"/>
+      <stop offset="100%" stop-color="#1e4a72"/>
+    </linearGradient>
+    <linearGradient id="out" x1="0" x2="1">
+      <stop offset="0%" stop-color="#2f2052"/>
+      <stop offset="100%" stop-color="#46306f"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
     <style>
-      .t { font-family: Segoe UI, Arial, sans-serif; fill: #eaf4ff; }
-      .small { font-size: 16px; }
-      .mid { font-size: 20px; font-weight: 600; }
-      .big { font-size: 28px; font-weight: 700; }
+      .title { font: 700 28px Inter, Segoe UI, Arial, sans-serif; fill: #e7f1ff; }
+      .subtitle { font: 500 14px Inter, Segoe UI, Arial, sans-serif; fill: #9eb6d6; }
+      .section { font: 700 16px Inter, Segoe UI, Arial, sans-serif; fill: #dbe9ff; }
+      .node { font: 600 14px Inter, Segoe UI, Arial, sans-serif; fill: #edf6ff; }
+      .arrow { stroke: #8fb7df; stroke-width: 2.2; fill: none; marker-end: url(#m); }
+      .ghost { opacity: .2; }
     </style>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9dd0ff"/>
+    <marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#8fb7df"/>
     </marker>
   </defs>
 
-  <rect width="1240" height="720" rx="18" fill="#09131a"/>
-  <text class="t big" x="48" y="58">Argentic Search Pipeline</text>
-  <text class="t small" x="48" y="88" opacity="0.9">Two execution modes with shared grounding and citations</text>
+  <rect width="1400" height="560" fill="url(#bg)"/>
+  <circle cx="180" cy="120" r="120" fill="#3e6aa0" class="ghost" filter="url(#soft)"/>
+  <circle cx="1220" cy="450" r="140" fill="#4f3c8f" class="ghost" filter="url(#soft)"/>
 
-  <rect x="48" y="128" width="220" height="76" rx="12" fill="#13364b" stroke="#5fa8ff"/>
-  <text class="t mid" x="78" y="174">User Query</text>
+  <text x="48" y="54" class="title">Argentic Search Pipeline</text>
+  <text x="48" y="80" class="subtitle">Auto mode routes to Quick or Deep research with grounded synthesis</text>
 
-  <rect x="320" y="128" width="260" height="76" rx="12" fill="#23351d" stroke="#8bdc65"/>
-  <text class="t mid" x="355" y="174">Mode Resolver (Auto)</text>
+  <rect x="48" y="124" rx="14" ry="14" width="190" height="70" fill="url(#entry)" stroke="#5fa8ff" stroke-width="1.6"/>
+  <text x="76" y="166" class="node">User Query</text>
 
-  <line x1="268" y1="166" x2="320" y2="166" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="278" y="124" rx="14" ry="14" width="210" height="70" fill="url(#entry)" stroke="#5fa8ff" stroke-width="1.6"/>
+  <text x="307" y="166" class="node">Mode Resolver</text>
 
-  <text class="t small" x="114" y="272">Quick Track</text>
-  <rect x="48" y="288" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
-  <text class="t small" x="88" y="328">Quick Planner</text>
-  <rect x="48" y="372" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
-  <text class="t small" x="92" y="412">Targeted Search</text>
-  <rect x="48" y="456" width="220" height="66" rx="10" fill="#153a2e" stroke="#43d3a8"/>
-  <text class="t small" x="86" y="496">Fast Synthesis</text>
+  <text x="548" y="114" class="section">Quick Lane</text>
+  <rect x="548" y="132" rx="12" ry="12" width="170" height="52" fill="url(#quick)" stroke="#43d3a8" stroke-width="1.4"/>
+  <text x="586" y="163" class="node">Quick Planner</text>
+  <rect x="742" y="132" rx="12" ry="12" width="170" height="52" fill="url(#quick)" stroke="#43d3a8" stroke-width="1.4"/>
+  <text x="772" y="163" class="node">Fast Search</text>
+  <rect x="936" y="132" rx="12" ry="12" width="190" height="52" fill="url(#quick)" stroke="#43d3a8" stroke-width="1.4"/>
+  <text x="966" y="163" class="node">Quick Synthesis</text>
 
-  <line x1="158" y1="354" x2="158" y2="372" stroke="#7de0b9" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="158" y1="438" x2="158" y2="456" stroke="#7de0b9" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="450" y1="204" x2="158" y2="288" stroke="#9dd0ff" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="548" y="262" class="section">Deep Lane</text>
+  <rect x="548" y="280" rx="12" ry="12" width="140" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="576" y="311" class="node">Analyzer</text>
+  <rect x="704" y="280" rx="12" ry="12" width="130" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="744" y="311" class="node">Planner</text>
+  <rect x="848" y="280" rx="12" ry="12" width="130" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="888" y="311" class="node">Refiner</text>
+  <rect x="992" y="280" rx="12" ry="12" width="170" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="1019" y="311" class="node">Multi-lane Search</text>
 
-  <text class="t small" x="760" y="272">Deep Track</text>
-  <rect x="650" y="288" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="722" y="323">Analyzer</text>
-  <rect x="650" y="358" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="732" y="393">Planner</text>
-  <rect x="650" y="428" width="220" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="734" y="463">Refiner</text>
-  <rect x="910" y="288" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="950" y="323">Multi-lane Search</text>
-  <rect x="910" y="358" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="1000" y="393">Critic</text>
-  <rect x="910" y="428" width="260" height="58" rx="10" fill="#3a1d12" stroke="#ffb067"/>
-  <text class="t small" x="952" y="463">Synthesis + Citations</text>
+  <rect x="744" y="360" rx="12" ry="12" width="130" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="785" y="391" class="node">Critic</text>
+  <rect x="890" y="360" rx="12" ry="12" width="200" height="52" fill="url(#deep)" stroke="#ffb067" stroke-width="1.4"/>
+  <text x="926" y="391" class="node">Evidence Synthesis</text>
 
-  <line x1="760" y1="346" x2="760" y2="358" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="760" y1="416" x2="760" y2="428" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="870" y1="317" x2="910" y2="317" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="1040" y1="346" x2="1040" y2="358" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="1040" y1="416" x2="1040" y2="428" stroke="#ffc58f" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="450" y1="204" x2="760" y2="288" stroke="#9dd0ff" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <rect x="1168" y="216" rx="14" ry="14" width="180" height="74" fill="url(#out)" stroke="#b690ff" stroke-width="1.6"/>
+  <text x="1200" y="260" class="node">Answer +</text>
+  <text x="1193" y="280" class="node">Follow-ups</text>
 
-  <rect x="360" y="588" width="520" height="80" rx="12" fill="#2f2248" stroke="#b690ff"/>
-  <text class="t mid" x="454" y="622">Final Answer + Sources + Follow-ups</text>
-  <text class="t small" x="426" y="648">Grounded output from selected mode and context policy</text>
+  <path class="arrow" d="M238 159 L278 159"/>
+  <path class="arrow" d="M488 159 L548 159"/>
+  <path class="arrow" d="M718 159 L742 159"/>
+  <path class="arrow" d="M912 159 L936 159"/>
+  <path class="arrow" d="M1126 159 C1155 159 1160 205 1168 230"/>
 
-  <line x1="158" y1="522" x2="520" y2="588" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="1040" y1="486" x2="720" y2="588" stroke="#9dd0ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M488 159 C520 159 520 306 548 306"/>
+  <path class="arrow" d="M688 306 L704 306"/>
+  <path class="arrow" d="M834 306 L848 306"/>
+  <path class="arrow" d="M978 306 L992 306"/>
+  <path class="arrow" d="M1078 332 C1080 350 1035 360 990 360"/>
+  <path class="arrow" d="M874 386 L890 386"/>
+  <path class="arrow" d="M1090 386 C1145 386 1160 295 1168 270"/>
+
+  <text x="517" y="150" class="subtitle">auto → quick</text>
+  <text x="516" y="296" class="subtitle">auto → deep</text>
 </svg>
