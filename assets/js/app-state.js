@@ -47,32 +47,45 @@
         v.includes("app:") ||
         v.includes("172.") ||
         v.includes("localhost:10387") ||
-        v.includes("localhost:8393")
+        v.includes("localhost:8393") ||
+        v.startsWith("/searxng/") ||
+        v.startsWith("/lmstudio/") ||
+        v.startsWith("/ollama/")
       );
+    }
+
+    function nodeExternalDefaultUrls() {
+      const host = (window.location.hostname || "localhost").trim() || "localhost";
+      return {
+        searchUrl: `http://${host}:8394/search`,
+        lmBase: `http://${host}:1234/v1`,
+        ollamaBase: `http://${host}:11434/v1`
+      };
     }
 
     function normalizeNodeRuntimeEndpoints(snapshot) {
       const s = snapshot || {};
       if (window.location.protocol === "file:") return s;
+      const ext = nodeExternalDefaultUrls();
       if ($("searchUrl")) {
         const cur = String(s.searchUrl || $("searchUrl").value || "").trim();
         if (!cur || isDockerInternalLike(cur)) {
-          s.searchUrl = "/searxng/search";
-          $("searchUrl").value = "/searxng/search";
+          s.searchUrl = ext.searchUrl;
+          $("searchUrl").value = ext.searchUrl;
         }
       }
       if ($("lmBase")) {
         const cur = String(s.lmBase || $("lmBase").value || "").trim();
         if (!cur || isDockerInternalLike(cur)) {
-          s.lmBase = "/lmstudio/v1";
-          $("lmBase").value = "/lmstudio/v1";
+          s.lmBase = ext.lmBase;
+          $("lmBase").value = ext.lmBase;
         }
       }
       if ($("ollamaBase")) {
         const cur = String(s.ollamaBase || $("ollamaBase").value || "").trim();
         if (!cur || isDockerInternalLike(cur)) {
-          s.ollamaBase = "/ollama/v1";
-          $("ollamaBase").value = "/ollama/v1";
+          s.ollamaBase = ext.ollamaBase;
+          $("ollamaBase").value = ext.ollamaBase;
         }
       }
       return s;
@@ -97,9 +110,10 @@
           }
         };
 
-        setIfDocker("searchUrl", d.searchUrl || "/searxng/search");
-        setIfDocker("lmBase", d.lmBase || "/lmstudio/v1");
-        setIfDocker("ollamaBase", d.ollamaBase || "/ollama/v1");
+        const ext = nodeExternalDefaultUrls();
+        setIfDocker("searchUrl", d.searchUrl || ext.searchUrl);
+        setIfDocker("lmBase", d.lmBase || ext.lmBase);
+        setIfDocker("ollamaBase", d.ollamaBase || ext.ollamaBase);
 
         if (changed.value) saveSettingsToStorage();
       } catch {

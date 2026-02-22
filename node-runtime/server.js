@@ -359,15 +359,20 @@ app.get('/health', async (req, res) => {
 });
 
 app.get('/runtime/config', (req, res) => {
+  const ensureV1 = (base) => {
+    const b = String(base || '').replace(/\/$/, '');
+    return /\/v1$/i.test(b) ? b : `${b}/v1`;
+  };
+  const searchUrl = `${SEARX_BASE.replace(/\/$/, '')}/search`;
   res.json({
     ok: true,
     service: 'appagent-node',
     ui_base: '/',
     defaults: {
       provider: 'lmstudio',
-      searchUrl: '/searxng/search',
-      lmBase: '/lmstudio/v1',
-      ollamaBase: '/ollama/v1'
+      searchUrl,
+      lmBase: ensureV1(LMSTUDIO_BASE),
+      ollamaBase: ensureV1(OLLAMA_BASE)
     },
     upstream: {
       searx: SEARX_BASE,
