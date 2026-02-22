@@ -1063,6 +1063,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         const streamed = await lmChatStream({
           lmBase,
           payload: payloadStream,
+          streamTag: "synthesis",
           onText: (txt) => {
             if (typeof onStreamText === "function") onStreamText(txt);
           }

@@ -343,13 +343,16 @@
       }, { scope, label: `${runtime.provider} chat/completions` });
     }
 
-    async function lmChatStream({ lmBase, payload, onText }) {
+    async function lmChatStream({ lmBase, payload, onText, streamTag = "agent" }) {
       const runtime = getProviderRuntime();
       const payloadWithCtx = withRuntimeDateContext(payload);
       if (runtime.provider === "anthropic" || runtime.provider === "gemini") {
         const oneShot = await lmChat({ lmBase, payload: payloadWithCtx });
         const content = String(oneShot?.choices?.[0]?.message?.content || "");
         if (typeof onText === "function") onText(content);
+        if (typeof window !== "undefined" && typeof window.pushAgentStreamDelta === "function") {
+          window.pushAgentStreamDelta(streamTag, content.slice(0, 220), "content");
+        }
         return { content, reasoning: "" };
       }
 
@@ -395,8 +398,16 @@
               if (delta) {
                 full += delta;
                 if (typeof onText === "function") onText(full);
+                if (typeof window !== "undefined" && typeof window.pushAgentStreamDelta === "function") {
+                  window.pushAgentStreamDelta(streamTag, delta, "content");
+                }
               }
-              if (deltaReasoning) reasoning += String(deltaReasoning);
+              if (deltaReasoning) {
+                reasoning += String(deltaReasoning);
+                if (typeof window !== "undefined" && typeof window.pushAgentStreamDelta === "function") {
+                  window.pushAgentStreamDelta(streamTag, String(deltaReasoning), "reasoning");
+                }
+              }
             } catch { }
           }
         }
@@ -466,7 +477,8 @@
         }
       };
 
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "planner" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("planner", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({
@@ -511,7 +523,8 @@
           json_schema: { name: "query_profile", strict: true, schema }
         }
       };
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "analyzer" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("analyzer", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({
@@ -569,7 +582,8 @@
         }
       };
 
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "refiner" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("refiner", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({
@@ -671,7 +685,8 @@
         }
       };
 
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "critic" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("critic", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({
@@ -843,7 +858,8 @@
         }
       };
 
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "source-selector" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("source-selector", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({
@@ -897,7 +913,8 @@
           json_schema: { name: "followup_output", strict: true, schema }
         }
       };
-      const out = await lmChat({ lmBase, payload });
+      const streamed = await lmChatStream({ lmBase, payload, streamTag: "followup" });
+      const out = { choices: [{ message: { content: streamed.content, reasoning_content: streamed.reasoning } }] };
       captureModelThinking("followup", out);
       const content = out?.choices?.[0]?.message?.content || "";
       const parsed = await parseContentAsJsonSmart({

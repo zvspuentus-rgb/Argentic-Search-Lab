@@ -43,6 +43,7 @@
       runningPreview: false,
       runningPreviewMode: "deep",
       matrixTicker: null,
+      liveStageStreams: {},
       centerOverlayVisible: false,
       turns: [],
       mediaObservers: {},
@@ -215,6 +216,7 @@
     function setBusy(on) {
       state.busy = on;
       state.busySince = on ? Date.now() : 0;
+      if (on) state.liveStageStreams = {};
       const searchBox = $("searchBox");
       if (searchBox) searchBox.classList.toggle("is-busy", !!on);
       const searchContainer = $("searchContainer");
@@ -354,6 +356,25 @@
       return `[${tag}] ${text}`;
     }
 
+    function pushAgentStreamDelta(stage, delta, kind = "content") {
+      const stageKey = String(stage || "agent").toLowerCase().slice(0, 24);
+      const chunk = String(delta || "").replace(/\s+/g, " ").trim();
+      if (!chunk) return;
+      if (!state.liveStageStreams || typeof state.liveStageStreams !== "object") state.liveStageStreams = {};
+      const current = state.liveStageStreams[stageKey] || { stage: stageKey, text: "", updatedAt: 0 };
+      const prefix = kind === "reasoning" ? "⟡ " : "";
+      const merged = `${current.text}${prefix}${chunk}`.slice(-260);
+      state.liveStageStreams[stageKey] = {
+        stage: stageKey,
+        text: merged,
+        updatedAt: Date.now()
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      window.pushAgentStreamDelta = pushAgentStreamDelta;
+    }
+
     function renderAgentStreamMatrixTick() {
       const root = $("agentStreamMatrix");
       const lineA = $("agentStreamLineA");
@@ -403,9 +424,14 @@
         .map((x) => compactThinkingLine(x, "THINK"))
         .filter(Boolean)
         .slice(0, 10);
+      const streamLines = Object.values(state.liveStageStreams || {})
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .slice(0, 10)
+        .map((x) => `[${String(x.stage || "agent").toUpperCase().slice(0, 14)}] ${String(x.text || "").slice(0, 120)}`);
       const liveLines = [
         lineAText || `[${active}] ${randomMatrixChunk(22)}`,
         lineBText || `[TRACE] ${randomMatrixChunk(22)}`,
+        ...streamLines,
         ...thinkingLines,
         ...state.logs.slice(0, 10).map((x) => compactLogLine(x, "TRACE"))
       ].slice(0, 12);
@@ -417,8 +443,10 @@
         })
         .slice(0, 12)
         .map((x) => compactLogLine(x, "PACK"));
-      const thinkingPackets = thinkingLines.slice(0, 8);
+      const thinkingPackets = thinkingLines.slice(0, 6);
+      const streamPackets = streamLines.slice(0, 6);
       stream2.innerHTML = packetLines
+        .concat(streamPackets)
         .concat(thinkingPackets)
         .concat(packetLines.length ? [] : [`[${active}] ${randomMatrixChunk(26)}`])
         .slice(0, 12)
@@ -449,6 +477,7 @@
       state.runningPreview = !!on;
       state.runningPreviewMode = mode || "deep";
       if (!state.runningPreview) {
+        state.liveStageStreams = {};
         const analysisRoot = $("analysisLiveFx");
         if (analysisRoot) analysisRoot.classList.remove("active");
       } else {
