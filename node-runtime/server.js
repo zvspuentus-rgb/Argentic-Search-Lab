@@ -6,6 +6,8 @@ app.use(express.json({ limit: '2mb' }));
 
 const PORT = Number(process.env.PORT || 3093);
 const SEARX_BASE = (process.env.SEARX_BASE || 'http://localhost:8393').replace(/\/$/, '');
+const LMSTUDIO_BASE = (process.env.LMSTUDIO_BASE || 'http://localhost:1234').replace(/\/$/, '');
+const OLLAMA_BASE = (process.env.OLLAMA_BASE || 'http://localhost:11434').replace(/\/$/, '');
 const APP_ROOT = path.resolve(__dirname, '..');
 const URL_RX = /(https?:\/\/[^\s<>'"`]+)/gi;
 
@@ -226,6 +228,43 @@ function mcpToolsPayload() {
   ];
 }
 
+async function proxyRequest(req, res, base, stripPrefix) {
+  try {
+    const original = req.originalUrl || req.url || '/';
+    const pathWithQuery = original.startsWith(stripPrefix) ? original.slice(stripPrefix.length) || '/' : original;
+    const target = `${base}${pathWithQuery.startsWith('/') ? '' : '/'}${pathWithQuery}`;
+    const headers = { ...req.headers };
+    delete headers.host;
+    delete headers['content-length'];
+    delete headers.connection;
+    delete headers['accept-encoding'];
+
+    let body;
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      body = JSON.stringify(req.body || {});
+      headers['content-type'] = headers['content-type'] || 'application/json';
+    }
+
+    const upstream = await fetch(target, {
+      method: req.method,
+      headers,
+      body,
+      duplex: 'half'
+    });
+
+    res.status(upstream.status);
+    upstream.headers.forEach((value, key) => {
+      if (key.toLowerCase() === 'content-encoding') return;
+      if (key.toLowerCase() === 'transfer-encoding') return;
+      res.setHeader(key, value);
+    });
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (err) {
+    res.status(502).json({ error: 'proxy_failed', message: String(err?.message || err) });
+  }
+}
+
 async function toolFetchUrlContext(args = {}) {
   const url = normalizeUrl(args.url || '');
   if (!url) throw Object.assign(new Error('valid url is required'), { status: 400 });
@@ -336,6 +375,14 @@ app.post('/tools/search_quick', async (req, res) => {
 app.post('/tools/search_deep', async (req, res) => {
   try { res.json(await toolSearchDeep(req.body || {})); }
   catch (err) { res.status(Number(err?.status || 500)).json({ error: String(err?.message || err) }); }
+});
+
+app.all('/lmstudio/*', async (req, res) => {
+  await proxyRequest(req, res, LMSTUDIO_BASE, '/lmstudio');
+});
+
+app.all('/ollama/*', async (req, res) => {
+  await proxyRequest(req, res, OLLAMA_BASE, '/ollama');
 });
 
 app.post('/mcp', async (req, res) => {
