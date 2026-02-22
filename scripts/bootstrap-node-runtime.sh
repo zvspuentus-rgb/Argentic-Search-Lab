@@ -12,6 +12,14 @@ if ! command -v npm >/dev/null 2>&1; then
   echo "[bootstrap-node-runtime] npm is required."
   exit 1
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[bootstrap-node-runtime] Python 3.10-3.13 is required."
+  exit 1
+fi
+if ! command -v git >/dev/null 2>&1; then
+  echo "[bootstrap-node-runtime] git is required."
+  exit 1
+fi
 
 cd "$NODE_DIR"
 echo "[bootstrap-node-runtime] npm install"
@@ -23,10 +31,11 @@ npm link
 echo "[bootstrap-node-runtime] setup local SearXNG (python venv)"
 if ! npm run setup:search; then
   echo "[bootstrap-node-runtime] setup failed."
-  echo "[bootstrap-node-runtime] make sure Python 3.10-3.13 is installed, then run:"
+  echo "[bootstrap-node-runtime] make sure Python 3.10-3.13 + python3-venv are installed, then run:"
   echo "  cd node-runtime && npm run setup:search"
   exit 1
 fi
 
 echo "[bootstrap-node-runtime] done"
 echo "Run: argentic up"
+echo "If command not found, run: cd node-runtime && npx argentic up"

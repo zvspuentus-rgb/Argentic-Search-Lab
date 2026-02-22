@@ -40,6 +40,31 @@ pick_python() {
   return 1
 }
 
+install_venv_pkg_debian() {
+  local py_minor pkg cmd
+  py_minor="$("$PYTHON" -c 'import sys; print(sys.version_info.minor)')"
+  if [ -f /etc/debian_version ] && command -v apt-get >/dev/null 2>&1; then
+    if [ "$(id -u)" -eq 0 ]; then
+      cmd="apt-get"
+    elif command -v sudo >/dev/null 2>&1; then
+      cmd="sudo apt-get"
+    else
+      echo "[setup-searxng] missing sudo/root for apt install."
+      return 1
+    fi
+
+    for pkg in "python3.${py_minor}-venv" "python3-venv"; do
+      if apt-cache show "$pkg" >/dev/null 2>&1; then
+        echo "[setup-searxng] installing missing package: $pkg"
+        $cmd update -y >/dev/null
+        $cmd install -y "$pkg" >/dev/null
+        return 0
+      fi
+    done
+  fi
+  return 1
+}
+
 PYTHON="$(pick_python || true)"
 if [ -z "$PYTHON" ]; then
   echo "[setup-searxng] Python 3.10-3.13 is required (not found)."
@@ -49,7 +74,28 @@ fi
 
 if [ ! -d "$VENV_DIR" ]; then
   echo "[setup-searxng] creating venv with $PYTHON"
-  "$PYTHON" -m venv "$VENV_DIR"
+  if ! "$PYTHON" -m venv "$VENV_DIR" 2>"$RUN_DIR/.venv.err"; then
+    if grep -Eiq 'ensurepip is not available|No module named venv|venv package' "$RUN_DIR/.venv.err"; then
+      echo "[setup-searxng] python venv components are missing."
+      if install_venv_pkg_debian; then
+        echo "[setup-searxng] retrying venv creation"
+        "$PYTHON" -m venv "$VENV_DIR"
+      else
+        echo "[setup-searxng] install failed. Run one of:"
+        echo "  sudo apt install python3-venv"
+        echo "  sudo apt install python3.$("$PYTHON" -c 'import sys; print(sys.version_info.minor)')-venv"
+        exit 1
+      fi
+    else
+      cat "$RUN_DIR/.venv.err"
+      exit 1
+    fi
+  fi
+fi
+
+if [ ! -f "$VENV_DIR/bin/activate" ]; then
+  echo "[setup-searxng] venv activation script missing: $VENV_DIR/bin/activate"
+  exit 1
 fi
 
 # shellcheck disable=SC1091
