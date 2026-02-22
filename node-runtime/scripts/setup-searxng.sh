@@ -25,16 +25,42 @@ pick_free_port() {
 }
 
 pick_python() {
+  local resolved
+
   if [ -n "${PYTHON_BIN:-}" ] && command -v "$PYTHON_BIN" >/dev/null 2>&1; then
-    echo "$PYTHON_BIN"; return 0
+    resolved="$(command -v "$PYTHON_BIN")"
+    if echo "$resolved" | grep -q '/data/data/com.termux/'; then
+      if [ -x "/usr/bin/${PYTHON_BIN}" ]; then
+        echo "/usr/bin/${PYTHON_BIN}"; return 0
+      fi
+      echo "[setup-searxng] PYTHON_BIN points to Termux python: $resolved" >&2
+      echo "[setup-searxng] use distro python, e.g. export PYTHON_BIN=/usr/bin/python3.11" >&2
+      return 1
+    fi
+    echo "$resolved"; return 0
   fi
-  # Prefer 3.12/3.11 over 3.13 for better binary-wheel compatibility.
-  for py in python3.12 python3.11 python3.10 python3.13 python3; do
-    if command -v "$py" >/dev/null 2>&1; then
+
+  for py in /usr/bin/python3.12 /usr/bin/python3.11 /usr/bin/python3.10 /usr/bin/python3.13 /usr/bin/python3; do
+    if [ -x "$py" ]; then
       ver="$($py -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
       major="${ver%%.*}"; minor="${ver##*.}"
       if [ "$major" = "3" ] && [ "$minor" -ge 10 ] && [ "$minor" -le 13 ]; then
         echo "$py"; return 0
+      fi
+    fi
+  fi
+
+  # Prefer 3.12/3.11 over 3.13 for better binary-wheel compatibility.
+  for py in python3.12 python3.11 python3.10 python3.13 python3; do
+    if command -v "$py" >/dev/null 2>&1; then
+      resolved="$(command -v "$py")"
+      if echo "$resolved" | grep -q '/data/data/com.termux/'; then
+        continue
+      fi
+      ver="$($py -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+      major="${ver%%.*}"; minor="${ver##*.}"
+      if [ "$major" = "3" ] && [ "$minor" -ge 10 ] && [ "$minor" -le 13 ]; then
+        echo "$resolved"; return 0
       fi
     fi
   done
