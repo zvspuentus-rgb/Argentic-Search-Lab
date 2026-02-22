@@ -229,9 +229,12 @@
         const u = new URL(base);
         const host = String(window.location.hostname || "").toLowerCase();
         const isLocalHost = ["localhost", "127.0.0.1", host].filter(Boolean).includes(u.hostname.toLowerCase());
-        if (!isLocalHost) return base;
-        if (provider === "lmstudio" && String(u.port || "") === "1234") return "/lmstudio/v1";
-        if (provider === "ollama" && String(u.port || "") === "11434") return "/ollama/v1";
+        if (provider === "lmstudio" && isLocalHost && String(u.port || "") === "1234") return "/lmstudio/v1";
+        if (provider === "ollama" && isLocalHost && String(u.port || "") === "11434") return "/ollama/v1";
+        if (provider === "openai" && /(^|\.)api\.openai\.com$/i.test(u.hostname)) return "/openai";
+        if (provider === "anthropic" && /(^|\.)api\.anthropic\.com$/i.test(u.hostname)) return "/anthropic";
+        if (provider === "gemini" && /(^|\.)generativelanguage\.googleapis\.com$/i.test(u.hostname)) return "/gemini";
+        if (!isLocalHost && ["/openai", "/anthropic", "/gemini"].includes(base)) return base;
       } catch {
         // relative urls stay as is
       }
@@ -277,7 +280,8 @@
       }
 
       if (provider === "ollama") {
-        const raw = await fetchJson(`${base}/api/tags`, {}, { scope: "health", label: "Ollama tags" });
+        const tagsBase = String(base).replace(/\/v1$/i, "");
+        const raw = await fetchJson(`${tagsBase}/api/tags`, {}, { scope: "health", label: "Ollama tags" });
         return uniqueStrings((raw?.models || []).map((m) => m?.name || m?.model).filter(Boolean));
       }
 
