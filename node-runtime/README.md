@@ -14,23 +14,31 @@ It runs as a single Node.js service (UI + MCP tools).
 
 ## Requirements
 - Node.js 20+
-- A running SearXNG endpoint (JSON enabled)
+- Docker (for automatic local SearXNG setup in Node mode)
 
 ## Install
 ```bash
 cd node-runtime
 npm install
+npm run setup:search
 ```
 
 ## Run
 ```bash
-SEARX_BASE=http://localhost:8393 PORT=3093 npm start
+npm run start:all
 ```
 
 ## Access
 - Web UI: `http://localhost:3093`
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
+- SearXNG: `http://localhost:8393/search?q=test&format=json`
+
+## Optional manual mode
+If you already have an external SearXNG:
+```bash
+SEARX_BASE=http://your-searx-host:8080 PORT=3093 npm start
+```
 
 ## MCP client example
 ```json
