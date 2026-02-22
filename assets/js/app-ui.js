@@ -361,6 +361,60 @@
       return out.replace(/\s+/g, " ").trim();
     }
 
+    function looksLikeClarificationQuestions(text) {
+      const src = String(text || "").trim();
+      if (!src) return false;
+      const qCount = (src.match(/\?/g) || []).length;
+      if (qCount >= 2) return true;
+      if (/^\s*(?:1\.|2\.|3\.)/.test(src) && qCount >= 1) return true;
+      if (/\b(please provide|provide the following|would you like|do you want|can you share)\b/i.test(src)) return true;
+      if (/(?:^|\s)(?:האם|אנא ספק|אנא הזן|מהו|מהם)\b/.test(src)) return true;
+      return false;
+    }
+
+    async function forceExecutablePrompt({
+      lmBase,
+      model,
+      draftText,
+      candidateText,
+      targetLang
+    }) {
+      const lang = String(targetLang || "en").toLowerCase();
+      const out = await lmChat({
+        lmBase,
+        payload: {
+          model,
+          temperature: 0.1,
+          max_tokens: 420,
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are Prompt Compiler.",
+                "Return ONE final executable research prompt only.",
+                "Hard rule: DO NOT ask user follow-up questions.",
+                "If details are missing, infer reasonable defaults and state assumptions briefly inside the prompt.",
+                "Keep it concise and high-signal (max 220 words)."
+              ].join(" ")
+            },
+            {
+              role: "user",
+              content: [
+                `Original user draft: ${draftText}`,
+                "",
+                `Candidate prompt: ${candidateText}`,
+                "",
+                lang === "auto"
+                  ? "Output language: same as original user draft."
+                  : `Output language: ${labelForLanguageCode(lang)}.`
+              ].join("\n")
+            }
+          ]
+        }
+      });
+      return clampEnhancedPrompt(out?.choices?.[0]?.message?.content || candidateText);
+    }
+
     async function forcePromptLanguage({
       lmBase,
       model,
@@ -395,7 +449,7 @@
           messages: [
             {
               role: "system",
-              content: `${directive} Preserve intent, constraints, and key entities. Keep it compact (maximum 220 words). Return only the final prompt text.`
+              content: `${directive} Preserve intent, constraints, and key entities. Hard rule: return one final executable prompt, do not ask the user follow-up questions, and do not return questionnaires/checklists for user input. If details are missing, infer reasonable defaults. Keep it compact (maximum 220 words). Return only the final prompt text.`
             },
             {
               role: "user",
@@ -408,6 +462,15 @@
       });
       const forced = normalizeQuery(out?.choices?.[0]?.message?.content || "");
       if (!forced) return content;
+      if (looksLikeClarificationQuestions(forced)) {
+        return await forceExecutablePrompt({
+          lmBase,
+          model,
+          draftText,
+          candidateText: forced,
+          targetLang: lang
+        });
+      }
 
       if (lang === "auto" && autoLikeHebrew && !looksMostlyHebrew(forced)) {
         const retry = await lmChat({
@@ -469,13 +532,29 @@
             messages: [
               {
                 role: "system",
-                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent, constraints, dates, and key entities. Keep it compact (maximum 220 words). Return only the improved prompt text."
+                content: [
+                  "Rewrite the user draft into one concise, high-quality research prompt in English.",
+                  "Preserve intent, constraints, dates, and key entities.",
+                  "Hard rule: do NOT ask user follow-up questions.",
+                  "Do NOT output questionnaires or forms for user input.",
+                  "If details are missing, infer reasonable defaults and include assumptions briefly.",
+                  "Keep it compact (maximum 220 words). Return only the improved prompt text."
+                ].join(" ")
               },
               { role: "user", content: draft }
             ]
           }
         });
-        const improvedEnglish = clampEnhancedPrompt(out?.choices?.[0]?.message?.content || "");
+        let improvedEnglish = clampEnhancedPrompt(out?.choices?.[0]?.message?.content || "");
+        if (looksLikeClarificationQuestions(improvedEnglish)) {
+          improvedEnglish = await forceExecutablePrompt({
+            lmBase,
+            model,
+            draftText: draft,
+            candidateText: improvedEnglish,
+            targetLang: "en"
+          });
+        }
         const improved = await forcePromptLanguage({
           lmBase,
           model,
