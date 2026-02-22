@@ -40,7 +40,7 @@ pick_python() {
     echo "$resolved"; return 0
   fi
 
-  for py in /usr/bin/python3.12 /usr/bin/python3.11 /usr/bin/python3.10 /usr/bin/python3.13 /usr/bin/python3; do
+  for py in /usr/bin/python3.13 /usr/bin/python3.12 /usr/bin/python3.11 /usr/bin/python3.10 /usr/bin/python3; do
     if [ -x "$py" ]; then
       ver="$($py -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
       major="${ver%%.*}"; minor="${ver##*.}"
@@ -50,8 +50,8 @@ pick_python() {
     fi
   done
 
-  # Prefer 3.12/3.11 over 3.13 for better binary-wheel compatibility.
-  for py in python3.12 python3.11 python3.10 python3.13 python3; do
+  # Prefer 3.13 by default, then 3.12/3.11.
+  for py in python3.13 python3.12 python3.11 python3.10 python3; do
     if command -v "$py" >/dev/null 2>&1; then
       resolved="$(command -v "$py")"
       if echo "$resolved" | grep -q '/data/data/com.termux/'; then
@@ -159,8 +159,8 @@ if [ -f "$SEARX_DIR/requirements.txt" ]; then
   python -m pip install -q -r "$SEARX_DIR/requirements.txt"
 fi
 
-echo "[setup-searxng] installing searxng into venv"
-python -m pip install -q -e "$SEARX_DIR"
+echo "[setup-searxng] installing searxng into venv (editable, no build isolation)"
+python -m pip install -q -e "$SEARX_DIR" --no-build-isolation
 
 PORT="$DEFAULT_PORT"
 if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
