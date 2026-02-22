@@ -45,6 +45,7 @@
       matrixTicker: null,
       liveStageStreams: {},
       liveStreamFeed: [],
+      liveStreamBuffers: {},
       centerOverlayVisible: false,
       turns: [],
       mediaObservers: {},
@@ -149,7 +150,11 @@
     function setBusy(on) {
       state.busy = on;
       state.busySince = on ? Date.now() : 0;
-      if (on) state.liveStageStreams = {};
+      if (on) {
+        state.liveStageStreams = {};
+        state.liveStreamFeed = [];
+        state.liveStreamBuffers = {};
+      }
       const searchBox = $("searchBox");
       if (searchBox) searchBox.classList.toggle("is-busy", !!on);
       const searchContainer = $("searchContainer");
@@ -302,6 +307,7 @@
       if (!chunk) return;
       if (!state.liveStageStreams || typeof state.liveStageStreams !== "object") state.liveStageStreams = {};
       if (!Array.isArray(state.liveStreamFeed)) state.liveStreamFeed = [];
+      if (!state.liveStreamBuffers || typeof state.liveStreamBuffers !== "object") state.liveStreamBuffers = {};
       const current = state.liveStageStreams[stageKey] || { stage: stageKey, text: "", updatedAt: 0 };
       const prefix = kind === "reasoning" ? "⟡ " : "";
       const merged = `${current.text}${prefix}${chunk}`.slice(-260);
@@ -312,13 +318,26 @@
       };
       const normalized = chunk.replace(/[^\p{L}\p{N}\s:;,.!?()[\]{}<>+\-_/|#@]/gu, "").trim();
       if (normalized) {
-        const compact = normalized.slice(0, 96);
-        state.liveStreamFeed.unshift({
-          stage: stageKey,
-          kind,
-          text: compact,
-          at: Date.now()
-        });
+        const now = Date.now();
+        const bufferKey = `${stageKey}:${kind}`;
+        const buf = state.liveStreamBuffers[bufferKey] || { text: "", lastAt: 0 };
+        const nextText = `${buf.text ? `${buf.text} ` : ""}${normalized}`.replace(/\s+/g, " ").trim().slice(-220);
+        const shouldFlush =
+          /[.!?;:]$/.test(normalized) ||
+          normalized.length >= 48 ||
+          nextText.length >= 68 ||
+          ((now - (buf.lastAt || 0)) > 900 && nextText.length >= 18);
+        if (shouldFlush) {
+          state.liveStreamFeed.unshift({
+            stage: stageKey,
+            kind,
+            text: nextText.slice(0, 110),
+            at: now
+          });
+          state.liveStreamBuffers[bufferKey] = { text: "", lastAt: now };
+        } else {
+          state.liveStreamBuffers[bufferKey] = { text: nextText, lastAt: now };
+        }
         if (state.liveStreamFeed.length > 240) state.liveStreamFeed.length = 240;
       }
     }
@@ -444,6 +463,7 @@
       if (!state.runningPreview) {
         state.liveStageStreams = {};
         state.liveStreamFeed = [];
+        state.liveStreamBuffers = {};
         const analysisRoot = $("analysisLiveFx");
         if (analysisRoot) analysisRoot.classList.remove("active");
       } else {
