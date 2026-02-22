@@ -127,7 +127,7 @@ Best for:
 - Higher-stakes answers where evidence quality matters
 
 ### Pipeline Diagram
-![Pipeline Overview](docs/pipeline.svg)
+![Pipeline Overview](docs/pipeline.png)
 
 ```mermaid
 flowchart TB
@@ -189,7 +189,7 @@ This setting is persisted in `localStorage` and restored after refresh.
 │   └── requirements.txt
 ├── docs/
 │   ├── logo.svg
-│   └── pipeline.svg
+│   └── pipeline.png
 ├── scripts/
 │   └── bootstrap.sh
 ├── searxng/
