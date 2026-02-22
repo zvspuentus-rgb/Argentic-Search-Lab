@@ -38,6 +38,22 @@
       return value;
     }
 
+    function normalizeSearchUrlForRequest(raw) {
+      const direct = normalizeSearchUrl(raw);
+      if (!direct) return direct;
+      try {
+        const u = new URL(direct);
+        const host = String(window.location.hostname || "").toLowerCase();
+        const isLocal = ["localhost", "127.0.0.1", host].filter(Boolean).includes(u.hostname.toLowerCase());
+        if (isLocal && /\/search$/i.test(u.pathname)) {
+          return `${window.location.origin}/searxng/search`;
+        }
+      } catch {
+        // keep direct
+      }
+      return direct;
+    }
+
     function isDockerInternalLike(value) {
       const v = String(value || "").trim().toLowerCase();
       if (!v) return false;
@@ -125,7 +141,8 @@
           const el = $(id);
           if (!el) return;
           const cur = String(el.value || "").trim();
-          if (!cur || isDockerInternalLike(cur)) {
+          const isLocalPortLike = /^https?:\/\/(localhost|127\.0\.0\.1):\d+\/.+/i.test(cur);
+          if (!cur || isDockerInternalLike(cur) || isLocalPortLike) {
             el.value = String(fallback || "").trim() || el.value;
             changed.value = true;
           }

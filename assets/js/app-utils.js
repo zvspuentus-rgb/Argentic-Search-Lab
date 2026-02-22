@@ -220,6 +220,24 @@
       return map[provider] || map.lmstudio;
     }
 
+    function normalizeProviderBaseForRequest(runtime) {
+      const rt = runtime || getProviderRuntime();
+      const provider = String(rt.provider || "").toLowerCase();
+      const base = String(rt.base || "").trim().replace(/\/$/, "");
+      if (!base) return base;
+      try {
+        const u = new URL(base);
+        const host = String(window.location.hostname || "").toLowerCase();
+        const isLocalHost = ["localhost", "127.0.0.1", host].filter(Boolean).includes(u.hostname.toLowerCase());
+        if (!isLocalHost) return base;
+        if (provider === "lmstudio" && String(u.port || "") === "1234") return "/lmstudio/v1";
+        if (provider === "ollama" && String(u.port || "") === "11434") return "/ollama/v1";
+      } catch {
+        // relative urls stay as is
+      }
+      return base;
+    }
+
     function normalizeLlmParallelForProvider(rawParallel) {
       const provider = getProviderRuntime().provider;
       if (provider === "ollama") return 1;
@@ -246,7 +264,7 @@
 
     async function listProviderModels(runtime) {
       const rt = runtime || getProviderRuntime();
-      const base = String(rt.base || "").replace(/\/$/, "");
+      const base = String(normalizeProviderBaseForRequest(rt) || "").replace(/\/$/, "");
       const provider = String(rt.provider || "lmstudio").toLowerCase();
 
       if (!base && (provider === "lmstudio" || provider === "ollama" || provider === "openai")) {
@@ -345,7 +363,7 @@
 
     async function lmChat({ lmBase, payload }) {
       const runtime = getProviderRuntime();
-      const base = runtime.base || lmBase;
+      const base = normalizeProviderBaseForRequest(runtime) || lmBase;
       const scope = runtime.provider;
       const payloadWithCtx = withRuntimeDateContext(payload);
 
@@ -419,7 +437,7 @@
         return { content, reasoning: "" };
       }
 
-      const base = runtime.base || lmBase;
+      const base = normalizeProviderBaseForRequest(runtime) || lmBase;
       const headers = { "Content-Type": "application/json" };
       if (runtime.provider === "openai" && runtime.apiKey) headers.Authorization = `Bearer ${runtime.apiKey}`;
       const url = `${base.replace(/\/$/, "")}/chat/completions`;

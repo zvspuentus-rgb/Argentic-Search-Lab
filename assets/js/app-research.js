@@ -714,7 +714,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         } else {
           await animateAnswerMarkdown(answer || "No answer generated.");
         }
-        const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
+        const searchUrl = normalizeSearchUrlForRequest($("searchUrl").value.trim());
         await loadAnswerMedia(searchUrl, cleanQuery).catch((err) => addLog("media", err.message, "warn"));
         try {
           if ($("copilotBtn")?.checked) {
@@ -871,7 +871,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web", page = 1 }) {
-      const u = new URL(normalizeSearchUrl(searchUrl));
+      const u = new URL(normalizeSearchUrlForRequest(searchUrl));
       const focusedQuery = enforceFocusDomainScope(query);
       const scopedQuery = enforceTemporalScopeInSearchQuery(focusedQuery);
       u.searchParams.set("q", scopedQuery);
@@ -1281,7 +1281,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
     async function testConnections() {
       const runtime = getProviderRuntime();
-      const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
+      const searchUrl = normalizeSearchUrlForRequest($("searchUrl").value.trim());
       const pName = providerDisplayName(runtime.provider);
 
       addLog("health", `Testing ${pName}...`, "ok");
@@ -1472,7 +1472,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
 
       const lmBase = $("lmBase").value.trim();
       const model = $("modelName").value.trim();
-      const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
+      const searchUrl = normalizeSearchUrlForRequest($("searchUrl").value.trim());
       const mode = $("mode").value;
       const researchMode = $("researchMode").value;
       const thinkingMode = $("thinkingMode").value;
