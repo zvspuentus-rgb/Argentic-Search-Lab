@@ -52,7 +52,9 @@ ensure_searx_running() {
     return 0
   fi
 
-  "$ROOT_DIR/scripts/setup-searxng.sh"
+  if [ ! -x "$VENV_DIR/bin/searxng-run" ]; then
+    "$ROOT_DIR/scripts/setup-searxng.sh"
+  fi
 
   if [ -f "$PORT_FILE" ]; then
     saved_port="$(cat "$PORT_FILE" 2>/dev/null || true)"
@@ -63,7 +65,7 @@ ensure_searx_running() {
   fi
 
   if [ ! -x "$VENV_DIR/bin/searxng-run" ]; then
-    echo "[start-all] missing searxng-run in venv: $VENV_DIR"
+    echo "[start-all] missing searxng-run in venv after setup check: $VENV_DIR"
     return 1
   fi
 
