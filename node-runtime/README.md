@@ -30,6 +30,12 @@ If your server has multiple Python versions and you want to force one:
 export PYTHON_BIN=python3.12
 bash ./scripts/bootstrap-node-runtime.sh
 ```
+
+If you run inside Termux/proot, force distro python (not `/data/data/com.termux/...`):
+```bash
+export PYTHON_BIN=/usr/bin/python3.11
+bash ./scripts/bootstrap-node-runtime.sh
+```
 Manual:
 ```bash
 cd node-runtime
