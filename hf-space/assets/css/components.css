@@ -570,6 +570,54 @@
       line-height: 1.45;
     }
 
+    .turn-query.turn-query-md {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.55rem;
+      background: rgba(0, 0, 0, 0.14);
+      padding: 0.55rem 0.6rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .turn-query.turn-query-md h1,
+    .turn-query.turn-query-md h2,
+    .turn-query.turn-query-md h3 {
+      margin-top: 0.45rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.85rem;
+    }
+
+    .turn-query.turn-query-md p,
+    .turn-query.turn-query-md ul,
+    .turn-query.turn-query-md ol {
+      margin-bottom: 0.35rem;
+      font-size: 0.74rem;
+      line-height: 1.45;
+    }
+
+    .prompt-preview {
+      margin-top: 0.38rem;
+      margin-bottom: 0.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.65rem;
+      background: rgba(4, 10, 16, 0.62);
+      padding: 0.5rem 0.65rem;
+      max-height: 11rem;
+      overflow: auto;
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    .prompt-preview::before {
+      content: "Prompt Preview";
+      display: block;
+      font-size: 0.62rem;
+      color: #97b2c6;
+      font-family: var(--font-mono);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
     .turn-answer {
       margin: 0;
       color: #c7dae8;

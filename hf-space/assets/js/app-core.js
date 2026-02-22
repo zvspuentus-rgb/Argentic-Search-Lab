@@ -1194,6 +1194,8 @@
       for (const [idx, t] of state.turns.entries()) {
         const rawHtml = String(t.answerHtml || "").trim();
         const rawText = String(t.answerText || "").trim();
+        const queryRaw = String(t.query || "").trim();
+        const queryRenderedHtml = queryRaw ? markdownToSafeHtml(queryRaw) : "";
         const hasHtmlMarkup = /<[^>]+>/.test(rawHtml);
         const turnRenderedHtml = rawHtml
           ? (hasHtmlMarkup ? rawHtml : markdownToSafeHtml(rawHtml))
@@ -1210,7 +1212,7 @@
               <button type="button" class="btn-action" data-turn-copy="${escapeAttr(t.id)}">Copy</button>
               <button type="button" class="btn-action" data-turn-print="${escapeAttr(t.id)}">Print</button>
             </div>
-            <p class="turn-query"><strong>Query:</strong> ${escapeHtml(t.query || "")}</p>
+            <div class="turn-query turn-query-md answer-body">${queryRenderedHtml || `<p>${escapeHtml(queryRaw)}</p>`}</div>
             <div class="turn-answer-html answer-body">${turnRenderedHtml}</div>
           </div>
         `;

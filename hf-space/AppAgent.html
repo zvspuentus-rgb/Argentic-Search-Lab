@@ -185,6 +185,7 @@
         </div>
         <textarea id="userQuery" class="search-input" rows="1" placeholder="Ask a deep technical question..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); runPipeline(); }"></textarea>
+        <div id="promptPreview" class="prompt-preview answer-body" style="display:none"></div>
         <input id="filePicker" type="file" multiple style="display:none"
           accept=".txt,.md,.markdown,.json,.csv,.tsv,.html,.xml,.js,.ts,.py,.java,.c,.cpp,.pdf,image/*" />
         <div id="attachmentTray" class="attachment-tray" style="display:none"></div>
@@ -209,7 +210,9 @@
         <div class="search-actions">
           <div class="d-flex gap-2">
             <select id="searchMode" class="btn-action" title="Execution Mode">
-              <option value="quick" selected>Quick</option>
+              <option value="auto" selected>Auto</option>
+              <option value="quick">Quick</option>
+              <option value="deep">Deep</option>
             </select>
             <select id="mode" class="btn-action">
               <option value="speed">Speed</option>
@@ -302,7 +305,11 @@
             <div class="col-md-6">
               <label class="form-label small text-muted">Provider</label>
               <select id="provider" class="form-select form-select-sm bg-dark text-white border-secondary">
-                <option value="ollama" selected>Ollama (Space default)</option>
+                <option value="lmstudio" selected>LM Studio (default)</option>
+                <option value="ollama">Ollama</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="gemini">Gemini</option>
               </select>
             </div>
             <div class="col-md-6">
@@ -319,7 +326,7 @@
               <label class="form-label small text-muted">Active Model Name</label>
               <div class="input-group input-group-sm">
                 <select id="modelName" class="form-select bg-dark text-white border-secondary">
-                  <option value="qwen3-0.6b-q4_0:latest" selected>qwen3-0.6b-q4_0:latest (Space default)</option>
+                  <option value="qwen3-coder-30b-a3b-instruct-dq-abliterated">qwen3-coder-30b-a3b (Default)</option>
                 </select>
                 <button class="btn btn-outline-secondary" type="button" onclick="refreshModels()">Fetch</button>
               </div>
@@ -560,13 +567,6 @@
   </div>
 
 
-  <script>
-    window.__HF_SPACE_CONFIG = {
-      quickOnly: true,
-      singleProvider: "ollama",
-      singleModel: "qwen3-0.6b-q4_0:latest"
-    };
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -164,7 +164,6 @@
       } catch { }
       window.scrollTo(0, 0);
       loadSettingsFromStorage();
-      if (typeof enforceHfSpaceRuntimeDefaults === "function") enforceHfSpaceRuntimeDefaults();
       if ($("settingsState")) $("settingsState").textContent = "settings: loaded";
       loadSessionsFromStorage();
       renderSessions();
@@ -669,6 +668,24 @@
         runBtn.disabled = (!hasText && !hasAttachments) || state.busy || state.promptEnhanceLock;
         runBtn.style.opacity = (hasText || hasAttachments) ? "1" : "0.5";
       }
+      renderPromptPreview();
+    }
+
+    function renderPromptPreview() {
+      const input = document.getElementById("userQuery");
+      const preview = document.getElementById("promptPreview");
+      if (!input || !preview) return;
+      const raw = String(input.value || "").trim();
+      if (!raw) {
+        preview.style.display = "none";
+        preview.innerHTML = "";
+        return;
+      }
+      const html = (typeof markdownToSafeHtml === "function")
+        ? markdownToSafeHtml(raw)
+        : `<pre>${escapeHtml(raw)}</pre>`;
+      preview.innerHTML = html;
+      preview.style.display = "block";
     }
 
     let selectedAnalysisText = "";

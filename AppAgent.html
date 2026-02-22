@@ -185,6 +185,7 @@
         </div>
         <textarea id="userQuery" class="search-input" rows="1" placeholder="Ask a deep technical question..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); runPipeline(); }"></textarea>
+        <div id="promptPreview" class="prompt-preview answer-body" style="display:none"></div>
         <input id="filePicker" type="file" multiple style="display:none"
           accept=".txt,.md,.markdown,.json,.csv,.tsv,.html,.xml,.js,.ts,.py,.java,.c,.cpp,.pdf,image/*" />
         <div id="attachmentTray" class="attachment-tray" style="display:none"></div>
