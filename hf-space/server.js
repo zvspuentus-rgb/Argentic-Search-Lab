@@ -184,6 +184,40 @@ async function proxy(req, res, base, stripPrefix) {
   }
 }
 
+async function proxyExact(req, res, base, exactPath) {
+  try {
+    const url = `${base}${exactPath}`;
+    const body = await new Promise((resolve) => {
+      if (req.method === 'GET' || req.method === 'HEAD') return resolve(undefined);
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', () => resolve(undefined));
+    });
+    const headers = { ...req.headers };
+    delete headers.host;
+    const upstream = await fetch(url, {
+      method: req.method,
+      headers,
+      body,
+      redirect: 'follow'
+    });
+    const outHeaders = {};
+    upstream.headers.forEach((v, k) => {
+      if (k.toLowerCase() === 'content-encoding') return;
+      outHeaders[k] = v;
+    });
+    res.writeHead(upstream.status, outHeaders);
+    if (!upstream.body) return res.end();
+    for await (const chunk of upstream.body) res.write(chunk);
+    res.end();
+  } catch (err) {
+    send(res, 502, JSON.stringify({ error: 'proxy_failed', message: err.message }), {
+      'Content-Type': 'application/json; charset=utf-8'
+    });
+  }
+}
+
 function serveFile(req, res) {
   const rawPath = req.url === '/' ? '/AppAgent.html' : req.url;
   const safePath = path.normalize(rawPath).replace(/^\.\.(\/|\\|$)/, '');
@@ -258,7 +292,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.url.startsWith('/searxng/')) return handleSearxWithFallback(req, res);
-  if (req.url.startsWith('/mcp/')) return proxy(req, res, MCP_BASE, '/mcp');
+  // MCP endpoints
+  if (req.url === '/mcp' || req.url.startsWith('/mcp?')) return proxyExact(req, res, MCP_BASE, '/mcp');
+  if (req.url.startsWith('/mcp/')) return proxy(req, res, MCP_BASE, '');
   if (req.url.startsWith('/lmstudio/')) return proxy(req, res, LMSTUDIO_BASE, '/lmstudio');
   if (req.url.startsWith('/ollama/')) return proxy(req, res, OLLAMA_BASE, '/ollama');
 

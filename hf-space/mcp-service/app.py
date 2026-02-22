@@ -352,6 +352,29 @@ async def fetch_clean_context(url: str, max_chars: int) -> str:
     return compact_text(res.text, max_chars)
 
 
+def strip_html_to_text(html: str) -> str:
+    text = re.sub(r"(?is)<script.*?>.*?</script>", " ", html or "")
+    text = re.sub(r"(?is)<style.*?>.*?</style>", " ", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+async def fetch_direct_context(url: str, max_chars: int) -> str:
+    validate_http_url(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; appagent-mcp/1.3)",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    async with httpx.AsyncClient(timeout=25, follow_redirects=True, headers=headers) as client:
+        res = await client.get(url)
+        if res.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"direct fetch failed: {res.status_code}")
+    content_type = str(res.headers.get("content-type", "")).lower()
+    raw_text = res.text if "html" not in content_type else strip_html_to_text(res.text)
+    return compact_text(raw_text, max_chars)
+
+
 async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) -> List[Dict[str, Any]]:
     picked = unique_urls(urls)[: max(0, max_urls)]
     if not picked:
@@ -692,8 +715,22 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
 
 @app.post("/tools/fetch_url_context")
 async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
-    text = await fetch_clean_context(payload.url, 4000)
-    return {"url": payload.url, "context": text, "current_date": current_date_context()}
+    try:
+        text = await fetch_clean_context(payload.url, 4000)
+        return {"url": payload.url, "context": text, "source": "jina-mirror", "current_date": current_date_context()}
+    except Exception as first_err:
+        try:
+            text = await fetch_direct_context(payload.url, 4000)
+            return {"url": payload.url, "context": text, "source": "direct-http", "current_date": current_date_context()}
+        except Exception as second_err:
+            # Return structured result instead of throwing MCP -32000.
+            return {
+                "url": payload.url,
+                "context": "",
+                "source": "none",
+                "error": f"url_context_failed: {first_err}; fallback_failed: {second_err}",
+                "current_date": current_date_context(),
+            }
 
 
 @app.post("/mcp/call")
