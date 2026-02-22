@@ -7,6 +7,11 @@ Production-oriented local research stack with:
 - MCP server for tool-calling in agent/chat/code workflows
 - Dockerized runtime (UI + SearXNG + MCP + Redis)
 
+> ## Android Support (Termux)
+> Yes. Android is supported via **Termux + proot Debian/Ubuntu** using the Node.js runtime branch.
+> Node.js branch: [codex/app-nodejs-runtime](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime)
+> Android setup details: [`node-runtime/README.md`](node-runtime/README.md)
+
 The system is designed to run locally with zero mandatory cloud cost.
 
 ## Why It Is Truly Free
@@ -67,6 +72,20 @@ Open:
 - MCP endpoint: `http://localhost:3093/mcp`
 - SearXNG JSON: `http://localhost:8394/search?q=test&format=json`
 
+### Android Support (Termux + proot Debian/Ubuntu)
+You can run the Node runtime on Android through Termux with a proot distro (Debian/Ubuntu).
+
+Recommended:
+- Use distro Python from proot (`/usr/bin/python3.x`), not Termux Python (`/data/data/com.termux/...`).
+- Keep Node.js + npm + git installed in the same environment.
+
+Example:
+```bash
+export PYTHON_BIN=/usr/bin/python3.11
+bash ./scripts/bootstrap-node-runtime.sh
+cd node-runtime && npx argentic up
+```
+
 CLI:
 - `argentic status`
 - `argentic down`
@@ -76,6 +95,7 @@ Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
 - Node runtime guide: [`node-runtime/README.md`](node-runtime/README.md)
+- Node.js runtime branch (for Node-first workflow): [`codex/app-nodejs-runtime`](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime)
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
@@ -128,6 +148,8 @@ Best for:
 
 ### Pipeline Diagram
 ![Pipeline Overview](docs/pipeline.png)
+![Pipeline Workflow (SVG)](docs/pipeline.svg)
+![MCP Workflow (SVG)](docs/mcp-flow.svg)
 
 ```mermaid
 flowchart TB

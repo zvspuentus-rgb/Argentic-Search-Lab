@@ -3,11 +3,21 @@
 Node runtime for Argentic Search Lab.
 This mode runs on **Node.js + Python venv** (SearXNG), without Docker.
 
+> ## Android Support (Termux)
+> Supported on Android via **Termux + proot Debian/Ubuntu**.
+> Use distro Python in proot (`/usr/bin/python3.x`) and run the bootstrap script from that environment.
+
 ## Requirements
 - Node.js 20+
 - Python 3.10-3.13
 - `python3-venv` (Debian/Ubuntu package; installer tries auto-install when possible)
 - `git`
+
+### Android (Termux + proot Debian/Ubuntu)
+- Supported when running inside a proot distro (Debian/Ubuntu).
+- Use distro Python (`/usr/bin/python3.x`) instead of Termux Python path.
+- Run bootstrap and runtime from the same proot environment.
+- This is the preferred path for Android users (Termux + proot Debian/Ubuntu).
 
 ## Install
 From repo root:
@@ -60,6 +70,13 @@ cd node-runtime && npx argentic up
 - Health: `http://localhost:3093/health`
 - Search direct: `http://localhost:8394/search?q=test&format=json`
 - Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
+
+## Visual Workflows
+![Pipeline Workflow (SVG)](../docs/pipeline.svg)
+![MCP Workflow (SVG)](../docs/mcp-flow.svg)
+
+Node.js branch reference:
+- [`codex/app-nodejs-runtime`](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime)
 
 ## Notes
 - `argentic up` runs foreground (`Ctrl+C` to stop).
