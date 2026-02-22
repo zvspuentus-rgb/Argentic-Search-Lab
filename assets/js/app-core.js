@@ -44,6 +44,7 @@
       runningPreviewMode: "deep",
       matrixTicker: null,
       liveStageStreams: {},
+      liveStreamFeed: [],
       centerOverlayVisible: false,
       turns: [],
       mediaObservers: {},
@@ -300,6 +301,7 @@
       const chunk = String(delta || "").replace(/\s+/g, " ").trim();
       if (!chunk) return;
       if (!state.liveStageStreams || typeof state.liveStageStreams !== "object") state.liveStageStreams = {};
+      if (!Array.isArray(state.liveStreamFeed)) state.liveStreamFeed = [];
       const current = state.liveStageStreams[stageKey] || { stage: stageKey, text: "", updatedAt: 0 };
       const prefix = kind === "reasoning" ? "⟡ " : "";
       const merged = `${current.text}${prefix}${chunk}`.slice(-260);
@@ -308,6 +310,17 @@
         text: merged,
         updatedAt: Date.now()
       };
+      const normalized = chunk.replace(/[^\p{L}\p{N}\s:;,.!?()[\]{}<>+\-_/|#@]/gu, "").trim();
+      if (normalized) {
+        const compact = normalized.slice(0, 96);
+        state.liveStreamFeed.unshift({
+          stage: stageKey,
+          kind,
+          text: compact,
+          at: Date.now()
+        });
+        if (state.liveStreamFeed.length > 240) state.liveStreamFeed.length = 240;
+      }
     }
 
     if (typeof window !== "undefined") {
@@ -319,8 +332,11 @@
       const lineA = $("agentStreamLineA");
       const lineB = $("agentStreamLineB");
       const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
-      const a = compactLogLine(state.logs[0], active);
-      const b = compactLogLine(state.logs[1], "TRACE");
+      const feed = Array.isArray(state.liveStreamFeed) ? state.liveStreamFeed : [];
+      const streamHeadA = feed[0] ? `[${String(feed[0].stage || active).toUpperCase().slice(0, 12)}] ${String(feed[0].text || "").slice(0, 78)}` : "";
+      const streamHeadB = feed[1] ? `[${String(feed[1].stage || "trace").toUpperCase().slice(0, 12)}] ${String(feed[1].text || "").slice(0, 78)}` : "";
+      const a = streamHeadA || compactLogLine(state.logs[0], active);
+      const b = streamHeadB || compactLogLine(state.logs[1], "TRACE");
       if (root && lineA && lineB) {
         if (!state.busy) {
           root.classList.remove("active");
@@ -355,6 +371,14 @@
       }
       const active = String(activeText || (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10));
       label.textContent = active;
+      const liveFeedLines = (Array.isArray(state.liveStreamFeed) ? state.liveStreamFeed : [])
+        .slice(0, 16)
+        .map((x) => {
+          const tag = String(x?.stage || "agent").toUpperCase().slice(0, 14);
+          const sign = x?.kind === "reasoning" ? "⟡" : ">";
+          const text = String(x?.text || "").slice(0, 110);
+          return `[${tag}] ${sign} ${text}`;
+        });
       const thinkingLines = state.thinking
         .filter((x) => {
           const stage = String(x?.stage || "").toLowerCase();
@@ -368,6 +392,7 @@
         .slice(0, 10)
         .map((x) => `[${String(x.stage || "agent").toUpperCase().slice(0, 14)}] ${String(x.text || "").slice(0, 120)}`);
       const liveLines = [
+        ...liveFeedLines,
         lineAText || `[${active}] ${randomMatrixChunk(22)}`,
         lineBText || `[TRACE] ${randomMatrixChunk(22)}`,
         ...streamLines,
@@ -385,6 +410,7 @@
       const thinkingPackets = thinkingLines.slice(0, 6);
       const streamPackets = streamLines.slice(0, 6);
       stream2.innerHTML = packetLines
+        .concat(liveFeedLines.slice(0, 8))
         .concat(streamPackets)
         .concat(thinkingPackets)
         .concat(packetLines.length ? [] : [`[${active}] ${randomMatrixChunk(26)}`])
@@ -417,6 +443,7 @@
       state.runningPreviewMode = mode || "deep";
       if (!state.runningPreview) {
         state.liveStageStreams = {};
+        state.liveStreamFeed = [];
         const analysisRoot = $("analysisLiveFx");
         if (analysisRoot) analysisRoot.classList.remove("active");
       } else {

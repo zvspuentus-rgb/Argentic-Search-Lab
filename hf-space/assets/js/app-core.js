@@ -44,6 +44,7 @@
       runningPreviewMode: "deep",
       matrixTicker: null,
       liveStageStreams: {},
+      liveStreamFeed: [],
       centerOverlayVisible: false,
       turns: [],
       mediaObservers: {},
@@ -60,52 +61,6 @@
     const SETTINGS_KEY = "agentic_search_lab_settings_v1";
     const UI_STATE_KEY = "agentic_search_lab_ui_state_v1";
     const DISCOVERY_VISIBLE = 12;
-    const HF_SPACE_CONFIG = (() => {
-      const cfg = (typeof window !== "undefined" && window.__HF_SPACE_CONFIG) ? window.__HF_SPACE_CONFIG : {};
-      return {
-        quickOnly: !!cfg.quickOnly,
-        singleProvider: String(cfg.singleProvider || "").trim().toLowerCase() || "",
-        singleModel: String(cfg.singleModel || "").trim() || ""
-      };
-    })();
-
-    function enforceHfSpaceRuntimeDefaults() {
-      if (!HF_SPACE_CONFIG.quickOnly) return;
-      const provider = $("provider");
-      if (provider) {
-        provider.value = HF_SPACE_CONFIG.singleProvider || "ollama";
-        provider.disabled = true;
-      }
-      const searchMode = $("searchMode");
-      if (searchMode) {
-        searchMode.value = "quick";
-        searchMode.disabled = true;
-      }
-      const researchMode = $("researchMode");
-      if (researchMode) {
-        researchMode.value = "default";
-        researchMode.disabled = true;
-      }
-      const modelName = $("modelName");
-      if (modelName) {
-        if (HF_SPACE_CONFIG.singleModel) modelName.value = HF_SPACE_CONFIG.singleModel;
-      }
-      const chatModel = $("chatModel");
-      if (chatModel) {
-        if (HF_SPACE_CONFIG.singleModel) chatModel.value = HF_SPACE_CONFIG.singleModel;
-      }
-      const lmBase = $("lmBase");
-      if (lmBase) lmBase.disabled = true;
-      const ollamaBase = $("ollamaBase");
-      if (ollamaBase) ollamaBase.disabled = true;
-      const openaiKey = $("openaiKey");
-      const anthropicKey = $("anthropicKey");
-      const geminiKey = $("geminiKey");
-      const openaiBase = $("openaiBase");
-      [openaiKey, anthropicKey, geminiKey, openaiBase].forEach((el) => {
-        if (el) el.disabled = true;
-      });
-    }
 
     const DEPTH_PRESETS = {
       speed: { queryCount: 2, perQueryResults: 3, maxSecondPassQueries: 1, contextSources: 8 },
@@ -118,7 +73,6 @@
     const DEEP_INTENT_RX = /\b(deep|research|analysis|analyze|systematic|comprehensive)\b/i;
 
     function resolveExecutionMode(userQuery) {
-      if (HF_SPACE_CONFIG.quickOnly) return "quick";
       const selected = $("searchMode")?.value || "auto";
       if (selected === "quick" || selected === "deep") return selected;
       return DEEP_INTENT_RX.test(String(userQuery || "")) ? "deep" : "quick";
@@ -137,17 +91,10 @@
 
     /* Dynamic Model Fetching */
     async function refreshModels() {
-      enforceHfSpaceRuntimeDefaults();
-      const provider = HF_SPACE_CONFIG.quickOnly
-        ? (HF_SPACE_CONFIG.singleProvider || "ollama")
-        : String($("provider")?.value || "lmstudio").toLowerCase();
-      const lmBase = $("lmBase")?.value?.trim() || "/lmstudio/v1";
-      const ollamaBase = $("ollamaBase")?.value?.trim() || "/ollama/v1";
-      const base = provider === "ollama" ? ollamaBase : lmBase;
-      const providerLabel = provider === "ollama" ? "Ollama" : "LM Studio";
+      const lmBase = $("lmBase").value.trim();
       try {
-        setStatus(`Fetching models from ${providerLabel}...`);
-        const res = await fetch(`${base.replace(/\/$/, "")}/models`);
+        setStatus("Fetching models from LM Studio...");
+        const res = await fetch(`${lmBase.replace(/\/$/, "")}/models`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const models = (data.data || []).map(m => m.id);
@@ -167,25 +114,12 @@
         if (models.length === 0) {
           select.innerHTML = '<option value="">No models found</option>';
         } else {
-          if (HF_SPACE_CONFIG.quickOnly && HF_SPACE_CONFIG.singleModel) {
-            const only = models.includes(HF_SPACE_CONFIG.singleModel) ? [HF_SPACE_CONFIG.singleModel] : [models[0]];
-            only.forEach(m => {
-              const opt = document.createElement("option");
-              opt.value = opt.textContent = m;
-              opt.selected = true;
-              select.appendChild(opt);
-            });
-          } else {
           models.forEach(m => {
             const opt = document.createElement("option");
             opt.value = opt.textContent = m;
             if (m === current) opt.selected = true;
             select.appendChild(opt);
           });
-          }
-        }
-        if (HF_SPACE_CONFIG.quickOnly && HF_SPACE_CONFIG.singleModel && select.value !== HF_SPACE_CONFIG.singleModel) {
-          select.value = select.options[0]?.value || "";
         }
         if (typeof syncChatModelOptions === "function") {
           syncChatModelOptions({ keepChatSelection: true });
@@ -196,10 +130,9 @@
             syncChatModelOptions({ keepChatSelection: true });
           }
         }
-        enforceHfSpaceRuntimeDefaults();
         if (typeof saveSettingsToStorage === "function") saveSettingsToStorage();
-        setStatus(`Found ${models.length} models from ${providerLabel}.`);
-        addLog("health", `Fetched ${models.length} models from ${providerLabel}.`, "ok");
+        setStatus(`Found ${models.length} models.`);
+        addLog("health", `Fetched ${models.length} models from LM Studio.`, "ok");
       } catch (err) {
         setStatus(`Model fetch failed: ${err.message}`);
         addLog("health", `Failed to fetch models: ${err.message}`, "warn");
@@ -368,6 +301,7 @@
       const chunk = String(delta || "").replace(/\s+/g, " ").trim();
       if (!chunk) return;
       if (!state.liveStageStreams || typeof state.liveStageStreams !== "object") state.liveStageStreams = {};
+      if (!Array.isArray(state.liveStreamFeed)) state.liveStreamFeed = [];
       const current = state.liveStageStreams[stageKey] || { stage: stageKey, text: "", updatedAt: 0 };
       const prefix = kind === "reasoning" ? "⟡ " : "";
       const merged = `${current.text}${prefix}${chunk}`.slice(-260);
@@ -376,6 +310,17 @@
         text: merged,
         updatedAt: Date.now()
       };
+      const normalized = chunk.replace(/[^\p{L}\p{N}\s:;,.!?()[\]{}<>+\-_/|#@]/gu, "").trim();
+      if (normalized) {
+        const compact = normalized.slice(0, 96);
+        state.liveStreamFeed.unshift({
+          stage: stageKey,
+          kind,
+          text: compact,
+          at: Date.now()
+        });
+        if (state.liveStreamFeed.length > 240) state.liveStreamFeed.length = 240;
+      }
     }
 
     if (typeof window !== "undefined") {
@@ -387,8 +332,11 @@
       const lineA = $("agentStreamLineA");
       const lineB = $("agentStreamLineB");
       const active = (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10);
-      const a = compactLogLine(state.logs[0], active);
-      const b = compactLogLine(state.logs[1], "TRACE");
+      const feed = Array.isArray(state.liveStreamFeed) ? state.liveStreamFeed : [];
+      const streamHeadA = feed[0] ? `[${String(feed[0].stage || active).toUpperCase().slice(0, 12)}] ${String(feed[0].text || "").slice(0, 78)}` : "";
+      const streamHeadB = feed[1] ? `[${String(feed[1].stage || "trace").toUpperCase().slice(0, 12)}] ${String(feed[1].text || "").slice(0, 78)}` : "";
+      const a = streamHeadA || compactLogLine(state.logs[0], active);
+      const b = streamHeadB || compactLogLine(state.logs[1], "TRACE");
       if (root && lineA && lineB) {
         if (!state.busy) {
           root.classList.remove("active");
@@ -423,6 +371,14 @@
       }
       const active = String(activeText || (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10));
       label.textContent = active;
+      const liveFeedLines = (Array.isArray(state.liveStreamFeed) ? state.liveStreamFeed : [])
+        .slice(0, 16)
+        .map((x) => {
+          const tag = String(x?.stage || "agent").toUpperCase().slice(0, 14);
+          const sign = x?.kind === "reasoning" ? "⟡" : ">";
+          const text = String(x?.text || "").slice(0, 110);
+          return `[${tag}] ${sign} ${text}`;
+        });
       const thinkingLines = state.thinking
         .filter((x) => {
           const stage = String(x?.stage || "").toLowerCase();
@@ -436,6 +392,7 @@
         .slice(0, 10)
         .map((x) => `[${String(x.stage || "agent").toUpperCase().slice(0, 14)}] ${String(x.text || "").slice(0, 120)}`);
       const liveLines = [
+        ...liveFeedLines,
         lineAText || `[${active}] ${randomMatrixChunk(22)}`,
         lineBText || `[TRACE] ${randomMatrixChunk(22)}`,
         ...streamLines,
@@ -453,6 +410,7 @@
       const thinkingPackets = thinkingLines.slice(0, 6);
       const streamPackets = streamLines.slice(0, 6);
       stream2.innerHTML = packetLines
+        .concat(liveFeedLines.slice(0, 8))
         .concat(streamPackets)
         .concat(thinkingPackets)
         .concat(packetLines.length ? [] : [`[${active}] ${randomMatrixChunk(26)}`])
@@ -485,6 +443,7 @@
       state.runningPreviewMode = mode || "deep";
       if (!state.runningPreview) {
         state.liveStageStreams = {};
+        state.liveStreamFeed = [];
         const analysisRoot = $("analysisLiveFx");
         if (analysisRoot) analysisRoot.classList.remove("active");
       } else {
