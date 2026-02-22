@@ -29,6 +29,7 @@ ENV SEARX_BASE=http://searxng:8080
 ENV OLLAMA_BASE=http://127.0.0.1:11434
 
 ENV OLLAMA_HOST=127.0.0.1:11434
+ENV OLLAMA_ORIGINS=*
 ENV OLLAMA_MODEL_PATH=/data/models/model.gguf
 ENV OLLAMA_MODEL_NAME=qwen3-0.6b-q4_0
 ENV OLLAMA_MODEL_URL=https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_0.gguf?download=true

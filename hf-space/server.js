@@ -158,6 +158,14 @@ async function proxy(req, res, base, stripPrefix) {
 
     const headers = { ...req.headers };
     delete headers.host;
+    // Avoid upstream origin/CORS rejection for internal service-to-service proxying
+    delete headers.origin;
+    delete headers.referer;
+    delete headers.connection;
+    delete headers['sec-fetch-site'];
+    delete headers['sec-fetch-mode'];
+    delete headers['sec-fetch-dest'];
+    delete headers['sec-fetch-user'];
     const upstream = await fetch(url, {
       method: req.method,
       headers,
@@ -196,6 +204,13 @@ async function proxyExact(req, res, base, exactPath) {
     });
     const headers = { ...req.headers };
     delete headers.host;
+    delete headers.origin;
+    delete headers.referer;
+    delete headers.connection;
+    delete headers['sec-fetch-site'];
+    delete headers['sec-fetch-mode'];
+    delete headers['sec-fetch-dest'];
+    delete headers['sec-fetch-user'];
     const upstream = await fetch(url, {
       method: req.method,
       headers,
