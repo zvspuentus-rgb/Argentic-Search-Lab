@@ -358,6 +358,26 @@ app.get('/health', async (req, res) => {
   res.json({ ok: true, service: 'appagent-node', searxng, current_date: currentDateContext() });
 });
 
+app.get('/runtime/config', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'appagent-node',
+    ui_base: '/',
+    defaults: {
+      provider: 'lmstudio',
+      searchUrl: '/searxng/search',
+      lmBase: '/lmstudio/v1',
+      ollamaBase: '/ollama/v1'
+    },
+    upstream: {
+      searx: SEARX_BASE,
+      lmstudio: LMSTUDIO_BASE,
+      ollama: OLLAMA_BASE
+    },
+    current_date: currentDateContext()
+  });
+});
+
 app.get('/tools', (req, res) => {
   res.json({ tools: mcpToolsPayload(), current_date: currentDateContext() });
 });

@@ -38,6 +38,75 @@
       return value;
     }
 
+    function isDockerInternalLike(value) {
+      const v = String(value || "").trim().toLowerCase();
+      if (!v) return false;
+      return (
+        v.includes("host.docker.internal") ||
+        v.includes("searxng:") ||
+        v.includes("app:") ||
+        v.includes("172.") ||
+        v.includes("localhost:10387") ||
+        v.includes("localhost:8393")
+      );
+    }
+
+    function normalizeNodeRuntimeEndpoints(snapshot) {
+      const s = snapshot || {};
+      if (window.location.protocol === "file:") return s;
+      if ($("searchUrl")) {
+        const cur = String(s.searchUrl || $("searchUrl").value || "").trim();
+        if (!cur || isDockerInternalLike(cur)) {
+          s.searchUrl = "/searxng/search";
+          $("searchUrl").value = "/searxng/search";
+        }
+      }
+      if ($("lmBase")) {
+        const cur = String(s.lmBase || $("lmBase").value || "").trim();
+        if (!cur || isDockerInternalLike(cur)) {
+          s.lmBase = "/lmstudio/v1";
+          $("lmBase").value = "/lmstudio/v1";
+        }
+      }
+      if ($("ollamaBase")) {
+        const cur = String(s.ollamaBase || $("ollamaBase").value || "").trim();
+        if (!cur || isDockerInternalLike(cur)) {
+          s.ollamaBase = "/ollama/v1";
+          $("ollamaBase").value = "/ollama/v1";
+        }
+      }
+      return s;
+    }
+
+    async function syncRuntimeConfigDefaults() {
+      if (window.location.protocol === "file:") return;
+      try {
+        const res = await fetch("/runtime/config", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const d = data?.defaults || {};
+        const changed = { value: false };
+
+        const setIfDocker = (id, fallback) => {
+          const el = $(id);
+          if (!el) return;
+          const cur = String(el.value || "").trim();
+          if (!cur || isDockerInternalLike(cur)) {
+            el.value = String(fallback || "").trim() || el.value;
+            changed.value = true;
+          }
+        };
+
+        setIfDocker("searchUrl", d.searchUrl || "/searxng/search");
+        setIfDocker("lmBase", d.lmBase || "/lmstudio/v1");
+        setIfDocker("ollamaBase", d.ollamaBase || "/ollama/v1");
+
+        if (changed.value) saveSettingsToStorage();
+      } catch {
+        // no-op
+      }
+    }
+
     function getCurrentSettingsSnapshot() {
       return {
         provider: $("provider")?.value || "lmstudio",
@@ -192,10 +261,11 @@
         const raw = localStorage.getItem(SETTINGS_KEY);
         if (!raw) {
           if ($("autoRunDiscovery")) $("autoRunDiscovery").checked = true;
+          normalizeNodeRuntimeEndpoints({});
           return;
         }
         const parsed = JSON.parse(raw);
-        applySettingsSnapshot(parsed);
+        applySettingsSnapshot(normalizeNodeRuntimeEndpoints(parsed));
         syncChatModelOptions();
         if (typeof parsed?.autoRunDiscovery !== "boolean" && $("autoRunDiscovery")) {
           $("autoRunDiscovery").checked = true;

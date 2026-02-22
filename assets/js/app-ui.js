@@ -164,6 +164,9 @@
       } catch { }
       window.scrollTo(0, 0);
       loadSettingsFromStorage();
+      if (typeof syncRuntimeConfigDefaults === "function") {
+        await syncRuntimeConfigDefaults();
+      }
       if ($("settingsState")) $("settingsState").textContent = "settings: loaded";
       loadSessionsFromStorage();
       renderSessions();
