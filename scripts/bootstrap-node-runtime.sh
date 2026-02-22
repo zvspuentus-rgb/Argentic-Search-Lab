@@ -28,6 +28,15 @@ npm install
 echo "[bootstrap-node-runtime] npm link (install argentic CLI)"
 npm link
 
+if ! command -v argentic >/dev/null 2>&1; then
+  NPM_GLOBAL_BIN="$(npm bin -g 2>/dev/null || true)"
+  if [ -n "$NPM_GLOBAL_BIN" ] && [ -x "$NPM_GLOBAL_BIN/argentic" ]; then
+    if [ -w /usr/local/bin ] && [ ! -e /usr/local/bin/argentic ]; then
+      ln -s "$NPM_GLOBAL_BIN/argentic" /usr/local/bin/argentic || true
+    fi
+  fi
+fi
+
 echo "[bootstrap-node-runtime] setup local SearXNG (python venv)"
 if ! npm run setup:search; then
   echo "[bootstrap-node-runtime] setup failed."
