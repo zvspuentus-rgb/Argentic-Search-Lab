@@ -3,6 +3,10 @@
 Node runtime for Argentic Search Lab.
 This mode runs on **Node.js + Python venv** (SearXNG), without Docker.
 
+> ## Android Support (Termux)
+> Supported on Android using **Termux + proot Debian/Ubuntu**.
+> Quick path: install deps in proot, set `PYTHON_BIN`, run bootstrap, then `npx argentic up`.
+
 ## Requirements
 - Node.js 20+
 - Python 3.10-3.13
@@ -79,3 +83,6 @@ If your distro doesn't provide `python3.13`, use:
 ```bash
 export PYTHON_BIN=/usr/bin/python3.11
 ```
+
+Node.js branch:
+- [`codex/app-nodejs-runtime`](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime)

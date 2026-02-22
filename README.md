@@ -3,6 +3,10 @@
 
 Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single CLI (`argentic`), using Python venv for SearXNG (no Docker required in this mode).
 
+> ## Android Support (Termux)
+> Yes. This branch supports Android via **Termux + proot Debian/Ubuntu**.
+> See `## Android / Termux` below and full steps in [`node-runtime/README.md`](node-runtime/README.md).
+
 ## Quick Start
 ```bash
 git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
@@ -26,6 +30,13 @@ argentic up
 - MCP: `http://localhost:3093/mcp`
 - Search direct: `http://localhost:8394/search?q=test&format=json`
 - Search via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
+
+## Android / Termux
+This Node.js branch also supports Android via Termux + proot Debian/Ubuntu.
+
+Notes:
+- Use distro Python inside proot (`/usr/bin/python3.x`) instead of Termux Python path.
+- Full Android setup steps are in [`node-runtime/README.md`](node-runtime/README.md).
 
 ## Visual Workflow
 ![Pipeline Overview](docs/pipeline.svg)
