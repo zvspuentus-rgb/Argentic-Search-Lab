@@ -48,7 +48,7 @@ pick_python() {
         echo "$py"; return 0
       fi
     fi
-  fi
+  done
 
   # Prefer 3.12/3.11 over 3.13 for better binary-wheel compatibility.
   for py in python3.12 python3.11 python3.10 python3.13 python3; do
