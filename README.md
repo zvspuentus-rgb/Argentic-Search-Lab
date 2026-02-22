@@ -8,6 +8,11 @@ Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single C
 git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
 cd Argentic-Search-Lab
 bash ./scripts/bootstrap-node-runtime.sh
+cd node-runtime && npx argentic up
+```
+
+If `argentic` is already in PATH, you can run:
+```bash
 argentic up
 ```
 
@@ -144,6 +149,7 @@ flowchart TB
 ## Notes
 - `argentic up` runs in foreground (`Ctrl+C` to stop).
 - If search default port is occupied, runtime chooses a free port automatically.
+- On Debian/Ubuntu, setup auto-attempts to install missing `python3-venv` packages if needed.
 
 ## Docker / Full Stack
 For Docker-first/full-stack instructions, use `main`:

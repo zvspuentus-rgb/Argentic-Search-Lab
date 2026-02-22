@@ -15,6 +15,16 @@ From repo root:
 bash ./scripts/bootstrap-node-runtime.sh
 ```
 
+Then run:
+```bash
+cd node-runtime && npx argentic up
+```
+
+Optional (if global PATH is already linked):
+```bash
+argentic up
+```
+
 Manual:
 ```bash
 cd node-runtime
@@ -25,7 +35,7 @@ npm run setup:search
 
 ## Run
 ```bash
-argentic up
+cd node-runtime && npx argentic up
 ```
 
 ## CLI
