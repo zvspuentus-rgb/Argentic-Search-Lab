@@ -1,9 +1,11 @@
 import asyncio
+from datetime import datetime, timezone
 import json
 import os
 import re
+from html import unescape
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
@@ -12,9 +14,51 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="AppAgent MCP Tool Service", version="1.0.0")
 SEARX_BASE = os.getenv("SEARX_BASE", "http://searxng:8080")
+SEARX_BASES_ENV = os.getenv("SEARX_BASES", "")
 MCP_PROTOCOL_VERSION = "2024-11-05"
 URL_RX = re.compile(r"(https?://[^\s<>'\"`]+)", re.IGNORECASE)
 GITHUB_REPO_RX = re.compile(r"^/([^/]+)/([^/]+)(?:/|$)")
+
+DDG_TITLE_RX = re.compile(
+    r'<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+    re.IGNORECASE | re.DOTALL,
+)
+DDG_SNIPPET_RX = re.compile(
+    r'<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>|<div[^>]*class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</div>',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _split_bases(text: str) -> List[str]:
+    parts = re.split(r"[,\s]+", text or "")
+    out: List[str] = []
+    seen = set()
+    for p in parts:
+        b = str(p or "").strip().rstrip("/")
+        if not b:
+            continue
+        key = b.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(b)
+    return out
+
+
+SEARX_BASE_CANDIDATES = _split_bases(SEARX_BASES_ENV) or _split_bases(
+    " ".join(
+        [
+            SEARX_BASE,
+            "https://searx.tiekoetter.com",
+            "https://searx.be",
+            "https://etsi.me",
+            "https://grep.vim.wtf",
+            "https://find.xenorio.xyz",
+            "https://copp.gg",
+            "https://baresearch.org",
+        ]
+    )
+)
 
 
 class SearchInput(BaseModel):
@@ -69,6 +113,55 @@ def normalize_results(results: List[Dict[str, Any]], limit: int) -> List[Dict[st
     return out
 
 
+def _extract_ddg_url(href: str) -> str:
+    h = unescape((href or "").strip())
+    if h.startswith("//"):
+        h = "https:" + h
+    p = urlparse(h)
+    if p.path.startswith("/l/") or p.path.startswith("/l"):
+        q = parse_qs(p.query or "")
+        target = (q.get("uddg") or [""])[0]
+        if target:
+            h = unquote(target)
+    return h
+
+
+def _strip_html_text(text: str) -> str:
+    t = re.sub(r"<[^>]+>", " ", text or "")
+    t = unescape(t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
+def _ddg_html_results(html: str, limit: int) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    titles = DDG_TITLE_RX.findall(html or "")
+    snippets = DDG_SNIPPET_RX.findall(html or "")
+    for i, (href, raw_title) in enumerate(titles):
+        url = _extract_ddg_url(href)
+        if not url.startswith("http"):
+            continue
+        title = _strip_html_text(raw_title) or url
+        snip = ""
+        if i < len(snippets):
+            snip = _strip_html_text((snippets[i][0] or snippets[i][1] or ""))
+        out.append({"title": title, "url": url, "content": snip})
+        if len(out) >= max(1, int(limit)):
+            break
+    return out
+
+
+async def ddg_fallback_search(query: str, limit: int) -> List[Dict[str, Any]]:
+    q = quote_plus(query or "")
+    url = f"https://html.duckduckgo.com/html/?q={q}"
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; appagent-mcp/1.2)"}
+    async with httpx.AsyncClient(timeout=20, headers=headers, follow_redirects=True) as client:
+        r = await client.get(url)
+        if r.status_code != 200:
+            return []
+    return _ddg_html_results(r.text, limit)
+
+
 async def searx_search(query: str, categories: str, limit: int) -> List[Dict[str, Any]]:
     params = {
         "q": query,
@@ -76,12 +169,25 @@ async def searx_search(query: str, categories: str, limit: int) -> List[Dict[str
         "categories": categories,
         "language": "auto",
     }
-    async with httpx.AsyncClient(timeout=20) as client:
-        res = await client.get(f"{SEARX_BASE}/search", params=params)
-        if res.status_code != 200:
-            raise HTTPException(status_code=502, detail=f"searxng error: {res.status_code}")
-        data = res.json()
-    return normalize_results(data.get("results", []), limit)
+    async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
+        for base in SEARX_BASE_CANDIDATES:
+            try:
+                res = await client.get(f"{base}/search", params=params)
+            except Exception:
+                continue
+            if res.status_code != 200:
+                continue
+            ctype = str(res.headers.get("content-type", "")).lower()
+            if "json" not in ctype:
+                continue
+            try:
+                data = res.json()
+            except Exception:
+                continue
+            normalized = normalize_results(data.get("results", []), limit)
+            if normalized:
+                return normalized
+    return await ddg_fallback_search(query, limit)
 
 
 def validate_http_url(url: str) -> None:
@@ -391,20 +497,47 @@ def mcp_ok(msg_id: Optional[Union[str, int]], result: Dict[str, Any]) -> Dict[st
     return {"jsonrpc": "2.0", "id": msg_id, "result": result}
 
 
+def current_date_context() -> Dict[str, str]:
+    now_utc = datetime.now(timezone.utc)
+    now_local = datetime.now().astimezone()
+    return {
+        "today_utc": now_utc.date().isoformat(),
+        "now_utc_iso": now_utc.isoformat(),
+        "today_local": now_local.date().isoformat(),
+        "now_local_iso": now_local.isoformat(),
+        "weekday_utc": now_utc.strftime("%A"),
+        "timezone_local": str(now_local.tzinfo),
+        "instruction": (
+            "Use this date context as authoritative current date/time for temporal reasoning. "
+            "Do not assume training-cutoff dates."
+        ),
+    }
+
+
 @app.get("/health")
 async def health() -> Dict[str, Any]:
+    searx_ok = False
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(f"{SEARX_BASE}/search", params={"q": "health", "format": "json"})
-        searx_ok = r.status_code == 200
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            for base in SEARX_BASE_CANDIDATES:
+                r = await client.get(f"{base}/search", params={"q": "health", "format": "json"})
+                if r.status_code == 200 and "json" in str(r.headers.get("content-type", "")).lower():
+                    searx_ok = True
+                    break
     except Exception:
-        searx_ok = False
-    return {"ok": True, "service": "mcp-tools", "searxng": searx_ok}
+        pass
+    return {
+        "ok": True,
+        "service": "mcp-tools",
+        "searxng": searx_ok,
+        "fallback": "duckduckgo-html",
+        "current_date": current_date_context(),
+    }
 
 
 @app.get("/tools")
 async def tools() -> Dict[str, Any]:
-    return {"tools": mcp_tools_payload()}
+    return {"tools": mcp_tools_payload(), "current_date": current_date_context()}
 
 
 @app.post("/tools/search_quick")
@@ -465,6 +598,7 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
         "repo_scope_enforced": bool(repo_scopes),
         "strict_repo_only": strict_repo_only,
         "repo_scopes": repo_scopes,
+        "current_date": current_date_context(),
         "analysis_hint": {
             "grounding_required": bool(explicit_urls or context_items),
             "priority_sources": ["context_items", "results"],
@@ -547,6 +681,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
         "repo_scope_enforced": bool(repo_scopes),
         "strict_repo_only": strict_repo_only,
         "repo_scopes": repo_scopes,
+        "current_date": current_date_context(),
         "analysis_hint": {
             "grounding_required": bool(explicit_urls or context_items),
             "priority_sources": ["context_items", "results"],
@@ -558,7 +693,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
 @app.post("/tools/fetch_url_context")
 async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
     text = await fetch_clean_context(payload.url, 4000)
-    return {"url": payload.url, "context": text}
+    return {"url": payload.url, "context": text, "current_date": current_date_context()}
 
 
 @app.post("/mcp/call")
@@ -621,7 +756,7 @@ async def mcp_http(request: Request) -> Response:
             continue
 
         if msg.method == "tools/list":
-            responses.append(mcp_ok(msg.id, {"tools": mcp_tools_payload()}))
+            responses.append(mcp_ok(msg.id, {"tools": mcp_tools_payload(), "current_date": current_date_context()}))
             continue
 
         if msg.method == "tools/call":

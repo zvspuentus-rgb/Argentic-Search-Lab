@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      hfspace-net:
+        aliases:
+          - redis
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:${HF_PORT:-7860}/searxng/
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/search?q=health&format=json"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      hfspace-net:
+        aliases:
+          - searxng
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hfspace-app:local
+    restart: unless-stopped
+    depends_on:
+      searxng:
+        condition: service_healthy
+    environment:
+      - PORT=7860
+      - MCP_BASE=http://127.0.0.1:8090
+      - SEARX_BASE=http://searxng:8080
+      - OLLAMA_BASE=http://127.0.0.1:11434
+      - LIVE_DEMO_MODE=true
+      - LIVE_DEMO_QUERY_LIMIT=2
+      - OLLAMA_MODEL_PATH=/data/models/model.gguf
+      - OLLAMA_MODEL_NAME=qwen3-0.6b-q4_0
+    ports:
+      - "${HF_PORT:-7860}:7860"
+    volumes:
+      - ./models/Qwen3-0.6B-Q4_0.gguf:/data/models/model.gguf:ro
+    networks:
+      - hfspace-net
+
+networks:
+  hfspace-net:
+    driver: bridge

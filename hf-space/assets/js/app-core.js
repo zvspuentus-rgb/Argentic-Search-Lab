@@ -59,6 +59,52 @@
     const SETTINGS_KEY = "agentic_search_lab_settings_v1";
     const UI_STATE_KEY = "agentic_search_lab_ui_state_v1";
     const DISCOVERY_VISIBLE = 12;
+    const HF_SPACE_CONFIG = (() => {
+      const cfg = (typeof window !== "undefined" && window.__HF_SPACE_CONFIG) ? window.__HF_SPACE_CONFIG : {};
+      return {
+        quickOnly: !!cfg.quickOnly,
+        singleProvider: String(cfg.singleProvider || "").trim().toLowerCase() || "",
+        singleModel: String(cfg.singleModel || "").trim() || ""
+      };
+    })();
+
+    function enforceHfSpaceRuntimeDefaults() {
+      if (!HF_SPACE_CONFIG.quickOnly) return;
+      const provider = $("provider");
+      if (provider) {
+        provider.value = HF_SPACE_CONFIG.singleProvider || "ollama";
+        provider.disabled = true;
+      }
+      const searchMode = $("searchMode");
+      if (searchMode) {
+        searchMode.value = "quick";
+        searchMode.disabled = true;
+      }
+      const researchMode = $("researchMode");
+      if (researchMode) {
+        researchMode.value = "default";
+        researchMode.disabled = true;
+      }
+      const modelName = $("modelName");
+      if (modelName) {
+        if (HF_SPACE_CONFIG.singleModel) modelName.value = HF_SPACE_CONFIG.singleModel;
+      }
+      const chatModel = $("chatModel");
+      if (chatModel) {
+        if (HF_SPACE_CONFIG.singleModel) chatModel.value = HF_SPACE_CONFIG.singleModel;
+      }
+      const lmBase = $("lmBase");
+      if (lmBase) lmBase.disabled = true;
+      const ollamaBase = $("ollamaBase");
+      if (ollamaBase) ollamaBase.disabled = true;
+      const openaiKey = $("openaiKey");
+      const anthropicKey = $("anthropicKey");
+      const geminiKey = $("geminiKey");
+      const openaiBase = $("openaiBase");
+      [openaiKey, anthropicKey, geminiKey, openaiBase].forEach((el) => {
+        if (el) el.disabled = true;
+      });
+    }
 
     const DEPTH_PRESETS = {
       speed: { queryCount: 2, perQueryResults: 3, maxSecondPassQueries: 1, contextSources: 8 },
@@ -71,6 +117,7 @@
     const DEEP_INTENT_RX = /\b(deep|research|analysis|analyze|systematic|comprehensive)\b/i;
 
     function resolveExecutionMode(userQuery) {
+      if (HF_SPACE_CONFIG.quickOnly) return "quick";
       const selected = $("searchMode")?.value || "auto";
       if (selected === "quick" || selected === "deep") return selected;
       return DEEP_INTENT_RX.test(String(userQuery || "")) ? "deep" : "quick";
@@ -89,7 +136,10 @@
 
     /* Dynamic Model Fetching */
     async function refreshModels() {
-      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
+      enforceHfSpaceRuntimeDefaults();
+      const provider = HF_SPACE_CONFIG.quickOnly
+        ? (HF_SPACE_CONFIG.singleProvider || "ollama")
+        : String($("provider")?.value || "lmstudio").toLowerCase();
       const lmBase = $("lmBase")?.value?.trim() || "/lmstudio/v1";
       const ollamaBase = $("ollamaBase")?.value?.trim() || "/ollama/v1";
       const base = provider === "ollama" ? ollamaBase : lmBase;
@@ -108,16 +158,30 @@
         if (models.length === 0) {
           select.innerHTML = '<option value="">No models found</option>';
         } else {
+          if (HF_SPACE_CONFIG.quickOnly && HF_SPACE_CONFIG.singleModel) {
+            const only = models.includes(HF_SPACE_CONFIG.singleModel) ? [HF_SPACE_CONFIG.singleModel] : [models[0]];
+            only.forEach(m => {
+              const opt = document.createElement("option");
+              opt.value = opt.textContent = m;
+              opt.selected = true;
+              select.appendChild(opt);
+            });
+          } else {
           models.forEach(m => {
             const opt = document.createElement("option");
             opt.value = opt.textContent = m;
             if (m === current) opt.selected = true;
             select.appendChild(opt);
           });
+          }
+        }
+        if (HF_SPACE_CONFIG.quickOnly && HF_SPACE_CONFIG.singleModel && select.value !== HF_SPACE_CONFIG.singleModel) {
+          select.value = select.options[0]?.value || "";
         }
         if (typeof syncChatModelOptions === "function") {
           syncChatModelOptions({ keepChatSelection: true });
         }
+        enforceHfSpaceRuntimeDefaults();
         setStatus(`Found ${models.length} models from ${providerLabel}.`);
         addLog("health", `Fetched ${models.length} models from ${providerLabel}.`, "ok");
       } catch (err) {

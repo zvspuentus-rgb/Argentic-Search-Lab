@@ -158,6 +158,7 @@
       } catch { }
       window.scrollTo(0, 0);
       loadSettingsFromStorage();
+      if (typeof enforceHfSpaceRuntimeDefaults === "function") enforceHfSpaceRuntimeDefaults();
       if ($("settingsState")) $("settingsState").textContent = "settings: loaded";
       loadSessionsFromStorage();
       renderSessions();

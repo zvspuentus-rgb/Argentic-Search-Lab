@@ -134,6 +134,7 @@
       document.querySelectorAll(".source-lane").forEach((el) => { el.checked = lanes.has(el.value); });
       renderDiscovery();
       renderSources();
+      if (typeof enforceHfSpaceRuntimeDefaults === "function") enforceHfSpaceRuntimeDefaults();
     }
 
     function saveSettingsToStorage() {
@@ -200,6 +201,7 @@
         if (typeof parsed?.autoRunDiscovery !== "boolean" && $("autoRunDiscovery")) {
           $("autoRunDiscovery").checked = true;
         }
+        if (typeof enforceHfSpaceRuntimeDefaults === "function") enforceHfSpaceRuntimeDefaults();
       } catch { }
     }
 
