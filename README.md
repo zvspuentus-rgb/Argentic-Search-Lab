@@ -45,7 +45,7 @@ Open:
 - SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
 
 ### Option B: Node.js runtime (auto setup)
-One command install (Node runtime + local SearXNG setup):
+One command install (Node.js + local SearXNG via Python venv, no Docker):
 ```bash
 bash ./scripts/bootstrap-node-runtime.sh
 ```
@@ -65,7 +65,7 @@ argentic up
 Open:
 - UI: `http://localhost:3093`
 - MCP endpoint: `http://localhost:3093/mcp`
-- SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
+- SearXNG JSON: `http://localhost:8394/search?q=test&format=json`
 
 CLI:
 - `argentic status`

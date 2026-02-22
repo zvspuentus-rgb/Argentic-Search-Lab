@@ -11,9 +11,10 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUN_DIR="$ROOT_DIR/.run"
 NODE_PID_FILE="$RUN_DIR/node.pid"
-CONTAINER_NAME="${SEARX_CONTAINER_NAME:-appagent-searxng-node}"
+SEARX_PID_FILE="$RUN_DIR/searx.pid"
+SEARX_PORT_FILE="$RUN_DIR/searx_port"
 NODE_PORT="${PORT:-3093}"
-SEARX_PORT="${SEARX_PORT:-8393}"
+SEARX_PORT="${SEARX_PORT:-8394}"
 
 cmd="${1:-up}"
 
@@ -31,12 +32,22 @@ case "$cmd" in
     else
       lsof -ti tcp:"$NODE_PORT" | xargs -r kill -9
     fi
-    if command -v docker >/dev/null 2>&1; then
-      docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    if [[ -f "$SEARX_PID_FILE" ]]; then
+      spid="$(cat "$SEARX_PID_FILE" || true)"
+      if [[ -n "$spid" ]] && kill -0 "$spid" >/dev/null 2>&1; then
+        kill "$spid" >/dev/null 2>&1 || true
+      fi
+      rm -f "$SEARX_PID_FILE"
     fi
     echo "[argentic] stopped"
     ;;
   status)
+    if [[ -f "$SEARX_PORT_FILE" ]]; then
+      saved="$(cat "$SEARX_PORT_FILE" 2>/dev/null || true)"
+      if [[ -n "${saved:-}" ]]; then
+        SEARX_PORT="$saved"
+      fi
+    fi
     if curl -fsS "http://localhost:${NODE_PORT}/health" >/dev/null 2>&1; then
       echo "[argentic] UI/MCP: up (http://localhost:${NODE_PORT})"
     else

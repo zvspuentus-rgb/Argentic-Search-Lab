@@ -1,26 +1,25 @@
-# AppAgent Node Runtime (No Docker Required)
+# AppAgent Node Runtime
 
-This is the Node.js runtime of **Argentic Search Lab**.
-It runs as a single Node.js service (UI + MCP tools).
-
-## What it includes
-- Web UI serving `AppAgent.html`
-- MCP endpoint (`/mcp`)
-- Tool endpoints:
-  - `/tools/search_quick`
-  - `/tools/search_deep`
-  - `/tools/fetch_url_context`
-- GitHub-aware URL context traversal (repo index + related file follow-up)
+Node runtime for Argentic Search Lab.
+This mode runs on **Node.js + Python venv** (SearXNG), without Docker.
 
 ## Requirements
 - Node.js 20+
-- Docker (for automatic local SearXNG setup in Node mode)
+- Python 3.10-3.13
+- `git`
 
 ## Install
+From repo root:
+```bash
+bash ./scripts/bootstrap-node-runtime.sh
+```
+
+Manual:
 ```bash
 cd node-runtime
 npm install
 npm link
+npm run setup:search
 ```
 
 ## Run
@@ -28,40 +27,20 @@ npm link
 argentic up
 ```
 
-## Access
-- Web UI: `http://localhost:3093`
+## CLI
+- `argentic up`
+- `argentic status`
+- `argentic down`
+
+## Endpoints
+- UI: `http://localhost:3093`
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
-- SearXNG: `http://localhost:8393/search?q=test&format=json`
-
-`start:all` behavior:
-- If SearXNG is not running, it auto-starts it locally.
-- If SearXNG already runs on `localhost:8393`, it reuses it.
-- No manual port input is required for default setup.
-
-CLI commands:
-- `argentic up`  -> start UI + MCP + Search
-- `argentic status` -> show service status
-- `argentic down` -> stop services started by CLI
-- `argentic up` runs in foreground. Press `Ctrl+C` to stop.
-
-## Optional manual mode
-If you already have an external SearXNG:
-```bash
-SEARX_BASE=http://your-searx-host:8080 PORT=3093 npm start
-```
-
-## MCP client example
-```json
-{
-  "mcpServers": {
-    "appagent-node": {
-      "url": "http://localhost:3093/mcp"
-    }
-  }
-}
-```
+- Search direct: `http://localhost:8394/search?q=test&format=json`
+- Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
 ## Notes
-- For one-command install from repo root:
-  - `bash ./scripts/bootstrap-node-runtime.sh`
+- `argentic up` runs foreground (`Ctrl+C` to stop).
+- SearXNG runs from local venv at `node-runtime/.venv-searxng`.
+- If default search port is occupied, next free port is selected automatically.
+- For Docker-first stack, see main Docker section in root README.

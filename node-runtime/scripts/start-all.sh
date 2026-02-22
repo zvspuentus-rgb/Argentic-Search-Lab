@@ -3,50 +3,105 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_DIR="$ROOT_DIR/.run"
+PORT_FILE="$RUN_DIR/searx_port"
+SEARX_PID_FILE="$RUN_DIR/searx.pid"
+NODE_PID_FILE="$RUN_DIR/node.pid"
+SETTINGS_TEMPLATE="$ROOT_DIR/searxng/settings-node.yml"
+SETTINGS_ACTIVE="$RUN_DIR/settings-active.yml"
+VENV_DIR="$ROOT_DIR/.venv-searxng"
+
 mkdir -p "$RUN_DIR"
 
-SEARX_PORT="${SEARX_PORT:-8393}"
 NODE_PORT="${PORT:-3093}"
-CONTAINER_NAME="${SEARX_CONTAINER_NAME:-appagent-searxng-node}"
-export SEARX_BASE="${SEARX_BASE:-http://localhost:${SEARX_PORT}}"
-
-STARTED_CONTAINER=0
+SEARX_PORT="${SEARX_PORT:-8394}"
+STARTED_SEARX=0
 NODE_PID=""
+SEARX_PID=""
+
+if [ -f "$PORT_FILE" ]; then
+  saved_port="$(cat "$PORT_FILE" 2>/dev/null || true)"
+  if [ -n "${saved_port:-}" ]; then
+    SEARX_PORT="$saved_port"
+  fi
+fi
+
+if [ -z "${SEARX_BASE:-}" ]; then
+  export SEARX_BASE="http://127.0.0.1:${SEARX_PORT}"
+fi
 
 cleanup() {
   if [[ -n "$NODE_PID" ]] && kill -0 "$NODE_PID" >/dev/null 2>&1; then
     kill "$NODE_PID" >/dev/null 2>&1 || true
     wait "$NODE_PID" >/dev/null 2>&1 || true
   fi
-  rm -f "$RUN_DIR/node.pid"
-  if [[ "$STARTED_CONTAINER" == "1" ]]; then
-    docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  rm -f "$NODE_PID_FILE"
+
+  if [[ "$STARTED_SEARX" == "1" ]] && [[ -n "$SEARX_PID" ]] && kill -0 "$SEARX_PID" >/dev/null 2>&1; then
+    kill "$SEARX_PID" >/dev/null 2>&1 || true
+    wait "$SEARX_PID" >/dev/null 2>&1 || true
+  fi
+  if [[ "$STARTED_SEARX" == "1" ]]; then
+    rm -f "$SEARX_PID_FILE"
   fi
 }
 
 trap cleanup INT TERM EXIT
 
-if ! curl -fsS "${SEARX_BASE}/search?q=health&format=json" >/dev/null 2>&1; then
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "[start-all] SearXNG is not reachable and Docker is unavailable."
-    echo "[start-all] Install Docker or set SEARX_BASE to an external SearXNG endpoint."
-    exit 1
+ensure_searx_running() {
+  if curl -fsS "${SEARX_BASE}/search?q=health&format=json" >/dev/null 2>&1; then
+    return 0
   fi
 
-  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "[start-all] found running SearXNG container: ${CONTAINER_NAME}"
-  else
-    "$ROOT_DIR/scripts/setup-searxng.sh"
-    STARTED_CONTAINER=1
+  "$ROOT_DIR/scripts/setup-searxng.sh"
+
+  if [ -f "$PORT_FILE" ]; then
+    saved_port="$(cat "$PORT_FILE" 2>/dev/null || true)"
+    if [ -n "${saved_port:-}" ]; then
+      SEARX_PORT="$saved_port"
+      export SEARX_BASE="http://127.0.0.1:${SEARX_PORT}"
+    fi
   fi
-fi
+
+  if [ ! -x "$VENV_DIR/bin/searxng-run" ]; then
+    echo "[start-all] missing searxng-run in venv: $VENV_DIR"
+    return 1
+  fi
+
+  cat "$SETTINGS_TEMPLATE" > "$SETTINGS_ACTIVE"
+  cat >> "$SETTINGS_ACTIVE" <<EOF
+
+server:
+  bind_address: "127.0.0.1"
+  port: ${SEARX_PORT}
+EOF
+
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/bin/activate"
+  SEARXNG_SETTINGS_PATH="$SETTINGS_ACTIVE" nohup "$VENV_DIR/bin/searxng-run" > "$RUN_DIR/searx.log" 2>&1 &
+  SEARX_PID=$!
+  STARTED_SEARX=1
+  echo "$SEARX_PID" > "$SEARX_PID_FILE"
+
+  for _ in {1..30}; do
+    if curl -fsS "${SEARX_BASE}/search?q=health&format=json" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "[start-all] searxng failed to start"
+  tail -n 120 "$RUN_DIR/searx.log" || true
+  return 1
+}
+
+ensure_searx_running
 
 echo "[start-all] starting Node runtime"
-echo "[start-all] UI:  http://localhost:${NODE_PORT}"
-echo "[start-all] MCP: http://localhost:${NODE_PORT}/mcp"
+echo "[start-all] UI:    http://localhost:${NODE_PORT}"
+echo "[start-all] MCP:   http://localhost:${NODE_PORT}/mcp"
 echo "[start-all] Search: ${SEARX_BASE}/search?q=test&format=json"
 
 PORT="$NODE_PORT" node "$ROOT_DIR/server.js" &
 NODE_PID=$!
-echo "$NODE_PID" > "$RUN_DIR/node.pid"
+echo "$NODE_PID" > "$NODE_PID_FILE"
 wait "$NODE_PID"
