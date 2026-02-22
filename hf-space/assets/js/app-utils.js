@@ -208,16 +208,8 @@
     }
 
     function getProviderRuntime() {
-      const cfg = (typeof window !== "undefined" && window.__HF_SPACE_CONFIG) ? window.__HF_SPACE_CONFIG : {};
-      const quickOnly = !!cfg.quickOnly;
-      const forcedProvider = String(cfg.singleProvider || "").trim().toLowerCase();
-      const forcedModel = String(cfg.singleModel || "").trim();
-      const provider = quickOnly
-        ? (forcedProvider || "ollama")
-        : (($("provider")?.value || "ollama").toLowerCase());
-      const model = quickOnly
-        ? (forcedModel || $("modelName")?.value?.trim() || "")
-        : ($("modelName")?.value?.trim() || "");
+      const provider = ($("provider")?.value || "lmstudio").toLowerCase();
+      const model = $("modelName")?.value?.trim() || "";
       const map = {
         lmstudio: { provider, model, base: $("lmBase")?.value?.trim() || "/lmstudio/v1", apiKey: "" },
         ollama: { provider, model, base: $("ollamaBase")?.value?.trim() || "/ollama/v1", apiKey: "" },
@@ -225,7 +217,7 @@
         anthropic: { provider, model, base: "https://api.anthropic.com/v1", apiKey: $("anthropicKey")?.value || "" },
         gemini: { provider, model, base: "https://generativelanguage.googleapis.com/v1beta", apiKey: $("geminiKey")?.value || "" }
       };
-      return map[provider] || map.ollama;
+      return map[provider] || map.lmstudio;
     }
 
     function normalizeLlmParallelForProvider(rawParallel) {
@@ -468,6 +460,8 @@
               "You are Planner Agent.",
               "Convert user query into focused web search queries.",
               "Ignore noisy separators like <<<<<<.",
+              "Temporal rule: never inject unrequested historical years (for example 2024/2025).",
+              "Temporal rule: use current-year framing only when the user asks for latest/current context.",
               "Prefer official documentation, GitHub repositories, release notes, and engineering blogs.",
               "Avoid generic listicles and low-signal sources.",
               quantMode
@@ -574,6 +568,8 @@
             role: "system",
             content: [
               "You are Refiner Agent. Improve query quality, remove duplicates, maximize coverage.",
+              "Temporal rule: remove unrequested historical years from query suggestions.",
+              "Temporal rule: keep only years explicitly requested by user, or current-year framing for latest/current asks.",
               "Favor high-authority technical sources.",
               quantMode ? "User asks quantitative analysis: ensure at least one query explicitly asks for numeric metrics and historical data." : "",
               "Return strict JSON only."

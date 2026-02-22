@@ -460,6 +460,8 @@
               "You are Planner Agent.",
               "Convert user query into focused web search queries.",
               "Ignore noisy separators like <<<<<<.",
+              "Temporal rule: never inject unrequested historical years (for example 2024/2025).",
+              "Temporal rule: use current-year framing only when the user asks for latest/current context.",
               "Prefer official documentation, GitHub repositories, release notes, and engineering blogs.",
               "Avoid generic listicles and low-signal sources.",
               quantMode
@@ -566,6 +568,8 @@
             role: "system",
             content: [
               "You are Refiner Agent. Improve query quality, remove duplicates, maximize coverage.",
+              "Temporal rule: remove unrequested historical years from query suggestions.",
+              "Temporal rule: keep only years explicitly requested by user, or current-year framing for latest/current asks.",
               "Favor high-authority technical sources.",
               quantMode ? "User asks quantitative analysis: ensure at least one query explicitly asks for numeric metrics and historical data." : "",
               "Return strict JSON only."

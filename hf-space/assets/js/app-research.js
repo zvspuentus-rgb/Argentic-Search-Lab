@@ -470,17 +470,38 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const base = normalizeQuery(queryText);
       if (!base) return base;
       const scope = state.temporalScope || inferTemporalScope(base);
+      const nowYear = new Date().getFullYear();
+      const allowedYears = new Set([nowYear]);
+      if (scope.type === "historical" && Array.isArray(scope.years)) {
+        for (const y of scope.years) {
+          if (Number.isInteger(y) && y >= 1900 && y <= 2100) allowedYears.add(y);
+        }
+      }
+      const stripDisallowedYears = (txt) => {
+        const cleaned = String(txt || "").replace(/\b(19|20)\d{2}\b/g, (m) => {
+          const y = Number(m);
+          return allowedYears.has(y) ? m : " ";
+        });
+        return cleaned.replace(/\s+/g, " ").trim();
+      };
+      const baseSafe = stripDisallowedYears(base);
       if (scope.type === "historical" && scope.years.length) {
         const y = scope.years[0];
-        if (new RegExp(`\\b${y}\\b`).test(base) && /\bhistorical\b/i.test(base)) return base;
-        return `${base} historical ${y} archived`;
+        if (new RegExp(`\\b${y}\\b`).test(baseSafe) && /\bhistorical\b/i.test(baseSafe)) return baseSafe;
+        return `${baseSafe} historical ${y} archived`.replace(/\s+/g, " ").trim();
       }
       if (scope.type === "current") {
-        const y = new Date().getFullYear();
-        if (new RegExp(`\\b${y}\\b`).test(base)) return base;
-        return `${base} ${y} latest`;
+        const y = nowYear;
+        if (new RegExp(`\\b${y}\\b`).test(baseSafe)) return baseSafe;
+        return `${baseSafe} ${y} latest`.replace(/\s+/g, " ").trim();
       }
-      return base;
+      return baseSafe;
+    }
+
+    function sanitizeQueriesByTemporalScope(queries) {
+      return uniqueStrings((Array.isArray(queries) ? queries : [])
+        .map((q) => enforceTemporalScopeInSearchQuery(q))
+        .filter(Boolean));
     }
 
     function enforceFocusDomainScope(queryText) {
@@ -1318,7 +1339,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           deep: { perLaneLimit: 5, maxSources: 14, workers: 4 }
         }[String(mode || "balanced")] || { perLaneLimit: 3, maxSources: 8, workers: 3 };
 
-        const quickQueries = buildQuickVariantQueries(cleanQuery, mode);
+        const quickQueries = sanitizeQueriesByTemporalScope(buildQuickVariantQueries(cleanQuery, mode));
         state.queries = quickQueries;
         renderQueries();
 
@@ -1743,8 +1764,11 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           )
         );
 
-        const initialQueries = uniqueStrings(plannerOutputs.flatMap((p) => p.queries || []))
-          .slice(0, Math.max(effectivePreset.queryCount * 2, effectivePreset.queryCount + 2));
+        const initialQueries = sanitizeQueriesByTemporalScope(
+          uniqueStrings(plannerOutputs.flatMap((p) => p.queries || []))
+            .slice(0, Math.max(effectivePreset.queryCount * 2, effectivePreset.queryCount + 2))
+        );
+        
         addLog("planner", `Merged initial queries: ${initialQueries.length}`, "ok");
         addLog("planner", `Produced ${initialQueries.length} queries`, "ok");
 
@@ -1758,7 +1782,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           maxQueries: effectivePreset.queryCount
         });
 
-        const finalQueries = uniqueStrings([...(refined.queries || []), ...initialQueries]).slice(0, effectivePreset.queryCount);
+        const finalQueries = sanitizeQueriesByTemporalScope(uniqueStrings([...(refined.queries || []), ...initialQueries])).slice(0, effectivePreset.queryCount);
         state.queries = finalQueries;
         renderQueries();
         addLog("refiner", `Final query count: ${finalQueries.length}`, "ok");
@@ -1825,7 +1849,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           const needMore = critic.needMoreSearch || belowGate;
           if (!needMore) break;
 
-          const followUps = uniqueStrings(critic.followUpQueries || []).slice(0, effectivePreset.maxSecondPassQueries);
+          const followUps = sanitizeQueriesByTemporalScope(uniqueStrings(critic.followUpQueries || [])).slice(0, effectivePreset.maxSecondPassQueries);
           if (!followUps.length || loop >= maxAutoLoops) {
             if (criticHardGate && belowGate) {
               throw new Error(`Critic gate blocked synthesis: score ${critic.overallScore}/100 < ${criticMinScore}`);

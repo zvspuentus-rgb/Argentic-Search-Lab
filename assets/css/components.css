@@ -594,29 +594,6 @@
       line-height: 1.45;
     }
 
-    .prompt-preview {
-      margin-top: 0.38rem;
-      margin-bottom: 0.4rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.65rem;
-      background: rgba(4, 10, 16, 0.62);
-      padding: 0.5rem 0.65rem;
-      max-height: 11rem;
-      overflow: auto;
-      font-size: 0.76rem;
-      line-height: 1.45;
-    }
-
-    .prompt-preview::before {
-      content: "Prompt Preview";
-      display: block;
-      font-size: 0.62rem;
-      color: #97b2c6;
-      font-family: var(--font-mono);
-      margin-bottom: 0.35rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
 
     .turn-answer {
       margin: 0;
