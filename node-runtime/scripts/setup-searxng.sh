@@ -28,7 +28,8 @@ pick_python() {
   if [ -n "${PYTHON_BIN:-}" ] && command -v "$PYTHON_BIN" >/dev/null 2>&1; then
     echo "$PYTHON_BIN"; return 0
   fi
-  for py in python3.13 python3.12 python3.11 python3.10 python3; do
+  # Prefer 3.12/3.11 over 3.13 for better binary-wheel compatibility.
+  for py in python3.12 python3.11 python3.10 python3.13 python3; do
     if command -v "$py" >/dev/null 2>&1; then
       ver="$($py -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
       major="${ver%%.*}"; minor="${ver##*.}"
@@ -105,6 +106,15 @@ fi
 # shellcheck disable=SC1091
 source "$VENV_DIR/bin/activate"
 python -m pip install -q -U pip setuptools wheel
+
+# SearXNG setup.py imports searx early; preinstall msgspec to avoid build-time failure.
+if ! python -m pip install -q -U msgspec; then
+  echo "[setup-searxng] failed to install msgspec with $PYTHON."
+  echo "[setup-searxng] try one of:"
+  echo "  export PYTHON_BIN=python3.12 && npm run setup:search"
+  echo "  sudo apt install build-essential python3-dev rustc cargo pkg-config"
+  exit 1
+fi
 
 if [ ! -d "$SEARX_DIR/.git" ]; then
   echo "[setup-searxng] cloning searxng source"
