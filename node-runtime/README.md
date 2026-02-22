@@ -1,63 +1,51 @@
-# AppAgent Node Runtime (No Docker Required)
+# AppAgent Node Runtime
 
-This is the primary runtime for the `codex/app-nodejs-runtime` branch of **Argentic Search Lab**.
-It runs as a single Node.js service (UI + MCP tools).
-
-## What it includes
-- Web UI serving `AppAgent.html`
-- MCP endpoint (`/mcp`)
-- Tool endpoints:
-  - `/tools/search_quick`
-  - `/tools/search_deep`
-  - `/tools/fetch_url_context`
-- GitHub-aware URL context traversal (repo index + related file follow-up)
-
-## Requirements
-- Node.js 20+
-- Docker (for automatic local SearXNG setup in Node mode)
+Node runtime for Argentic Search Lab in this branch.
 
 ## Install
+From repo root:
+```bash
+bash ./scripts/bootstrap-node-runtime.sh
+```
+
+Manual:
 ```bash
 cd node-runtime
 npm install
+npm link
+npm run setup:search
 ```
 
 ## Run
 ```bash
-npm run start:all
+argentic up
 ```
 
-## Access
-- Web UI: `http://localhost:3093`
+## CLI
+- `argentic up`
+- `argentic status`
+- `argentic down`
+
+## Endpoints
+- UI: `http://localhost:3093`
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
-- SearXNG: `http://localhost:8394/search?q=test&format=json` (Node default)
-- SearXNG via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
+- Search direct: `http://localhost:8394/search?q=test&format=json`
+- Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
-`start:all` behavior:
-- If SearXNG is not running, it auto-starts it locally.
-- Node runtime uses `8394` by default so it does not collide with Docker stack (`8393`).
-- If `8394` is busy, it automatically selects the next free port.
-- No manual port input is required for default setup.
+## LLM Routing
+- `/lmstudio/*` is proxied to `LMSTUDIO_BASE` (default `http://localhost:1234`)
+- `/ollama/*` is proxied to `OLLAMA_BASE` (default `http://localhost:11434`)
 
-## Optional manual mode
-If you already have an external SearXNG:
-```bash
-SEARX_BASE=http://your-searx-host:8080 PORT=3093 npm start
-```
-
-## MCP client example
-```json
-{
-  "mcpServers": {
-    "appagent-node": {
-      "url": "http://localhost:3093/mcp"
-    }
-  }
-}
-```
+## Environment (optional)
+- `PORT` (default `3093`)
+- `SEARX_BASE`
+- `LMSTUDIO_BASE`
+- `OLLAMA_BASE`
+- `SEARX_PORT` (default `8394` for local search)
 
 ## Notes
-- This branch is Node-first. Docker can still be used from other branches if needed.
-- For Docker setup, use the main branch README:
+- `argentic up` runs in foreground (`Ctrl+C` to stop).
+- Search port auto-fallback is enabled if default port is occupied.
+- For Docker-first/full-stack instructions, see main branch:
   - https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main
