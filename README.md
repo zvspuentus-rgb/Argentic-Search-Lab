@@ -44,18 +44,22 @@ Open:
 - MCP endpoint: `http://localhost:8193/mcp`
 - SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
 
-### Option B: Node.js runtime (branch)
-Node runtime is maintained in a dedicated branch:
-- `codex/app-nodejs-runtime`
-- https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime
+### Option B: Node.js runtime (auto setup)
+One command install (Node runtime + local SearXNG setup):
+```bash
+bash ./scripts/bootstrap-node-runtime.sh
+```
 
-Install:
+Or from fresh clone:
 ```bash
 git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
 cd Argentic-Search-Lab
-git checkout codex/app-nodejs-runtime
+bash ./scripts/bootstrap-node-runtime.sh
+```
+
+Run:
+```bash
 cd node-runtime
-npm install
 npm run start:all
 ```
 
@@ -67,7 +71,7 @@ Open:
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
-- Node branch: [`codex/app-nodejs-runtime`](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/codex/app-nodejs-runtime)
+- Node runtime guide: [`node-runtime/README.md`](node-runtime/README.md)
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
