@@ -6,6 +6,7 @@ RUN_DIR="$ROOT_DIR/.run"
 SEARX_DIR="$ROOT_DIR/.searxng-src"
 VENV_DIR="$ROOT_DIR/.venv-searxng"
 PORT_FILE="$RUN_DIR/searx_port"
+STAMP_FILE="$RUN_DIR/searx_installed.ok"
 DEFAULT_PORT="${SEARX_PORT:-8394}"
 
 mkdir -p "$RUN_DIR"
@@ -98,6 +99,20 @@ if [ -z "$PYTHON" ]; then
   exit 1
 fi
 
+if [ -x "$VENV_DIR/bin/searxng-run" ] && [ -f "$STAMP_FILE" ] && [ "${SEARX_FORCE_SETUP:-0}" != "1" ]; then
+  PORT="$DEFAULT_PORT"
+  if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+    alt="$(pick_free_port "$PORT" || true)"
+    if [ -n "${alt:-}" ]; then
+      PORT="$alt"
+    fi
+  fi
+  echo "$PORT" > "$PORT_FILE"
+  echo "[setup-searxng] already installed (stamp found), skipping reinstall."
+  echo "[setup-searxng] default search port: $PORT"
+  exit 0
+fi
+
 if [ -d "$VENV_DIR" ] && [ ! -f "$VENV_DIR/bin/activate" ]; then
   echo "[setup-searxng] found partial venv, recreating."
   rm -rf "$VENV_DIR"
@@ -173,5 +188,6 @@ if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 
 echo "$PORT" > "$PORT_FILE"
+printf "python=%s\ninstalled_at=%s\n" "$PYTHON" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "$STAMP_FILE"
 echo "[setup-searxng] ready (python venv): $VENV_DIR"
 echo "[setup-searxng] default search port: $PORT"
