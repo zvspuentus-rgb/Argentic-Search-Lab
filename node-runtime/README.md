@@ -27,7 +27,7 @@ argentic up
 
 If your server has multiple Python versions and you want to force one:
 ```bash
-export PYTHON_BIN=python3.12
+export PYTHON_BIN=python3.13
 bash ./scripts/bootstrap-node-runtime.sh
 ```
 
@@ -71,7 +71,7 @@ cd node-runtime && npx argentic up
 ## Troubleshooting
 If setup fails on `msgspec`:
 ```bash
-export PYTHON_BIN=python3.12
+export PYTHON_BIN=python3.13
 bash ./scripts/bootstrap-node-runtime.sh
 ```
 If your distro still builds `msgspec` from source:
