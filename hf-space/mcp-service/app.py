@@ -456,7 +456,10 @@ async def fetch_github_target_context(url: str, max_urls: int, max_chars_per_url
             pass
 
     repo_budget = max(1, int(max_urls) - len(items))
-    repo_prefix = rel_path.rsplit("/", 1)[0] if kind in {"blob", "tree"} and rel_path else ""
+    if kind in {"blob", "tree"} and rel_path and "/" in rel_path:
+        repo_prefix = rel_path.rsplit("/", 1)[0]
+    else:
+        repo_prefix = ""
     repo_items = await fetch_github_repo_context(
         owner,
         repo,
