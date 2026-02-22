@@ -28,8 +28,8 @@ argentic up
 - Search via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
 ## Visual Workflow
-![Pipeline Overview](docs/pipeline.png)
-![MCP Flow](docs/mcp-flow.png)
+![Pipeline Overview](docs/pipeline.svg)
+![MCP Flow](docs/mcp-flow.svg)
 
 ```mermaid
 flowchart LR
@@ -157,3 +157,17 @@ For Docker-first/full-stack instructions, use `main`:
 
 ## Additional Docs
 - Node runtime details: [`node-runtime/README.md`](node-runtime/README.md)
+
+## Update Node.js Branch Only
+Use this when you want UI/runtime updates from Node branch only (without switching to Docker/main flow):
+
+```bash
+cd Argentic-Search-Lab
+git fetch origin
+git checkout codex/app-nodejs-runtime
+git pull --ff-only origin codex/app-nodejs-runtime
+cd node-runtime
+npm install
+npx argentic down || true
+npx argentic up
+```

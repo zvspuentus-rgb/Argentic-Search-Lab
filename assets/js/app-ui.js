@@ -187,16 +187,22 @@
         addDebug("discovery", `Discovery failed: ${err.message}`, "warn");
       }
 
-      if (uiState?.currentSessionId && state.sessions.some((s) => s.id === uiState.currentSessionId)) {
-        loadSessionById(uiState.currentSessionId);
-      } else if (state.sessions.length) {
-        loadSessionById(state.sessions[0].id);
+      if (state.sessions.length) {
+        const resumeId = (uiState?.currentSessionId && state.sessions.some((s) => s.id === uiState.currentSessionId))
+          ? uiState.currentSessionId
+          : state.sessions[0].id;
+        state.currentSessionId = resumeId;
+        renderSessions();
+        renderConversationTree();
       } else {
         startNewSession();
         if (typeof uiState?.draftQuery === "string" && $("userQuery")) {
           $("userQuery").value = uiState.draftQuery;
         }
       }
+
+      // Node runtime default: open discovery first on startup.
+      showDiscovery();
 
       updateAnswerMeta();
       renderAttachmentTray();

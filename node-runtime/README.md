@@ -55,3 +55,27 @@ cd node-runtime && npx argentic up
 - SearXNG runs from local venv at `node-runtime/.venv-searxng`.
 - If default search port is occupied, next free port is selected automatically.
 - For Docker-first stack, see main Docker section in root README.
+
+## Android / Termux (proot Ubuntu or Debian)
+This Node.js branch can run on Android via Termux + proot distro.
+
+Requirements inside proot Ubuntu/Debian:
+- `nodejs` + `npm`
+- `python3.13` (or `python3.11`) + `python3-venv`
+- `git`
+- `curl`
+
+Example:
+```bash
+apt update
+apt install -y git curl nodejs npm python3 python3-venv
+cd ~/Argentic-Search-Lab
+export PYTHON_BIN=/usr/bin/python3.13
+bash ./scripts/bootstrap-node-runtime.sh
+cd node-runtime && npx argentic up
+```
+
+If your distro doesn't provide `python3.13`, use:
+```bash
+export PYTHON_BIN=/usr/bin/python3.11
+```
