@@ -310,13 +310,14 @@
                 <option value="anthropic">Anthropic</option>
                 <option value="gemini">Gemini</option>
               </select>
+              <div id="providerActiveHint" class="provider-active-hint mt-2"></div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="fieldLmBase">
               <label class="form-label small text-muted">LM Studio Base URL</label>
               <input id="lmBase" class="form-control form-control-sm bg-dark text-white border-secondary"
                 value="http://localhost:1234/v1" />
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="fieldOllamaBase">
               <label class="form-label small text-muted">Ollama Base URL</label>
               <input id="ollamaBase" class="form-control form-control-sm bg-dark text-white border-secondary"
                 value="http://localhost:11434/v1" />
@@ -350,20 +351,20 @@
               <input id="geminiKey" type="password" class="form-control form-control-sm bg-dark text-white border-secondary"
                 placeholder="google-api-key" />
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="fieldOpenaiBase">
               <label class="form-label small text-muted">OpenAI-Compatible Base URL</label>
               <input id="openaiBase" class="form-control form-control-sm bg-dark text-white border-secondary"
-                value="/openai" />
+                value="https://api.openai.com/v1" />
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="fieldAnthropicBase">
               <label class="form-label small text-muted">Anthropic Base URL</label>
               <input id="anthropicBase" class="form-control form-control-sm bg-dark text-white border-secondary"
-                value="/anthropic" />
+                value="https://api.anthropic.com/v1" />
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="fieldGeminiBase">
               <label class="form-label small text-muted">Gemini Base URL</label>
               <input id="geminiBase" class="form-control form-control-sm bg-dark text-white border-secondary"
-                value="/gemini" />
+                value="https://generativelanguage.googleapis.com/v1beta" />
             </div>
           </div>
         </section>

@@ -376,9 +376,9 @@ app.get('/runtime/config', (req, res) => {
       searchUrl,
       lmBase: ensureV1(LMSTUDIO_BASE),
       ollamaBase: ensureV1(OLLAMA_BASE),
-      openaiBase: '/openai',
-      anthropicBase: '/anthropic',
-      geminiBase: '/gemini'
+      openaiBase: OPENAI_BASE,
+      anthropicBase: ANTHROPIC_BASE,
+      geminiBase: GEMINI_BASE
     },
     upstream: {
       searx: SEARX_BASE,

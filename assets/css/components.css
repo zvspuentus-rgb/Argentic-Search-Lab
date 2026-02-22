@@ -833,6 +833,21 @@
       text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
     }
 
+    #settingsModal .provider-active-hint {
+      font-size: 0.72rem;
+      color: #8fd3ff;
+      min-height: 1.05rem;
+      letter-spacing: 0.01em;
+    }
+
+    #settingsModal .provider-field-active {
+      border: 1px solid rgba(94, 220, 255, 0.38);
+      border-radius: 10px;
+      padding: 0.42rem;
+      background: linear-gradient(180deg, rgba(36, 63, 84, 0.34), rgba(36, 63, 84, 0.15));
+      box-shadow: 0 0 0 1px rgba(94, 220, 255, 0.10) inset;
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from {

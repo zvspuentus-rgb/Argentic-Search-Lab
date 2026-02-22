@@ -70,6 +70,10 @@
     addListenerIfPresent("fullResetBtn", "click", fullResetAppData);
     addListenerIfPresent("fullResetBtnRail", "click", fullResetAppData);
     addListenerIfPresent("convoSearch", "input", renderConversationTree);
+    addListenerIfPresent("provider", "change", () => {
+      updateProviderVisualState();
+      if (typeof saveSettingsToStorage === "function") saveSettingsToStorage();
+    });
 
     const sessionsListEl = $("sessionsList");
     if (sessionsListEl) {
@@ -169,6 +173,7 @@
       if (typeof syncRuntimeConfigDefaults === "function") {
         await syncRuntimeConfigDefaults();
       }
+      updateProviderVisualState();
       if ($("settingsState")) $("settingsState").textContent = "settings: loaded";
       loadSessionsFromStorage();
       renderSessions();
@@ -276,6 +281,25 @@
     function toggleSettings() {
       const modal = document.getElementById('settingsModal');
       modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function updateProviderVisualState() {
+      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
+      const hint = $("providerActiveHint");
+      const map = {
+        lmstudio: { id: "fieldLmBase", text: "Active provider: LM Studio -> using LM Studio Base URL" },
+        ollama: { id: "fieldOllamaBase", text: "Active provider: Ollama -> using Ollama Base URL" },
+        openai: { id: "fieldOpenaiBase", text: "Active provider: OpenAI -> using OpenAI Base URL + API key" },
+        anthropic: { id: "fieldAnthropicBase", text: "Active provider: Anthropic -> using Anthropic Base URL + API key" },
+        gemini: { id: "fieldGeminiBase", text: "Active provider: Gemini -> using Gemini Base URL + API key" }
+      };
+      const active = map[provider] || map.lmstudio;
+      ["fieldLmBase", "fieldOllamaBase", "fieldOpenaiBase", "fieldAnthropicBase", "fieldGeminiBase"].forEach((id) => {
+        const el = $(id);
+        if (!el) return;
+        el.classList.toggle("provider-field-active", id === active.id);
+      });
+      if (hint) hint.textContent = active.text;
     }
 
     function showMiniToast(message = "Saved") {

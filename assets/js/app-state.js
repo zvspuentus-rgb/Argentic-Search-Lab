@@ -90,23 +90,23 @@
       }
       if ($("openaiBase")) {
         const cur = String(s.openaiBase || $("openaiBase").value || "").trim();
-        if (!cur || isDockerInternalLike(cur) || /api\.openai\.com\/v1$/i.test(cur)) {
-          s.openaiBase = "/openai";
-          $("openaiBase").value = "/openai";
+        if (!cur || isDockerInternalLike(cur)) {
+          s.openaiBase = "https://api.openai.com/v1";
+          $("openaiBase").value = "https://api.openai.com/v1";
         }
       }
       if ($("anthropicBase")) {
         const cur = String(s.anthropicBase || $("anthropicBase").value || "").trim();
-        if (!cur || isDockerInternalLike(cur) || /api\.anthropic\.com\/v1$/i.test(cur)) {
-          s.anthropicBase = "/anthropic";
-          $("anthropicBase").value = "/anthropic";
+        if (!cur || isDockerInternalLike(cur)) {
+          s.anthropicBase = "https://api.anthropic.com/v1";
+          $("anthropicBase").value = "https://api.anthropic.com/v1";
         }
       }
       if ($("geminiBase")) {
         const cur = String(s.geminiBase || $("geminiBase").value || "").trim();
-        if (!cur || isDockerInternalLike(cur) || /generativelanguage\.googleapis\.com\/v1beta$/i.test(cur)) {
-          s.geminiBase = "/gemini";
-          $("geminiBase").value = "/gemini";
+        if (!cur || isDockerInternalLike(cur)) {
+          s.geminiBase = "https://generativelanguage.googleapis.com/v1beta";
+          $("geminiBase").value = "https://generativelanguage.googleapis.com/v1beta";
         }
       }
       return s;
@@ -135,9 +135,9 @@
         setIfDocker("searchUrl", d.searchUrl || ext.searchUrl);
         setIfDocker("lmBase", d.lmBase || ext.lmBase);
         setIfDocker("ollamaBase", d.ollamaBase || ext.ollamaBase);
-        setIfDocker("openaiBase", d.openaiBase || "/openai");
-        setIfDocker("anthropicBase", d.anthropicBase || "/anthropic");
-        setIfDocker("geminiBase", d.geminiBase || "/gemini");
+        setIfDocker("openaiBase", d.openaiBase || "https://api.openai.com/v1");
+        setIfDocker("anthropicBase", d.anthropicBase || "https://api.anthropic.com/v1");
+        setIfDocker("geminiBase", d.geminiBase || "https://generativelanguage.googleapis.com/v1beta");
 
         if (changed.value) saveSettingsToStorage();
       } catch {
