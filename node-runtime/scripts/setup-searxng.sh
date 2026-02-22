@@ -115,6 +115,10 @@ if ! python -m pip install -q -U msgspec; then
   echo "  sudo apt install build-essential python3-dev rustc cargo pkg-config"
   exit 1
 fi
+python - <<'PY'
+import msgspec
+print(f"[setup-searxng] msgspec ready: {msgspec.__version__}")
+PY
 
 if [ ! -d "$SEARX_DIR/.git" ]; then
   echo "[setup-searxng] cloning searxng source"
@@ -122,6 +126,11 @@ if [ ! -d "$SEARX_DIR/.git" ]; then
 else
   echo "[setup-searxng] updating searxng source"
   git -C "$SEARX_DIR" pull --ff-only >/dev/null 2>&1 || true
+fi
+
+if [ -f "$SEARX_DIR/requirements.txt" ]; then
+  echo "[setup-searxng] installing searxng requirements"
+  python -m pip install -q -r "$SEARX_DIR/requirements.txt"
 fi
 
 echo "[setup-searxng] installing searxng into venv"
