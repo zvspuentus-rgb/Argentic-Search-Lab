@@ -6,6 +6,7 @@ This mode runs on **Node.js + Python venv** (SearXNG), without Docker.
 ## Requirements
 - Node.js 20+
 - Python 3.10-3.13
+- `python3-venv` (Debian/Ubuntu package; installer tries auto-install when possible)
 - `git`
 
 ## Install
