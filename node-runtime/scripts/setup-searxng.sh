@@ -56,7 +56,7 @@ install_venv_pkg_debian() {
     for pkg in "python3.${py_minor}-venv" "python3-venv"; do
       if apt-cache show "$pkg" >/dev/null 2>&1; then
         echo "[setup-searxng] installing missing package: $pkg"
-        $cmd update -y >/dev/null
+        $cmd update >/dev/null
         $cmd install -y "$pkg" >/dev/null
         return 0
       fi
@@ -74,11 +74,12 @@ fi
 
 if [ ! -d "$VENV_DIR" ]; then
   echo "[setup-searxng] creating venv with $PYTHON"
-  if ! "$PYTHON" -m venv "$VENV_DIR" 2>"$RUN_DIR/.venv.err"; then
+  if ! "$PYTHON" -m venv "$VENV_DIR" >"$RUN_DIR/.venv.err" 2>&1; then
     if grep -Eiq 'ensurepip is not available|No module named venv|venv package' "$RUN_DIR/.venv.err"; then
       echo "[setup-searxng] python venv components are missing."
       if install_venv_pkg_debian; then
         echo "[setup-searxng] retrying venv creation"
+        rm -rf "$VENV_DIR"
         "$PYTHON" -m venv "$VENV_DIR"
       else
         echo "[setup-searxng] install failed. Run one of:"
