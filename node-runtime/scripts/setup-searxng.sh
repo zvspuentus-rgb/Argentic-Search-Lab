@@ -5,7 +5,11 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SETTINGS_FILE="$ROOT_DIR/searxng/settings-node.yml"
 CONTAINER_NAME="appagent-searxng-node"
 IMAGE="searxng/searxng:latest"
-PORT="${SEARX_PORT:-8393}"
+RUN_DIR="$ROOT_DIR/.run"
+PORT_FILE="$RUN_DIR/searx_port"
+PORT="${SEARX_PORT:-8394}"
+
+mkdir -p "$RUN_DIR"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "[setup-searxng] docker is required for auto-setup in Node mode."
@@ -13,9 +17,31 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-if curl -fsS "http://localhost:${PORT}/search?q=health&format=json" >/dev/null 2>&1; then
-  echo "[setup-searxng] existing SearXNG detected on localhost:${PORT}"
-  exit 0
+pick_free_port() {
+  local start_port="$1"
+  local p="$start_port"
+  local limit=$((start_port + 30))
+  while [ "$p" -le "$limit" ]; do
+    if ! lsof -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1; then
+      echo "$p"
+      return 0
+    fi
+    p=$((p + 1))
+  done
+  return 1
+}
+
+running_host_port() {
+  docker port "$CONTAINER_NAME" 8080/tcp 2>/dev/null | head -n1 | awk -F: '{print $NF}'
+}
+
+if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  mapped="$(running_host_port || true)"
+  if [ -n "${mapped:-}" ] && curl -fsS "http://localhost:${mapped}/search?q=health&format=json" >/dev/null 2>&1; then
+    echo "$mapped" > "$PORT_FILE"
+    echo "[setup-searxng] container already running: ${CONTAINER_NAME} on localhost:${mapped}"
+    exit 0
+  fi
 fi
 
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -26,12 +52,16 @@ else
   fi
   echo "[setup-searxng] pulling ${IMAGE}"
   docker pull "${IMAGE}" >/dev/null
-  echo "[setup-searxng] starting ${CONTAINER_NAME} on localhost:${PORT}"
   if lsof -iTCP:"${PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
-    echo "[setup-searxng] port ${PORT} is in use and no healthy SearXNG was detected."
-    echo "[setup-searxng] set SEARX_PORT to a free port, e.g. SEARX_PORT=8394 npm run setup:search"
-    exit 1
+    picked="$(pick_free_port "$PORT" || true)"
+    if [ -z "${picked:-}" ]; then
+      echo "[setup-searxng] no free port found near ${PORT}"
+      exit 1
+    fi
+    echo "[setup-searxng] port ${PORT} busy, switching to ${picked}"
+    PORT="$picked"
   fi
+  echo "[setup-searxng] starting ${CONTAINER_NAME} on localhost:${PORT}"
   docker run -d \
     --name "${CONTAINER_NAME}" \
     -p "${PORT}:8080" \
@@ -41,6 +71,7 @@ fi
 
 for i in {1..30}; do
   if curl -fsS "http://localhost:${PORT}/search?q=health&format=json" >/dev/null 2>&1; then
+    echo "$PORT" > "$PORT_FILE"
     echo "[setup-searxng] ready: http://localhost:${PORT}"
     exit 0
   fi

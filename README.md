@@ -37,7 +37,7 @@ npm run start:all
 Open:
 - UI: `http://localhost:3093`
 - MCP endpoint: `http://localhost:3093/mcp`
-- SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
+- SearXNG JSON: `http://localhost:8394/search?q=test&format=json` (Node default, Docker stays on `8393`)
 
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)

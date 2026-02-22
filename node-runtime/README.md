@@ -31,11 +31,12 @@ npm run start:all
 - Web UI: `http://localhost:3093`
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
-- SearXNG: `http://localhost:8393/search?q=test&format=json`
+- SearXNG: `http://localhost:8394/search?q=test&format=json` (Node default)
 
 `start:all` behavior:
 - If SearXNG is not running, it auto-starts it locally.
-- If SearXNG already runs on `localhost:8393`, it reuses it.
+- Node runtime uses `8394` by default so it does not collide with Docker stack (`8393`).
+- If `8394` is busy, it automatically selects the next free port.
 - No manual port input is required for default setup.
 
 ## Optional manual mode
