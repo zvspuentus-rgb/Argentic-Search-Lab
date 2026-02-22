@@ -1,6 +1,7 @@
 # Argentic Search Lab (Node.js Branch)
+![Argentic Search Lab Logo](docs/logo.svg)
 
-This branch is focused on the Node.js runtime and CLI workflow.
+Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single CLI (`argentic`).
 
 ## Quick Start
 ```bash
@@ -10,31 +11,60 @@ bash ./scripts/bootstrap-node-runtime.sh
 argentic up
 ```
 
-## CLI Commands
-- `argentic up` -> start Web UI + MCP + Search service
-- `argentic status` -> show service status
-- `argentic down` -> stop services
+## CLI
+- `argentic up` -> start UI + MCP + Search
+- `argentic status` -> show running status
+- `argentic down` -> stop runtime
 
 ## Endpoints
-- Web UI: `http://localhost:3093`
+- UI: `http://localhost:3093`
 - MCP: `http://localhost:3093/mcp`
-- Search (direct): `http://localhost:8394/search?q=test&format=json`
-- Search (proxy): `http://localhost:3093/searxng/search?q=test&format=json`
+- Search direct: `http://localhost:8394/search?q=test&format=json`
+- Search via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
-## Provider Base URLs
-Set these if needed before `argentic up`:
-- `LMSTUDIO_BASE` (default `http://localhost:1234`)
-- `OLLAMA_BASE` (default `http://localhost:11434`)
-- `SEARX_BASE` (auto by default, usually `http://localhost:8394`)
+## Visual Workflow
+![Pipeline Overview](docs/pipeline.svg)
+![MCP Flow](docs/mcp-flow.svg)
+
+```mermaid
+flowchart LR
+    U["User / Agent"] --> C["argentic up"]
+    C --> UI["Web UI :3093"]
+    C --> MCP["MCP :3093/mcp"]
+    C --> SX["SearXNG :8394"]
+    UI --> MCP
+    UI --> SX
+    MCP --> SX
+```
+
+## MCP Tools
+- `search_quick`
+- `search_deep`
+- `fetch_url_context`
+
+Tool policy and JSON config examples:
+- [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
+
+## Search + LLM Routing
+- Search endpoint is internal to app runtime, exposed externally at `:8394` and app proxy `/searxng/*`.
+- LLM proxy routes:
+  - `/lmstudio/*` -> `LMSTUDIO_BASE` (default `http://localhost:1234`)
+  - `/ollama/*` -> `OLLAMA_BASE` (default `http://localhost:11434`)
+
+## Environment (optional)
+- `PORT` (default `3093`)
+- `SEARX_PORT` (default `8394`)
+- `SEARX_BASE`
+- `LMSTUDIO_BASE`
+- `OLLAMA_BASE`
 
 ## Notes
-- `argentic up` runs in foreground. Press `Ctrl+C` to stop.
-- If default search port is busy, a free port is selected automatically.
+- `argentic up` runs in foreground (`Ctrl+C` to stop).
+- If search default port is occupied, runtime chooses a free port automatically.
 
-## Full Stack Reference
-For the Docker-first/full-stack guide, use the main branch:
+## Docker / Full Stack
+For Docker-first/full-stack instructions, use `main`:
 - https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main
 
 ## Additional Docs
-- MCP integration: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Node runtime details: [`node-runtime/README.md`](node-runtime/README.md)

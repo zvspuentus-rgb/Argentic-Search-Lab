@@ -1,4 +1,5 @@
 # AppAgent Node Runtime
+![Argentic Search Lab Logo](../docs/logo.svg)
 
 Node runtime for Argentic Search Lab in this branch.
 
@@ -32,6 +33,10 @@ argentic up
 - Health: `http://localhost:3093/health`
 - Search direct: `http://localhost:8394/search?q=test&format=json`
 - Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
+
+## Workflow Visuals
+- Pipeline: `../docs/pipeline.svg`
+- MCP flow: `../docs/mcp-flow.svg`
 
 ## LLM Routing
 - `/lmstudio/*` is proxied to `LMSTUDIO_BASE` (default `http://localhost:1234`)
