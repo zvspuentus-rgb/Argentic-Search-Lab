@@ -1280,12 +1280,13 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function testConnections() {
-      const lmBase = $("lmBase").value.trim();
+      const runtime = getProviderRuntime();
       const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
+      const pName = providerDisplayName(runtime.provider);
 
-      addLog("health", "Testing LM Studio...", "ok");
-      await fetchJson(`${lmBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: "LM Studio models" });
-      addLog("health", "LM Studio OK", "ok");
+      addLog("health", `Testing ${pName}...`, "ok");
+      const probe = await testProviderConnection(runtime);
+      addLog("health", `${pName} OK (${(probe.models || []).length} models)`, "ok");
 
       addLog("health", "Testing SearXNG...", "ok");
       const u = new URL(searchUrl);

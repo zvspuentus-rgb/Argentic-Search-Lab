@@ -234,6 +234,69 @@
       return "";
     }
 
+    function providerDisplayName(provider) {
+      const p = String(provider || "").toLowerCase();
+      if (p === "lmstudio") return "LM Studio";
+      if (p === "ollama") return "Ollama";
+      if (p === "openai") return "OpenAI";
+      if (p === "anthropic") return "Anthropic";
+      if (p === "gemini") return "Gemini";
+      return p || "Provider";
+    }
+
+    async function listProviderModels(runtime) {
+      const rt = runtime || getProviderRuntime();
+      const base = String(rt.base || "").replace(/\/$/, "");
+      const provider = String(rt.provider || "lmstudio").toLowerCase();
+
+      if (!base && (provider === "lmstudio" || provider === "ollama" || provider === "openai")) {
+        throw new Error(`${providerDisplayName(provider)} base URL is missing.`);
+      }
+
+      if (provider === "lmstudio") {
+        const raw = await fetchJson(`${base}/models`, {}, { scope: "health", label: "LM Studio models" });
+        return uniqueStrings((raw?.data || []).map((m) => m?.id).filter(Boolean));
+      }
+
+      if (provider === "ollama") {
+        const raw = await fetchJson(`${base}/api/tags`, {}, { scope: "health", label: "Ollama tags" });
+        return uniqueStrings((raw?.models || []).map((m) => m?.name || m?.model).filter(Boolean));
+      }
+
+      if (provider === "openai") {
+        const headers = {};
+        if (rt.apiKey) headers.Authorization = `Bearer ${rt.apiKey}`;
+        const raw = await fetchJson(`${base}/models`, { headers }, { scope: "health", label: "OpenAI models" });
+        return uniqueStrings((raw?.data || []).map((m) => m?.id).filter(Boolean));
+      }
+
+      if (provider === "anthropic") {
+        if (!rt.apiKey) throw new Error("Anthropic key is missing.");
+        const raw = await fetchJson(`${base.replace(/\/$/, "")}/models`, {
+          headers: {
+            "x-api-key": rt.apiKey,
+            "anthropic-version": "2023-06-01"
+          }
+        }, { scope: "health", label: "Anthropic models" });
+        return uniqueStrings((raw?.data || []).map((m) => m?.id).filter(Boolean));
+      }
+
+      if (provider === "gemini") {
+        if (!rt.apiKey) throw new Error("Gemini key is missing.");
+        const url = `${base.replace(/\/$/, "")}/models?key=${encodeURIComponent(rt.apiKey)}`;
+        const raw = await fetchJson(url, {}, { scope: "health", label: "Gemini models" });
+        return uniqueStrings((raw?.models || []).map((m) => String(m?.name || "").replace(/^models\//, "")).filter(Boolean));
+      }
+
+      return [];
+    }
+
+    async function testProviderConnection(runtime) {
+      const rt = runtime || getProviderRuntime();
+      const models = await listProviderModels(rt);
+      return { provider: rt.provider, models };
+    }
+
     function extractTemporalScope(text) {
       const src = String(text || "");
       const years = [...new Set((src.match(/\b(19|20)\d{2}\b/g) || []).map((x) => Number(x)).filter((n) => n >= 1900 && n <= 2100))];

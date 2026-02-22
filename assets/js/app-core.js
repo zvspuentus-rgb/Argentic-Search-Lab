@@ -92,13 +92,11 @@
 
     /* Dynamic Model Fetching */
     async function refreshModels() {
-      const lmBase = $("lmBase").value.trim();
       try {
-        setStatus("Fetching models from LM Studio...");
-        const res = await fetch(`${lmBase.replace(/\/$/, "")}/models`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const models = (data.data || []).map(m => m.id);
+        const runtime = getProviderRuntime();
+        const pName = providerDisplayName(runtime.provider);
+        setStatus(`Fetching models from ${pName}...`);
+        const models = await listProviderModels(runtime);
 
         const select = $("modelName");
         let storedModel = "";
@@ -132,11 +130,13 @@
           }
         }
         if (typeof saveSettingsToStorage === "function") saveSettingsToStorage();
-        setStatus(`Found ${models.length} models.`);
-        addLog("health", `Fetched ${models.length} models from LM Studio.`, "ok");
+        setStatus(`${pName}: found ${models.length} models.`);
+        addLog("health", `Fetched ${models.length} models from ${pName}.`, "ok");
+        if (typeof showMiniToast === "function") showMiniToast(`${pName}: ${models.length} models`);
       } catch (err) {
         setStatus(`Model fetch failed: ${err.message}`);
         addLog("health", `Failed to fetch models: ${err.message}`, "warn");
+        if (typeof showMiniToast === "function") showMiniToast("Model fetch failed");
       }
     }
 

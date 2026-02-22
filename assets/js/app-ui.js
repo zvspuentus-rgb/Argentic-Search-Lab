@@ -43,9 +43,11 @@
         setStatus("Testing connections...");
         await testConnections();
         setStatus("Connection test passed.");
+        if (typeof showMiniToast === "function") showMiniToast("Connection OK");
       } catch (err) {
         addLog("health", err.message || String(err), "err");
         setStatus(`Connection test failed: ${err.message}`);
+        if (typeof showMiniToast === "function") showMiniToast("Connection failed");
       } finally {
         setBusy(false);
       }
@@ -529,8 +531,13 @@
       }
       const lmBase = $("lmBase")?.value?.trim() || "";
       const model = $("modelName")?.value?.trim() || "";
-      if (!lmBase || !model) {
-        setStatus("LM endpoint/model is missing.");
+      const providerIssue = validateProviderConfig();
+      if (providerIssue) {
+        setStatus(providerIssue);
+        return;
+      }
+      if (!model) {
+        setStatus("Model is missing.");
         return;
       }
       const improveBtn = $("improvePromptBtn");
@@ -548,8 +555,11 @@
       setStatus("Processing request... improving prompt");
       try {
         const targetLang = String($("enhancePromptLanguage")?.value || "en").toLowerCase();
-        const out = await lmChat({
+        let streamedText = "";
+        input.value = "";
+        const streamed = await lmChatStream({
           lmBase,
+          streamTag: "prompt-enhance",
           payload: {
             model,
             temperature: 0.2,
@@ -559,18 +569,25 @@
                 role: "system",
                 content: [
                   "Rewrite the user draft into one concise, high-quality research prompt in English.",
-                  "Preserve intent, constraints, dates, and key entities.",
+                  "Preserve intent, constraints, dates, key entities, and explicit timeline requirements.",
                   "Hard rule: do NOT ask user follow-up questions.",
-                  "Do NOT output questionnaires or forms for user input.",
+                  "Do NOT output questionnaires, forms, interviews, or clarification prompts.",
                   "If details are missing, infer reasonable defaults and include assumptions briefly.",
                   "Keep it compact (maximum 220 words). Return only the improved prompt text."
                 ].join(" ")
               },
               { role: "user", content: draft }
             ]
+          },
+          onText: (delta) => {
+            streamedText += String(delta || "");
+            input.value = normalizeEnhancedPromptForTextarea(streamedText);
+            input.style.height = "auto";
+            input.style.height = (input.scrollHeight) + "px";
+            updateInpState();
           }
         });
-        let improvedEnglish = clampEnhancedPrompt(out?.choices?.[0]?.message?.content || "");
+        let improvedEnglish = clampEnhancedPrompt(streamed?.content || streamedText || "");
         if (looksLikeClarificationQuestions(improvedEnglish)) {
           improvedEnglish = await forceExecutablePrompt({
             lmBase,
@@ -594,9 +611,11 @@
         updateInpState();
         saveUiState();
         setStatus("Prompt improved.");
+        if (typeof showMiniToast === "function") showMiniToast("Prompt improved");
       } catch (err) {
         setStatus(`Prompt enhancement failed: ${err.message}`);
         addDebug("prompt", `Enhance failed: ${err.message}`, "warn");
+        if (typeof showMiniToast === "function") showMiniToast("Prompt enhancement failed");
       } finally {
         state.promptEnhanceLock = false;
         if (improveBtn) {
