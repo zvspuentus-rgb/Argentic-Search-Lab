@@ -15,6 +15,40 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 }
 ```
 
+## Generic MCP client config (`command` / `args` / `env`)
+If your MCP client requires a command-based server definition (stdio transport), use an HTTP bridge:
+
+```json
+{
+  "mcpServers": {
+    "appagent": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:8193/mcp",
+        "--transport",
+        "http-only",
+        "--allow-http"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
+If your client supports native HTTP MCP, prefer:
+
+```json
+{
+  "mcpServers": {
+    "appagent": {
+      "url": "http://localhost:8193/mcp"
+    }
+  }
+}
+```
+
 ## Supported MCP methods
 - `initialize`
 - `tools/list`

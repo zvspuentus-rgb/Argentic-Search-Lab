@@ -318,6 +318,47 @@ Add inside your MCP client config (`mcpServers`):
 }
 ```
 
+### MCP config for clients that require `command`/`args`/`env`
+Some MCP clients support `url` directly, while others require a stdio command.
+
+Use one of these patterns:
+
+1. Direct HTTP (preferred when client supports `url`)
+```json
+{
+  "mcpServers": {
+    "appagent": {
+      "url": "http://localhost:8193/mcp"
+    }
+  }
+}
+```
+
+2. Stdio bridge via `mcp-remote` (for command-only clients)
+```json
+{
+  "mcpServers": {
+    "appagent": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:8193/mcp",
+        "--transport",
+        "http-only",
+        "--allow-http"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
+Notes:
+- `env` can stay `{}` if you do not need secrets/custom headers.
+- Not all clients require all fields; if `url` works in your client, prefer it.
+- Keep your server endpoint as `http://localhost:8193/mcp` unless you changed ports.
+
 ## Local Model Runtime and Cost
 - Default setup is local-first.
 - Works with small models for lightweight tasks (for example ~1B–3B class models).
