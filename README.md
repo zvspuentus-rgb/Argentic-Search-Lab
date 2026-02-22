@@ -49,6 +49,40 @@ flowchart LR
 Tool policy and JSON config examples:
 - [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 
+### MCP JSON (Copy/Paste)
+Use this in clients that support URL-based MCP servers:
+
+```json
+{
+  "mcpServers": {
+    "appagent-node": {
+      "url": "http://localhost:3093/mcp"
+    }
+  }
+}
+```
+
+For clients that require `command` + `args`:
+
+```json
+{
+  "mcpServers": {
+    "appagent-node": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:3093/mcp",
+        "--transport",
+        "http-only",
+        "--allow-http"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
 ### MCP Visual Workflow (Tool Branches)
 ```mermaid
 flowchart TB

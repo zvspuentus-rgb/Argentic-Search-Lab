@@ -34,6 +34,40 @@ argentic up
 - Search direct: `http://localhost:8394/search?q=test&format=json`
 - Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
+## MCP JSON (Copy/Paste)
+URL-based MCP config:
+
+```json
+{
+  "mcpServers": {
+    "appagent-node": {
+      "url": "http://localhost:3093/mcp"
+    }
+  }
+}
+```
+
+Command-based MCP config:
+
+```json
+{
+  "mcpServers": {
+    "appagent-node": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:3093/mcp",
+        "--transport",
+        "http-only",
+        "--allow-http"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
 ## Workflow Visuals
 - Pipeline: `../docs/pipeline.svg`
 - MCP flow: `../docs/mcp-flow.svg`
