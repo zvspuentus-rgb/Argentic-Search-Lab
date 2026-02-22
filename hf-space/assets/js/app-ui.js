@@ -361,6 +361,22 @@
       return out.replace(/\s+/g, " ").trim();
     }
 
+    function normalizeEnhancedPromptForTextarea(text) {
+      let out = String(text || "");
+      if (!out) return "";
+      // Keep textarea clean/editable: strip markdown wrappers while preserving content.
+      out = out
+        .replace(/^#{1,6}\s+/gm, "")
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/\*(.*?)\*/g, "$1")
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/^\s*[-*+]\s+/gm, "")
+        .replace(/^\s*\d+\.\s+/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      return clampEnhancedPrompt(out);
+    }
+
     function looksLikeClarificationQuestions(text) {
       const src = String(text || "").trim();
       if (!src) return false;
@@ -563,7 +579,7 @@
           targetLang
         });
         if (!improved) throw new Error("No improved prompt returned.");
-        input.value = improved;
+        input.value = normalizeEnhancedPromptForTextarea(improved);
         input.style.height = "auto";
         input.style.height = (input.scrollHeight) + "px";
         updateInpState();

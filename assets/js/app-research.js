@@ -352,6 +352,10 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const followups = (state.followups || []).slice(0, 8);
       const answerText = String($("answer")?.textContent || "").trim();
       const summary = answerText.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 5).join(" ");
+      const currentQueryRaw = String($("userQuery")?.value || "-").trim();
+      const currentQueryHtml = (typeof markdownToSafeHtml === "function")
+        ? markdownToSafeHtml(currentQueryRaw || "-")
+        : `<pre class="mono" style="white-space:pre-wrap; margin:0; color:#d5e2eb;">${escapeHtml(currentQueryRaw || "-")}</pre>`;
 
       body.innerHTML = `
         <div class="deep-grid">
@@ -360,7 +364,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
             <p class="deep-exec-text" style="margin:0; line-height:1.6;">${escapeHtml(summary || "No summary available yet.")}</p>
             <hr style="border-color: rgba(255,255,255,0.08)" />
             <div class="section-title">Current Query</div>
-            <pre class="mono" style="white-space:pre-wrap; margin:0; color:#d5e2eb;">${escapeHtml($("userQuery")?.value || "-")}</pre>
+            <div class="answer-body" style="margin:0; color:#d5e2eb;">${currentQueryHtml}</div>
           </section>
           <section class="card">
             <div class="section-title">Agent Relay Brief</div>
