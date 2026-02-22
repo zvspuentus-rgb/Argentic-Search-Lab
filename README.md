@@ -56,12 +56,13 @@ cd Argentic-Search-Lab
 git checkout codex/app-nodejs-runtime
 cd node-runtime
 npm install
-SEARX_BASE=http://localhost:8393 PORT=3093 npm start
+npm run start:all
 ```
 
 Open:
 - UI: `http://localhost:3093`
 - MCP endpoint: `http://localhost:3093/mcp`
+- SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
 
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
