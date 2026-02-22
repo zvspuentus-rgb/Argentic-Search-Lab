@@ -32,6 +32,7 @@ npm run start:all
 - MCP: `http://localhost:3093/mcp`
 - Health: `http://localhost:3093/health`
 - SearXNG: `http://localhost:8394/search?q=test&format=json` (Node default)
+- SearXNG via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
 `start:all` behavior:
 - If SearXNG is not running, it auto-starts it locally.

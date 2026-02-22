@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 
 const PORT = Number(process.env.PORT || 3093);
-const SEARX_BASE = (process.env.SEARX_BASE || 'http://localhost:8393').replace(/\/$/, '');
+const SEARX_BASE = (process.env.SEARX_BASE || 'http://localhost:8394').replace(/\/$/, '');
 const LMSTUDIO_BASE = (process.env.LMSTUDIO_BASE || 'http://localhost:1234').replace(/\/$/, '');
 const OLLAMA_BASE = (process.env.OLLAMA_BASE || 'http://localhost:11434').replace(/\/$/, '');
 const APP_ROOT = path.resolve(__dirname, '..');
@@ -383,6 +383,10 @@ app.all('/lmstudio/*', async (req, res) => {
 
 app.all('/ollama/*', async (req, res) => {
   await proxyRequest(req, res, OLLAMA_BASE, '/ollama');
+});
+
+app.all('/searxng/*', async (req, res) => {
+  await proxyRequest(req, res, SEARX_BASE, '/searxng');
 });
 
 app.post('/mcp', async (req, res) => {
