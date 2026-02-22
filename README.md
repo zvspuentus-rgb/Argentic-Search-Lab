@@ -35,6 +35,11 @@ flowchart LR
     UI --> MCP
     UI --> SX
     MCP --> SX
+    classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef runtime fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1px;
+    classDef tools fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1px;
+    class U entry;
+    class C,UI,MCP,SX runtime;
 ```
 
 ## MCP Tools
@@ -67,6 +72,16 @@ flowchart TB
     U1 -->|"No"| U3["Single URL clean extract"]
     U2 --> OUT
     U3 --> OUT
+    classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef quick fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1px;
+    classDef deep fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1px;
+    classDef url fill:#2f2248,stroke:#b690ff,color:#f2eaff,stroke-width:1px;
+    classDef output fill:#1f2f3a,stroke:#7fd1ff,color:#eaf8ff,stroke-width:1px;
+    class A,B entry;
+    class Q,Q1,Q2 quick;
+    class D,D1,D2,D3 deep;
+    class U,U1,U2,U3 url;
+    class OUT output;
 ```
 
 ## Search + LLM Routing

@@ -52,6 +52,16 @@ flowchart LR
     QO --> O["Final response"]
     DO --> O
     FO --> O
+    classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1px;
+    classDef quick fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1px;
+    classDef deep fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1px;
+    classDef url fill:#2f2248,stroke:#b690ff,color:#f2eaff,stroke-width:1px;
+    classDef output fill:#1f2f3a,stroke:#7fd1ff,color:#eaf8ff,stroke-width:1px;
+    class C,R entry;
+    class Q,QO quick;
+    class D,DO deep;
+    class F,FO url;
+    class O output;
 ```
 
 ## LLM Routing
