@@ -98,7 +98,15 @@
         const models = (data.data || []).map(m => m.id);
 
         const select = $("modelName");
-        const current = select.value;
+        let storedModel = "";
+        try {
+          const raw = localStorage.getItem(SETTINGS_KEY);
+          if (raw) {
+            const saved = JSON.parse(raw);
+            storedModel = String(saved?.chatModel || saved?.modelName || "").trim();
+          }
+        } catch { }
+        const current = select.value || storedModel;
         select.innerHTML = "";
 
         if (models.length === 0) {
@@ -114,6 +122,13 @@
         if (typeof syncChatModelOptions === "function") {
           syncChatModelOptions({ keepChatSelection: true });
         }
+        if (current && models.includes(current) && select.value !== current) {
+          select.value = current;
+          if (typeof syncChatModelOptions === "function") {
+            syncChatModelOptions({ keepChatSelection: true });
+          }
+        }
+        if (typeof saveSettingsToStorage === "function") saveSettingsToStorage();
         setStatus(`Found ${models.length} models.`);
         addLog("health", `Fetched ${models.length} models from LM Studio.`, "ok");
       } catch (err) {
@@ -259,6 +274,18 @@
       return `[${tag}] ${msg}`;
     }
 
+    function compactThinkingLine(item, fallbackTag = "THINK") {
+      if (!item) return "";
+      const tag = String(item.stage || fallbackTag).toUpperCase().slice(0, 14);
+      const text = String(item.text || "")
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 110);
+      if (!text) return "";
+      return `[${tag}] ${text}`;
+    }
+
     function renderAgentStreamMatrixTick() {
       const root = $("agentStreamMatrix");
       const lineA = $("agentStreamLineA");
@@ -300,9 +327,18 @@
       }
       const active = String(activeText || (activeFlowLabel() || "COLLECT").toUpperCase().slice(0, 10));
       label.textContent = active;
+      const thinkingLines = state.thinking
+        .filter((x) => {
+          const stage = String(x?.stage || "").toLowerCase();
+          return stage && !stage.includes("synthesis") && !stage.includes("writing");
+        })
+        .map((x) => compactThinkingLine(x, "THINK"))
+        .filter(Boolean)
+        .slice(0, 10);
       const liveLines = [
         lineAText || `[${active}] ${randomMatrixChunk(22)}`,
         lineBText || `[TRACE] ${randomMatrixChunk(22)}`,
+        ...thinkingLines,
         ...state.logs.slice(0, 10).map((x) => compactLogLine(x, "TRACE"))
       ].slice(0, 12);
       stream.innerHTML = liveLines.map((line) => `<div class="analysis-live-line">${escapeHtml(line)}</div>`).join("");
@@ -313,7 +349,9 @@
         })
         .slice(0, 12)
         .map((x) => compactLogLine(x, "PACK"));
+      const thinkingPackets = thinkingLines.slice(0, 8);
       stream2.innerHTML = packetLines
+        .concat(thinkingPackets)
         .concat(packetLines.length ? [] : [`[${active}] ${randomMatrixChunk(26)}`])
         .slice(0, 12)
         .map((line) => `<div class="analysis-live-line">${escapeHtml(line)}</div>`)

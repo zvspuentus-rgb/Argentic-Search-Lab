@@ -341,6 +341,16 @@
       return heb > 0 && heb >= lat;
     }
 
+    function clampEnhancedPrompt(text, { maxWords = 260, maxChars = 1900 } = {}) {
+      const normalized = normalizeQuery(text || "");
+      if (!normalized) return "";
+      let out = normalized;
+      if (out.length > maxChars) out = out.slice(0, maxChars);
+      const words = out.split(/\s+/).filter(Boolean);
+      if (words.length > maxWords) out = words.slice(0, maxWords).join(" ");
+      return out.replace(/\s+/g, " ").trim();
+    }
+
     async function forcePromptLanguage({
       lmBase,
       model,
@@ -371,11 +381,11 @@
         payload: {
           model,
           temperature: 0.1,
-          max_tokens: 900,
+          max_tokens: 420,
           messages: [
             {
               role: "system",
-              content: `${directive} Preserve intent, constraints, and key entities. Return only the final prompt text.`
+              content: `${directive} Preserve intent, constraints, and key entities. Keep it compact (maximum 220 words). Return only the final prompt text.`
             },
             {
               role: "user",
@@ -395,19 +405,19 @@
           payload: {
             model,
             temperature: 0.1,
-            max_tokens: 900,
+            max_tokens: 420,
             messages: [
               {
                 role: "system",
-                content: "Return this prompt in Hebrew only. Preserve all technical details. Return only the prompt."
+                content: "Return this prompt in Hebrew only. Preserve all technical details. Keep it compact (maximum 220 words). Return only the prompt."
               },
               { role: "user", content: forced }
             ]
           }
         });
-        return normalizeQuery(retry?.choices?.[0]?.message?.content || forced);
+        return clampEnhancedPrompt(retry?.choices?.[0]?.message?.content || forced);
       }
-      return forced;
+      return clampEnhancedPrompt(forced);
     }
 
     async function improvePromptDraft() {
@@ -445,17 +455,17 @@
           payload: {
             model,
             temperature: 0.2,
-            max_tokens: 900,
+            max_tokens: 420,
             messages: [
               {
                 role: "system",
-                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent, constraints, dates, and key entities. Return only the improved prompt text."
+                content: "Rewrite the user draft into a concise, high-quality research prompt in English. Preserve intent, constraints, dates, and key entities. Keep it compact (maximum 220 words). Return only the improved prompt text."
               },
               { role: "user", content: draft }
             ]
           }
         });
-        const improvedEnglish = normalizeQuery(out?.choices?.[0]?.message?.content || "");
+        const improvedEnglish = clampEnhancedPrompt(out?.choices?.[0]?.message?.content || "");
         const improved = await forcePromptLanguage({
           lmBase,
           model,
