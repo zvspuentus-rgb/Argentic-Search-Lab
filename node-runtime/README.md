@@ -69,8 +69,8 @@ Command-based MCP config:
 ```
 
 ## Workflow Visuals
-- Pipeline: `../docs/pipeline.svg`
-- MCP flow: `../docs/mcp-flow.svg`
+- Pipeline: `../docs/pipeline.png`
+- MCP flow: `../docs/mcp-flow.png`
 
 ## LLM Routing
 - `/lmstudio/*` is proxied to `LMSTUDIO_BASE` (default `http://localhost:1234`)

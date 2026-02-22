@@ -23,8 +23,8 @@ argentic up
 - Search via app proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
 ## Visual Workflow
-![Pipeline Overview](docs/pipeline.svg)
-![MCP Flow](docs/mcp-flow.svg)
+![Pipeline Overview](docs/pipeline.png)
+![MCP Flow](docs/mcp-flow.png)
 
 ```mermaid
 flowchart LR
