@@ -19,6 +19,8 @@ Compared to hosted research products, this project can run fully local-first wit
 
 ## Local-First Responsibility Notes
 - Quality depends on the model you choose.
+- Recommended default for this project: non-thinking/non-reasoning models for best speed and stability.
+- Thinking/reasoning models are optional and currently more variable in formatting/latency.
 - Smaller models are faster/cheaper but may reason less deeply.
 - Larger models generally improve grounding, critique, and synthesis quality.
 - Always validate high-stakes outputs (medical/legal/financial) before acting.
@@ -44,20 +46,6 @@ Open:
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
-
-## Screenshot Guide (Project in Action)
-### macOS quick screenshot
-- Full screen: `Shift + Command + 3`
-- Area selection: `Shift + Command + 4`
-- Specific window: `Shift + Command + 4`, then press `Space`, then click the window
-
-### Full-page screenshot from browser
-- Chrome/Edge:
-1. Open DevTools (`Option + Command + I` on Mac)
-2. Open command menu (`Shift + Command + P`)
-3. Run `Capture full size screenshot`
-
-Tip: capture one image with `Discovery`, one during `Deep Research Running`, and one with final `Analysis & Synthesis`.
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
