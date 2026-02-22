@@ -5,7 +5,7 @@ Production-oriented local research stack with:
 - Modern web UI (`AppAgent.html`)
 - SearXNG as internal search backend
 - MCP server for tool-calling in agent/chat/code workflows
-- Dockerized runtime (UI + SearXNG + MCP + Redis)
+- Node.js runtime (UI + MCP + SearXNG integration)
 
 The system is designed to run locally with zero mandatory cloud cost.
 
@@ -26,6 +26,19 @@ Compared to hosted research products, this project can run fully local-first wit
 - Always validate high-stakes outputs (medical/legal/financial) before acting.
 
 ## Quick Start (1 minute)
+### Option A: Node.js runtime (recommended in this branch)
+```bash
+git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
+cd Argentic-Search-Lab/node-runtime
+npm install
+SEARX_BASE=http://localhost:8393 PORT=3093 npm start
+```
+
+Open:
+- UI: `http://localhost:3093`
+- MCP endpoint: `http://localhost:3093/mcp`
+
+### Option B: Docker (optional legacy path)
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)
 ```
@@ -46,6 +59,7 @@ Open:
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
 - Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
+- Node runtime guide: [`node-runtime/README.md`](node-runtime/README.md)
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:
@@ -153,6 +167,10 @@ This setting is persisted in `localStorage` and restored after refresh.
 ├── Dockerfile
 ├── docker-compose.yml
 ├── server.js
+├── node-runtime/
+│   ├── package.json
+│   ├── server.js
+│   └── README.md
 ├── mcp-service/
 │   ├── app.py
 │   ├── Dockerfile
