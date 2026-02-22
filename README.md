@@ -26,6 +26,21 @@ argentic up
 ![Pipeline Overview](docs/pipeline.svg)
 ![MCP Flow](docs/mcp-flow.svg)
 
+```mermaid
+flowchart LR
+    U["User / Agent"] --> C["argentic up"]
+    C --> UI["Web UI :3093"]
+    C --> MCP["MCP :3093/mcp"]
+    C --> SX["SearXNG :8394"]
+    UI --> MCP
+    UI --> SX
+    MCP --> SX
+    classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1.4px;
+    classDef runtime fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1.4px;
+    class U entry;
+    class C,UI,MCP,SX runtime;
+```
+
 ## MCP Tools
 - `search_quick`
 - `search_deep`
@@ -38,29 +53,40 @@ Tool policy and JSON config examples:
 ```mermaid
 flowchart TB
     A["Client / Agent Request"] --> B{"Intent Router"}
-    B -->|"Fast lookup"| Q["search_quick"]
-    B -->|"Deep research"| D["search_deep"]
-    B -->|"Specific URL inspect"| U["fetch_url_context"]
 
-    Q --> Q1["SearXNG fast query"]
-    Q1 --> Q2["Top results + optional context"]
+    subgraph SQ["Quick Lane"]
+      Q["search_quick"] --> Q1["SearXNG fast query"]
+      Q1 --> Q2["Top results + optional context"]
+    end
+
+    subgraph SD["Deep Lane"]
+      D["search_deep"] --> D1["Multi-query planning"]
+      D1 --> D2["Parallel lanes (general/science/news)"]
+      D2 --> D3["Context merge + dedupe"]
+    end
+
+    subgraph SU["URL Context Lane"]
+      U["fetch_url_context"] --> U1{"GitHub URL?"}
+      U1 -->|"Yes"| U2["Repo-aware traversal (index + related files)"]
+      U1 -->|"No"| U3["Single URL clean extract"]
+    end
+
+    B -->|"Fast lookup"| Q
+    B -->|"Deep research"| D
+    B -->|"Specific URL inspect"| U
     Q2 --> OUT["Grounded answer to user"]
-
-    D --> D1["Multi-query planning"]
-    D1 --> D2["Parallel lanes (general/science/news)"]
-    D2 --> D3["Context merge + dedupe"]
     D3 --> OUT
-
-    U --> U1{"GitHub URL?"}
-    U1 -->|"Yes"| U2["Repo-aware traversal (index + related files)"]
-    U1 -->|"No"| U3["Single URL clean extract"]
     U2 --> OUT
     U3 --> OUT
+
     classDef entry fill:#123047,stroke:#5fa8ff,color:#e8f4ff,stroke-width:1.4px;
     classDef quick fill:#153a2e,stroke:#43d3a8,color:#eafff6,stroke-width:1.4px;
     classDef deep fill:#3a1d12,stroke:#ffb067,color:#fff2e8,stroke-width:1.4px;
     classDef url fill:#2f2248,stroke:#b690ff,color:#f2eaff,stroke-width:1.4px;
     classDef output fill:#1f2f3a,stroke:#7fd1ff,color:#eaf8ff,stroke-width:1.4px;
+    style SQ fill:#10261f,stroke:#43d3a8,stroke-width:1px,color:#eafff6
+    style SD fill:#2a1a11,stroke:#ffb067,stroke-width:1px,color:#fff2e8
+    style SU fill:#201a33,stroke:#b690ff,stroke-width:1px,color:#f2eaff
     class A,B entry;
     class Q,Q1,Q2 quick;
     class D,D1,D2,D3 deep;
