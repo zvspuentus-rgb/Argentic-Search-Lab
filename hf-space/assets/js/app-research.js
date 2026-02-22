@@ -945,6 +945,88 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return lines.join("\n");
     }
 
+    function stripReasoningArtifacts(text) {
+      let out = String(text || "");
+      out = out.replace(/<think>[\s\S]*?<\/think>/gi, "");
+      out = out.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "");
+      out = out.replace(/```(?:thinking|reasoning)[\s\S]*?```/gi, "");
+      out = out.replace(/\n{3,}/g, "\n\n");
+      return out.trim();
+    }
+
+    function tryParseLooseJson(text) {
+      const raw = String(text || "").trim();
+      if (!raw) return null;
+      const candidates = [];
+      if (typeof stripCodeFences === "function") {
+        const stripped = stripCodeFences(raw);
+        if (stripped && stripped !== raw) candidates.push(stripped);
+      }
+      candidates.push(raw);
+      for (const c of candidates) {
+        try {
+          const parsed = JSON.parse(c);
+          if (parsed && typeof parsed === "object") return parsed;
+        } catch { }
+      }
+      return null;
+    }
+
+    function formatGenericStructuredJson(data) {
+      if (!data || typeof data !== "object") return "";
+      const lines = [];
+      const pushText = (title, value) => {
+        const txt = String(value || "").trim();
+        if (!txt) return;
+        lines.push(`## ${title}`, txt, "");
+      };
+      const pushList = (title, arr) => {
+        const items = Array.isArray(arr) ? arr.map((x) => String(x || "").trim()).filter(Boolean) : [];
+        if (!items.length) return;
+        lines.push(`## ${title}`);
+        for (const item of items) lines.push(`- ${item}`);
+        lines.push("");
+      };
+
+      pushText("Position", data.positionTitle || data.title || data.role);
+      pushText("Company", data.company || data.organization);
+      pushText("Summary", data.jobDescriptionSummary || data.summary || data.overview);
+      pushList("Responsibilities", data.responsibilities);
+      pushText("Team Role", data.teamRole);
+      pushText("Platform Overview", data.platformOverview);
+      pushList("Missing Information", data.missingInformation);
+
+      const src = Array.isArray(data.sources) ? data.sources : [];
+      if (src.length) {
+        lines.push("## References");
+        for (const s of src.slice(0, 40)) {
+          const id = String(s?.id || "").trim();
+          const title = String(s?.title || s?.url || "Source").trim();
+          const url = String(s?.url || "").trim();
+          const tag = id ? `[${id}] ` : "";
+          if (url) lines.push(`- ${tag}${title} — ${url}`);
+          else lines.push(`- ${tag}${title}`);
+        }
+        lines.push("");
+      }
+
+      if (!lines.length) {
+        try { return "```json\n" + JSON.stringify(data, null, 2) + "\n```"; } catch { return ""; }
+      }
+      return lines.join("\n").trim();
+    }
+
+    function normalizeSynthesisOutput(rawText, sourceCount) {
+      const clean = stripReasoningArtifacts(rawText);
+      const parsed = tryParseLooseJson(clean);
+      if (parsed && typeof parsed === "object") {
+        if (parsed.summary || parsed.keyPoints) return formatSynthesisJson(parsed, sourceCount);
+        const generic = formatGenericStructuredJson(parsed);
+        if (generic) return generic;
+      }
+      return clean;
+    }
+
     function buildResearchNotes({ query, analyzer, queries, sources, lanes, critic }) {
       const lines = [];
       lines.push(`Query: ${query}`);
@@ -1101,11 +1183,11 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
           payload: payloadStream,
           streamTag: "synthesis",
           onText: (txt) => {
-            if (typeof onStreamText === "function") onStreamText(txt);
+            if (typeof onStreamText === "function") onStreamText(stripReasoningArtifacts(txt));
           }
         });
         if (streamed?.reasoning) addThinking("synthesis-stream", streamed.reasoning);
-        return streamed?.content || "";
+        return normalizeSynthesisOutput(streamed?.content || "", sources.length);
       }
 
       const payload = {
@@ -1135,9 +1217,11 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         stage: "synthesis-json",
         defaultValue: null
       });
-      if (!parsed || typeof parsed !== "object") return String(content || "").trim();
-      if (!parsed.summary && !parsed.keyPoints) return String(content || "").trim();
-      return formatSynthesisJson(parsed, sources.length);
+      if (!parsed || typeof parsed !== "object") return normalizeSynthesisOutput(String(content || "").trim(), sources.length);
+      if (parsed.summary || parsed.keyPoints) return formatSynthesisJson(parsed, sources.length);
+      const generic = formatGenericStructuredJson(parsed);
+      if (generic) return generic;
+      return normalizeSynthesisOutput(String(content || "").trim(), sources.length);
     }
 
     function setupVoiceInput() {
@@ -1171,16 +1255,12 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function testConnections() {
-      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
       const lmBase = $("lmBase").value.trim();
-      const ollamaBase = $("ollamaBase")?.value?.trim() || "/ollama/v1";
-      const modelBase = provider === "ollama" ? ollamaBase : lmBase;
-      const modelLabel = provider === "ollama" ? "Ollama" : "LM Studio";
       const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
 
-      addLog("health", `Testing ${modelLabel}...`, "ok");
-      await fetchJson(`${modelBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: `${modelLabel} models` });
-      addLog("health", `${modelLabel} OK`, "ok");
+      addLog("health", "Testing LM Studio...", "ok");
+      await fetchJson(`${lmBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: "LM Studio models" });
+      addLog("health", "LM Studio OK", "ok");
 
       addLog("health", "Testing SearXNG...", "ok");
       const u = new URL(searchUrl);
