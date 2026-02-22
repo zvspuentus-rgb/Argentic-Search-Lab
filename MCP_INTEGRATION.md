@@ -25,6 +25,7 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 - `search_quick`
 - `search_deep`
 - `fetch_url_context`
+- `fetch_url_context_smart`
 
 ### `search_deep` advanced arguments
 - `query` (string) or `queries` (array of strings)
@@ -80,13 +81,47 @@ Use the MCP HTTP endpoint exposed by Docker at `http://localhost:8193/mcp` (defa
 - `POST /tools/search_quick`
 - `POST /tools/search_deep`
 - `POST /tools/fetch_url_context`
+- `POST /tools/fetch_url_context_smart`
 - `POST /mcp/call`
 
 ## Agenting Hook Pattern
 1. For fast factual lookup, call `search_quick`.
 2. For deep research, call `search_deep` and you may send multiple queries in one call.
 3. For URL grounding/context extraction, call `fetch_url_context`.
-4. Feed normalized results back into your planner/synthesizer.
+4. For deeper URL traversal, call `fetch_url_context_smart`.
+5. Feed normalized results back into your planner/synthesizer.
+
+## MCP2 smart URL tool (new)
+Use `fetch_url_context_smart` when a single-page fetch is not enough.
+
+Suggested arguments:
+- `url` (required): seed URL
+- `max_urls` (default `5`)
+- `max_chars_per_url` (default `1800`)
+- `same_domain_only` (default `true`)
+
+Typical response fields:
+- `mode` (`smart`)
+- `urls_visited`
+- `context_items`
+- `merged_context`
+
+Example:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 21,
+  "method": "tools/call",
+  "params": {
+    "name": "fetch_url_context_smart",
+    "arguments": {
+      "url": "https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "max_urls": 6,
+      "same_domain_only": true
+    }
+  }
+}
+```
 
 ## Example deep call with multiple queries
 ```json

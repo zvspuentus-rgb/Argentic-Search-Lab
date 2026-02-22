@@ -188,6 +188,7 @@ Available tools:
 - `search_quick`
 - `search_deep`
 - `fetch_url_context`
+- `fetch_url_context_smart` (MCP2 smart multi-link crawl + merged context)
 
 MCP deep/quick now support URL-aware research:
 - Detect URLs embedded inside query text
@@ -268,6 +269,38 @@ Interpretation tips for agents:
 - If `repo_scope_enforced=true`: trust this as repo-grounded retrieval
 - Prefer `context_items` for synthesis over generic web snippets
 - Use `fetch_url_context` only for extra targeted URLs not already covered
+- Use `fetch_url_context_smart` when one URL is not enough and deeper page traversal is needed
+
+### MCP2 Smart URL Context (new)
+`fetch_url_context_smart` is the advanced URL tool for deeper grounding:
+- Starts from a seed URL
+- Discovers additional links (optionally same-domain only)
+- Fetches and cleans multiple pages
+- Returns merged context for higher-quality synthesis
+
+Returned fields:
+- `mode` (`smart`)
+- `urls_visited`
+- `context_items`
+- `merged_context`
+
+Example:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 13,
+  "method": "tools/call",
+  "params": {
+    "name": "fetch_url_context_smart",
+    "arguments": {
+      "url": "https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
+      "max_urls": 5,
+      "max_chars_per_url": 2000,
+      "same_domain_only": true
+    }
+  }
+}
+```
 
 ### Visual Workflow (Repo URL Path)
 ```mermaid
