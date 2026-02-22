@@ -1,7 +1,12 @@
 # AppAgent Node Runtime
-![Argentic Search Lab Logo](../docs/logo.svg)
 
-Node runtime for Argentic Search Lab in this branch.
+Node runtime for Argentic Search Lab.
+This mode runs on **Node.js + Python venv** (SearXNG), without Docker.
+
+## Requirements
+- Node.js 20+
+- Python 3.10-3.13
+- `git`
 
 ## Install
 From repo root:
@@ -34,57 +39,8 @@ argentic up
 - Search direct: `http://localhost:8394/search?q=test&format=json`
 - Search proxy: `http://localhost:3093/searxng/search?q=test&format=json`
 
-## MCP JSON (Copy/Paste)
-URL-based MCP config:
-
-```json
-{
-  "mcpServers": {
-    "appagent-node": {
-      "url": "http://localhost:3093/mcp"
-    }
-  }
-}
-```
-
-Command-based MCP config:
-
-```json
-{
-  "mcpServers": {
-    "appagent-node": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "http://localhost:3093/mcp",
-        "--transport",
-        "http-only",
-        "--allow-http"
-      ],
-      "env": {}
-    }
-  }
-}
-```
-
-## Workflow Visuals
-- Pipeline: `../docs/pipeline.png`
-- MCP flow: `../docs/mcp-flow.png`
-
-## LLM Routing
-- `/lmstudio/*` is proxied to `LMSTUDIO_BASE` (default `http://localhost:1234`)
-- `/ollama/*` is proxied to `OLLAMA_BASE` (default `http://localhost:11434`)
-
-## Environment (optional)
-- `PORT` (default `3093`)
-- `SEARX_BASE`
-- `LMSTUDIO_BASE`
-- `OLLAMA_BASE`
-- `SEARX_PORT` (default `8394` for local search)
-
 ## Notes
-- `argentic up` runs in foreground (`Ctrl+C` to stop).
-- Search port auto-fallback is enabled if default port is occupied.
-- For Docker-first/full-stack instructions, see main branch:
-  - https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main
+- `argentic up` runs foreground (`Ctrl+C` to stop).
+- SearXNG runs from local venv at `node-runtime/.venv-searxng`.
+- If default search port is occupied, next free port is selected automatically.
+- For Docker-first stack, see main Docker section in root README.

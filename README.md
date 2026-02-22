@@ -1,7 +1,7 @@
 # Argentic Search Lab (Node.js Branch)
 ![Argentic Search Lab Logo](docs/logo.svg)
 
-Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single CLI (`argentic`).
+Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single CLI (`argentic`), using Python venv for SearXNG (no Docker required in this mode).
 
 ## Quick Start
 ```bash

@@ -2,20 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SETTINGS_FILE="$ROOT_DIR/searxng/settings-node.yml"
-CONTAINER_NAME="appagent-searxng-node"
-IMAGE="searxng/searxng:latest"
 RUN_DIR="$ROOT_DIR/.run"
+SEARX_DIR="$ROOT_DIR/.searxng-src"
+VENV_DIR="$ROOT_DIR/.venv-searxng"
 PORT_FILE="$RUN_DIR/searx_port"
-PORT="${SEARX_PORT:-8394}"
+DEFAULT_PORT="${SEARX_PORT:-8394}"
 
 mkdir -p "$RUN_DIR"
-
-if ! command -v docker >/dev/null 2>&1; then
-  echo "[setup-searxng] docker is required for auto-setup in Node mode."
-  echo "[setup-searxng] install Docker or provide external SearXNG via SEARX_BASE."
-  exit 1
-fi
 
 pick_free_port() {
   local start_port="$1"
@@ -31,53 +24,59 @@ pick_free_port() {
   return 1
 }
 
-running_host_port() {
-  docker port "$CONTAINER_NAME" 8080/tcp 2>/dev/null | head -n1 | awk -F: '{print $NF}'
+pick_python() {
+  if [ -n "${PYTHON_BIN:-}" ] && command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+    echo "$PYTHON_BIN"; return 0
+  fi
+  for py in python3.13 python3.12 python3.11 python3.10 python3; do
+    if command -v "$py" >/dev/null 2>&1; then
+      ver="$($py -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+      major="${ver%%.*}"; minor="${ver##*.}"
+      if [ "$major" = "3" ] && [ "$minor" -ge 10 ] && [ "$minor" -le 13 ]; then
+        echo "$py"; return 0
+      fi
+    fi
+  done
+  return 1
 }
 
-if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  mapped="$(running_host_port || true)"
-  if [ -n "${mapped:-}" ] && curl -fsS "http://localhost:${mapped}/search?q=health&format=json" >/dev/null 2>&1; then
-    echo "$mapped" > "$PORT_FILE"
-    echo "[setup-searxng] container already running: ${CONTAINER_NAME} on localhost:${mapped}"
-    exit 0
-  fi
+PYTHON="$(pick_python || true)"
+if [ -z "$PYTHON" ]; then
+  echo "[setup-searxng] Python 3.10-3.13 is required (not found)."
+  echo "[setup-searxng] install Python 3.11+ and re-run."
+  exit 1
 fi
 
-if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "[setup-searxng] container already running: ${CONTAINER_NAME}"
+if [ ! -d "$VENV_DIR" ]; then
+  echo "[setup-searxng] creating venv with $PYTHON"
+  "$PYTHON" -m venv "$VENV_DIR"
+fi
+
+# shellcheck disable=SC1091
+source "$VENV_DIR/bin/activate"
+python -m pip install -q -U pip setuptools wheel
+
+if [ ! -d "$SEARX_DIR/.git" ]; then
+  echo "[setup-searxng] cloning searxng source"
+  git clone --depth 1 https://github.com/searxng/searxng.git "$SEARX_DIR" >/dev/null 2>&1
 else
-  if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
-  fi
-  echo "[setup-searxng] pulling ${IMAGE}"
-  docker pull "${IMAGE}" >/dev/null
-  if lsof -iTCP:"${PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
-    picked="$(pick_free_port "$PORT" || true)"
-    if [ -z "${picked:-}" ]; then
-      echo "[setup-searxng] no free port found near ${PORT}"
-      exit 1
-    fi
-    echo "[setup-searxng] port ${PORT} busy, switching to ${picked}"
-    PORT="$picked"
-  fi
-  echo "[setup-searxng] starting ${CONTAINER_NAME} on localhost:${PORT}"
-  docker run -d \
-    --name "${CONTAINER_NAME}" \
-    -p "${PORT}:8080" \
-    -v "${SETTINGS_FILE}:/etc/searxng/settings.yml:ro" \
-    "${IMAGE}" >/dev/null
+  echo "[setup-searxng] updating searxng source"
+  git -C "$SEARX_DIR" pull --ff-only >/dev/null 2>&1 || true
 fi
 
-for i in {1..30}; do
-  if curl -fsS "http://localhost:${PORT}/search?q=health&format=json" >/dev/null 2>&1; then
-    echo "$PORT" > "$PORT_FILE"
-    echo "[setup-searxng] ready: http://localhost:${PORT}"
-    exit 0
-  fi
-  sleep 1
-done
+echo "[setup-searxng] installing searxng into venv"
+python -m pip install -q -e "$SEARX_DIR"
 
-echo "[setup-searxng] failed: service did not become ready"
-docker logs --tail 120 "${CONTAINER_NAME}" || true
-exit 1
+PORT="$DEFAULT_PORT"
+if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  alt="$(pick_free_port "$PORT" || true)"
+  if [ -z "${alt:-}" ]; then
+    echo "[setup-searxng] no free port found near $PORT"
+    exit 1
+  fi
+  PORT="$alt"
+fi
+
+echo "$PORT" > "$PORT_FILE"
+echo "[setup-searxng] ready (python venv): $VENV_DIR"
+echo "[setup-searxng] default search port: $PORT"
