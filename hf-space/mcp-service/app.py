@@ -360,6 +360,47 @@ async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) ->
     return out
 
 
+async def gather_context_items_smart(urls: List[str], max_urls: int, max_chars: int) -> List[Dict[str, Any]]:
+    picked = unique_urls(urls)[: max(0, max_urls)]
+    if not picked:
+        return []
+    per_url_budget = max(1, min(6, max(1, max_urls // max(1, len(picked)))))
+    out: List[Dict[str, Any]] = []
+    seen = set()
+
+    def push(item: Dict[str, Any]) -> None:
+        u = str(item.get("url", "")).strip().lower()
+        if not u or u in seen:
+            return
+        seen.add(u)
+        out.append(item)
+
+    for u in picked:
+        target = parse_github_target(u)
+        if target:
+            items = await fetch_github_target_context(
+                u,
+                max_urls=max(1, min(per_url_budget, max_urls - len(out))),
+                max_chars_per_url=max_chars,
+            )
+            for it in items:
+                push(
+                    {
+                        "url": it.get("url", ""),
+                        "context": it.get("context", ""),
+                        "source": it.get("source", "github-repo-context"),
+                    }
+                )
+                if len(out) >= max_urls:
+                    return out[:max_urls]
+        else:
+            item = await fetch_context_with_fallback(u, max_chars)
+            push(item)
+            if len(out) >= max_urls:
+                return out[:max_urls]
+    return out[:max_urls]
+
+
 async def fetch_github_repo_context(
     owner: str,
     repo: str,
@@ -421,6 +462,109 @@ async def fetch_github_repo_context(
     return contexts
 
 
+async def fetch_github_repo_tree(owner: str, repo: str) -> Dict[str, Any]:
+    async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
+        repo_res = await client.get(f"https://api.github.com/repos/{owner}/{repo}")
+        if repo_res.status_code != 200:
+            return {"branch": "main", "paths": []}
+        repo_info = repo_res.json()
+        branch = repo_info.get("default_branch") or "main"
+        tree_res = await client.get(f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}", params={"recursive": "1"})
+        if tree_res.status_code != 200:
+            return {"branch": branch, "paths": []}
+        tree = tree_res.json().get("tree", []) or []
+    paths: List[str] = []
+    for node in tree:
+        if node.get("type") != "blob":
+            continue
+        p = str(node.get("path", "")).strip()
+        if p:
+            paths.append(p)
+    return {"branch": branch, "paths": paths}
+
+
+def infer_related_repo_paths(content: str, tree_paths: List[str], max_hits: int = 8) -> List[str]:
+    txt = str(content or "")
+    candidates: List[str] = []
+    # markdown links: [x](./docs/a.md) or [x](src/app.py)
+    for m in re.findall(r"\[[^\]]+\]\(([^)]+)\)", txt):
+        u = str(m or "").strip().strip("'\"")
+        if not u or "://" in u or u.startswith("#"):
+            continue
+        u = u.split("#", 1)[0].split("?", 1)[0].strip()
+        u = u.lstrip("./").strip("/")
+        if u:
+            candidates.append(u)
+    # import-like references
+    for m in re.findall(r"(?:from|import)\s+([A-Za-z0-9_./-]+)", txt):
+        token = str(m or "").strip().replace(".", "/")
+        token = token.lstrip("./").strip("/")
+        if token:
+            candidates.append(token)
+    tree_set = set(tree_paths)
+    out: List[str] = []
+    seen = set()
+    for c in candidates:
+        if c in tree_set:
+            k = c.lower()
+            if k not in seen:
+                seen.add(k)
+                out.append(c)
+                if len(out) >= max_hits:
+                    break
+            continue
+        # suffix fallback
+        for t in tree_paths:
+            if t.lower().endswith("/" + c.lower()) or t.lower().endswith(c.lower()):
+                k = t.lower()
+                if k in seen:
+                    continue
+                seen.add(k)
+                out.append(t)
+                break
+        if len(out) >= max_hits:
+            break
+    return out
+
+
+def pick_initial_repo_paths(paths: List[str], rel_path: str, path_prefix: str, max_pick: int) -> List[str]:
+    max_pick = max(1, int(max_pick))
+    rel = str(rel_path or "").strip("/")
+    pref = str(path_prefix or "").strip("/").lower()
+    weighted: List[tuple[int, str]] = []
+    for p in paths:
+        lower = p.lower()
+        score = 0
+        if rel and lower == rel.lower():
+            score += 1200
+        if pref and lower.startswith(pref):
+            score += 600
+        if re.search(r"(readme|overview|architecture|docs/|guide|tutorial|contribut|changelog)", lower):
+            score += 220
+        if re.search(r"(dockerfile|compose|package\.json|requirements\.txt|pyproject\.toml|setup\.py|go\.mod|cargo\.toml|pom\.xml|build\.gradle)", lower):
+            score += 180
+        if re.search(r"\.(md|txt|py|js|ts|tsx|jsx|json|yml|yaml|toml)$", lower):
+            score += 40
+        # keep very large binary-like files down
+        if re.search(r"\.(png|jpg|jpeg|gif|svg|ico|pdf|zip|tar|gz|mp4|webm)$", lower):
+            score -= 400
+        weighted.append((score, p))
+    weighted.sort(key=lambda x: (-x[0], x[1]))
+    out: List[str] = []
+    seen = set()
+    for score, p in weighted:
+        if score <= -200:
+            continue
+        k = p.lower()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(p)
+        if len(out) >= max_pick:
+            break
+    return out
+
+
 async def fetch_github_target_context(url: str, max_urls: int, max_chars_per_url: int) -> List[Dict[str, Any]]:
     target = parse_github_target(url)
     if not target:
@@ -428,11 +572,20 @@ async def fetch_github_target_context(url: str, max_urls: int, max_chars_per_url
     owner = target["owner"]
     repo = target["repo"]
     kind = target.get("kind", "repo")
-    ref = target.get("ref") or "main"
+    ref = target.get("ref") or ""
     rel_path = str(target.get("path") or "").strip("/")
 
     items: List[Dict[str, Any]] = []
     seen = set()
+    trace: Dict[str, Any] = {
+        "owner": owner,
+        "repo": repo,
+        "kind": kind,
+        "requested_ref": ref,
+        "path": rel_path,
+        "selected_initial_paths": [],
+        "expanded_paths": [],
+    }
 
     async def add_item(item_url: str, text: str, source: str) -> None:
         key = (item_url or "").strip().lower()
@@ -444,34 +597,65 @@ async def fetch_github_target_context(url: str, max_urls: int, max_chars_per_url
             return
         items.append({"url": item_url, "context": compact, "source": source})
 
-    if kind == "blob" and rel_path:
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{rel_path}"
-        blob_url = f"https://github.com/{owner}/{repo}/blob/{ref}/{rel_path}"
-        try:
-            async with httpx.AsyncClient(timeout=25, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
-                res = await client.get(raw_url)
-            if res.status_code == 200:
-                await add_item(blob_url, f"[GitHub file: {rel_path}] {res.text}", "github-raw")
-        except Exception:
-            pass
+    tree_info = await fetch_github_repo_tree(owner, repo)
+    branch = str(ref or tree_info.get("branch") or "main")
+    tree_paths: List[str] = list(tree_info.get("paths") or [])
 
-    repo_budget = max(1, int(max_urls) - len(items))
     if kind in {"blob", "tree"} and rel_path and "/" in rel_path:
         repo_prefix = rel_path.rsplit("/", 1)[0]
     else:
         repo_prefix = ""
-    repo_items = await fetch_github_repo_context(
-        owner,
-        repo,
-        max_files=repo_budget,
-        max_chars_per_file=max_chars_per_url,
-        path_prefix=repo_prefix,
-    )
-    for entry in repo_items:
-        await add_item(str(entry.get("url", "")), str(entry.get("context", "")), "github-repo")
-        if len(items) >= max_urls:
-            break
 
+    # Step 1: small repository file index (agent can decide how deep to continue).
+    if tree_paths:
+        preview = "\n".join(tree_paths[: min(80, len(tree_paths))])
+        index_url = f"https://github.com/{owner}/{repo}/tree/{branch}/{repo_prefix}" if repo_prefix else f"https://github.com/{owner}/{repo}/tree/{branch}"
+        await add_item(index_url, f"[GitHub repo file index | branch={branch} | files={len(tree_paths)}]\n{preview}", "github-tree-index")
+
+    # Step 2: initial selection from tree (based on target path and project-signature files).
+    budget = max(1, int(max_urls) - len(items))
+    selected = pick_initial_repo_paths(tree_paths, rel_path=rel_path, path_prefix=repo_prefix, max_pick=budget)
+    trace["selected_initial_paths"] = selected[:]
+
+    async with httpx.AsyncClient(timeout=25, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
+        queue: List[str] = list(selected)
+        used = set()
+        # Step 3: iterative loop - fetch file, infer related paths, continue if budget allows.
+        while queue and len(items) < max_urls:
+            path = queue.pop(0)
+            key = path.lower().strip()
+            if not key or key in used:
+                continue
+            used.add(key)
+            raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
+            blob_url = f"https://github.com/{owner}/{repo}/blob/{branch}/{path}"
+            try:
+                res = await client.get(raw_url)
+            except Exception:
+                continue
+            if res.status_code != 200:
+                continue
+            body = str(res.text or "")
+            await add_item(blob_url, f"[GitHub file: {path}] {body}", "github-raw")
+            trace["expanded_paths"].append(path)
+            if len(items) >= max_urls:
+                break
+            next_paths = infer_related_repo_paths(body, tree_paths, max_hits=6)
+            for np in next_paths:
+                nk = np.lower().strip()
+                if nk and nk not in used and nk not in {x.lower().strip() for x in queue}:
+                    queue.append(np)
+
+    for it in items:
+        it["trace"] = {
+            "owner": owner,
+            "repo": repo,
+            "kind": kind,
+            "branch": branch,
+            "path": rel_path,
+        }
+    if items:
+        items[0]["repo_trace"] = trace
     return items[:max_urls]
 
 
@@ -536,7 +720,7 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
                 "MANDATORY TOOL POLICY: Do NOT call this tool unless the user explicitly asks to inspect/extract/summarize a specific URL. "
                 "Forbidden without explicit request: automatic URL fetching, hidden context extraction, tool-discovery replies. "
                 "If no explicit URL-context request exists, do not call this tool. "
-                "GitHub URLs are repo-aware: the tool can pull multiple related files from the same repository for grounded context."
+                "GitHub URLs are repo-aware: the tool first returns a repo file index, then traverses related files in loops and returns grounded context_items."
             ),
             "inputSchema": {
                 "type": "object",
@@ -645,7 +829,7 @@ async def search_quick(payload: SearchInput) -> Dict[str, Any]:
     effective_include_context = bool(payload.include_context or explicit_urls)
     if effective_include_context and payload.context_max_urls > 0:
         url_pool = explicit_urls + [r.get("url", "") for r in results if r.get("url")]
-        context_items = await fetch_context_items(url_pool, payload.context_max_urls, payload.context_max_chars)
+        context_items = await gather_context_items_smart(url_pool, payload.context_max_urls, payload.context_max_chars)
         for scope in repo_scopes:
             repo_ctx = await fetch_github_repo_context(
                 scope["owner"],
@@ -728,7 +912,7 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
     context_items: List[Dict[str, Any]] = []
     if payload.include_context and payload.context_max_urls > 0:
         urls = explicit_urls + [r.get("url", "") for r in merged if r.get("url")]
-        context_items = await fetch_context_items(urls, payload.context_max_urls, payload.context_max_chars)
+        context_items = await gather_context_items_smart(urls, payload.context_max_urls, payload.context_max_chars)
         for scope in repo_scopes:
             repo_ctx = await fetch_github_repo_context(
                 scope["owner"],
@@ -771,6 +955,9 @@ async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
         merged = "\n\n".join(
             [f"URL: {it.get('url','')}\n{it.get('context','')}" for it in items if it.get("context")]
         ).strip()
+        repo_trace = {}
+        if items:
+            repo_trace = items[0].get("repo_trace") or {}
         return {
             "url": payload.url,
             "mode": "repo-aware",
@@ -778,6 +965,12 @@ async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
             "context": compact_text(merged, min(20000, max_chars * max_urls)),
             "context_items": items,
             "count": len(items),
+            "repo_trace": repo_trace,
+            "analysis_hint": {
+                "ground_on_context_items": True,
+                "prefer_repo_files_over_general_web": True,
+                "if_more_depth_needed_call": "fetch_url_context_smart",
+            },
             "current_date": current_date_context(),
         }
     try:

@@ -3,7 +3,7 @@ use_default_settings: true
 server:
   secret_key: "change-me-in-prod-appagent"
   limiter: false
-  image_proxy: true
+  image_proxy: false
 
 search:
   safe_search: 0
@@ -14,4 +14,7 @@ search:
     - json
 
 redis:
+  url: redis://redis:6379/0
+
+valkey:
   url: redis://redis:6379/0

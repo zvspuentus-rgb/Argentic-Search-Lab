@@ -68,7 +68,16 @@ If your client supports native HTTP MCP, prefer:
 
 Behavior:
 - Regular URLs: single-page cleaned extraction.
-- GitHub URLs (`repo`/`tree`/`blob`): repo-aware extraction with multiple related file contexts from the same repository.
+- GitHub URLs (`repo`/`tree`/`blob`): repo-aware extraction in loops:
+  1. Builds a repo file index snapshot.
+  2. Selects high-signal files first (README/config/source).
+  3. Follows internal references to related files.
+
+Response fields (GitHub mode):
+- `mode: "repo-aware"`
+- `context_items` (multi-file grounded contexts)
+- `repo_trace` (selected/expanded file-path trace)
+- `analysis_hint` (agent grounding guidance)
 
 ### `search_deep` advanced arguments
 - `query` (string) or `queries` (array of strings)
@@ -141,7 +150,7 @@ Suggested arguments:
 - `url` (required): seed URL
 - `max_urls` (default `5`)
 - `max_chars_per_url` (default `1800`)
-- `same_domain_only` (default `true`)
+- `allow_external` (default `false`)
 
 Typical response fields:
 - `mode` (`smart`)
@@ -160,7 +169,7 @@ Example:
     "arguments": {
       "url": "https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main",
       "max_urls": 6,
-      "same_domain_only": true
+      "allow_external": false
     }
   }
 }
