@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+from html import unescape
 import json
 import os
 import re
@@ -31,6 +32,13 @@ class SearchInput(BaseModel):
 
 class FetchInput(BaseModel):
     url: str
+
+
+class SmartFetchInput(BaseModel):
+    url: str
+    max_urls: int = Field(4, ge=1, le=12)
+    max_chars_per_url: int = Field(2200, ge=500, le=8000)
+    allow_external: bool = False
 
 
 class ToolCall(BaseModel):
@@ -270,6 +278,52 @@ async def fetch_direct_context(url: str, max_chars: int) -> str:
     return compact_text(raw_text, max_chars)
 
 
+def extract_links_from_text(base_url: str, text: str, max_links: int, allow_external: bool) -> List[str]:
+    base = urlparse(base_url)
+    base_host = (base.netloc or "").lower()
+    base_path = (base.path or "").rstrip("/")
+    base_query = base.query or ""
+    base_key = f"{base_host}|{base_path}|{base_query}"
+    out: List[str] = []
+    seen = set()
+    for raw in URL_RX.findall(text or ""):
+        u = normalize_url(raw)
+        if not u.lower().startswith("http"):
+            continue
+        try:
+            p = urlparse(u)
+        except Exception:
+            continue
+        if p.fragment:
+            p = p._replace(fragment="")
+            u = p.geturl()
+        host = (p.netloc or "").lower()
+        if not allow_external and base_host and host and host != base_host:
+            continue
+        cand_path = (p.path or "").rstrip("/")
+        cand_key = f"{host}|{cand_path}|{p.query or ''}"
+        if cand_key == base_key:
+            continue
+        key = cand_key.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(u)
+        if len(out) >= max_links:
+            break
+    return out
+
+
+async def fetch_context_with_fallback(url: str, max_chars: int) -> Dict[str, Any]:
+    try:
+        return {"url": url, "context": await fetch_clean_context(url, max_chars), "source": "jina-mirror"}
+    except Exception:
+        try:
+            return {"url": url, "context": await fetch_direct_context(url, max_chars), "source": "direct-http"}
+        except Exception as err:
+            return {"url": url, "context": "", "source": "none", "error": str(err)}
+
+
 async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) -> List[Dict[str, Any]]:
     picked = unique_urls(urls)[: max(0, max_urls)]
     if not picked:
@@ -401,6 +455,24 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
             "inputSchema": {
                 "type": "object",
                 "properties": {"url": {"type": "string"}},
+                "required": ["url"],
+            },
+        },
+        {
+            "name": "fetch_url_context_smart",
+            "description": (
+                "Use when the user asks to inspect a URL deeply across multiple related links. "
+                "Starts from the given URL, follows additional links (same host by default), "
+                "and returns merged grounded context_items."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "max_urls": {"type": "number", "default": 4},
+                    "max_chars_per_url": {"type": "number", "default": 2200},
+                    "allow_external": {"type": "boolean", "default": False},
+                },
                 "required": ["url"],
             },
         },
@@ -617,6 +689,56 @@ async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
             }
 
 
+@app.post("/tools/fetch_url_context_smart")
+async def fetch_url_context_smart(payload: SmartFetchInput) -> Dict[str, Any]:
+    validate_http_url(payload.url)
+    max_urls = max(1, int(payload.max_urls))
+    max_chars = max(500, int(payload.max_chars_per_url))
+
+    items: List[Dict[str, Any]] = []
+    visited: List[str] = []
+
+    primary = await fetch_context_with_fallback(payload.url, max_chars)
+    items.append(primary)
+    visited.append(payload.url)
+
+    repo = parse_github_repo(payload.url)
+    if repo:
+        repo_ctx = await fetch_github_repo_context(
+            repo["owner"],
+            repo["repo"],
+            max_files=min(24, max_urls * 4),
+            max_chars_per_file=max_chars,
+        )
+        for c in repo_ctx:
+            items.append({"url": c.get("url", ""), "context": c.get("context", ""), "source": "github-repo"})
+            if len(items) >= max_urls:
+                break
+    else:
+        link_budget = max(0, max_urls - 1)
+        links = extract_links_from_text(payload.url, str(primary.get("context", "")), link_budget, payload.allow_external)
+        tasks = [fetch_context_with_fallback(u, max_chars) for u in links]
+        if tasks:
+            fetched = await asyncio.gather(*tasks, return_exceptions=True)
+            for u, entry in zip(links, fetched):
+                visited.append(u)
+                if isinstance(entry, Exception):
+                    items.append({"url": u, "context": "", "source": "none", "error": str(entry)})
+                else:
+                    items.append(entry)
+
+    merged = "\n\n".join([f"URL: {it.get('url','')}\n{it.get('context','')}" for it in items if it.get("context")]).strip()
+    return {
+        "url": payload.url,
+        "mode": "smart",
+        "urls_visited": visited,
+        "count": len(items),
+        "context_items": items,
+        "merged_context": compact_text(merged, min(20000, max_chars * max_urls)),
+        "current_date": current_date_context(),
+    }
+
+
 @app.post("/mcp/call")
 async def mcp_call(payload: ToolCall) -> Dict[str, Any]:
     if payload.tool == "search_quick":
@@ -628,6 +750,9 @@ async def mcp_call(payload: ToolCall) -> Dict[str, Any]:
     if payload.tool == "fetch_url_context":
         data = FetchInput(**payload.arguments)
         return await fetch_url_context(data)
+    if payload.tool == "fetch_url_context_smart":
+        data = SmartFetchInput(**payload.arguments)
+        return await fetch_url_context_smart(data)
     raise HTTPException(status_code=400, detail=f"unknown tool: {payload.tool}")
 
 
