@@ -127,6 +127,12 @@
         setStatus("A request is already running...");
         return;
       }
+      const list = $("followupsList");
+      if (list) {
+        list.classList.add("is-busy");
+        list.querySelectorAll(".followup-item.is-running").forEach((el) => el.classList.remove("is-running"));
+      }
+      target.classList.add("is-running");
       const q = target.dataset.query || target.textContent || "";
       $("userQuery").value = q.trim();
       setStatus("Request in progress...");

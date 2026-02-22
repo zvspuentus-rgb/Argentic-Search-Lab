@@ -174,6 +174,13 @@
       toggleAgentStreamMatrix(on);
       renderRunStageIndicator();
       if (!on) hideCenterRequestOverlay();
+      const followRoot = $("followupsList");
+      if (followRoot) {
+        followRoot.classList.toggle("is-busy", !!on);
+        if (!on) {
+          followRoot.querySelectorAll(".followup-item.is-running").forEach((el) => el.classList.remove("is-running"));
+        }
+      }
       if (typeof updateInpState === "function") updateInpState();
     }
 
@@ -525,6 +532,71 @@
         }
         node.parentNode?.replaceChild(frag, node);
       }
+
+      const compactUrlLabel = (url) => {
+        try {
+          const u = new URL(String(url || ""));
+          const host = u.hostname.replace(/^www\./i, "");
+          const parts = String(u.pathname || "/").split("/").filter(Boolean).slice(0, 2);
+          const shortPath = parts.length ? `/${parts.join("/")}` : "";
+          const suffix = String(u.pathname || "/").split("/").filter(Boolean).length > 2 ? "/..." : "";
+          return `${host}${shortPath}${suffix}`;
+        } catch {
+          return String(url || "").slice(0, 48);
+        }
+      };
+
+      const linkifyBareUrls = () => {
+        const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            const raw = String(node?.nodeValue || "");
+            if (!/https?:\/\//i.test(raw)) return NodeFilter.FILTER_REJECT;
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (parent.closest("a, pre, code, button")) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+        const textNodes = [];
+        while (tw.nextNode()) textNodes.push(tw.currentNode);
+        const urlRx = /(https?:\/\/[^\s<>"'`)\]]+)/gi;
+        for (const tn of textNodes) {
+          const src = String(tn.nodeValue || "");
+          let last = 0;
+          let m;
+          const frag = document.createDocumentFragment();
+          while ((m = urlRx.exec(src)) !== null) {
+            const start = m.index;
+            const end = start + m[0].length;
+            if (start > last) frag.appendChild(document.createTextNode(src.slice(last, start)));
+            const url = String(m[0] || "").replace(/[),.;!?]+$/g, "");
+            const a = document.createElement("a");
+            a.href = url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.className = "citation-url-compact";
+            a.title = url;
+            a.textContent = compactUrlLabel(url);
+            frag.appendChild(a);
+            last = end;
+          }
+          if (last === 0) continue;
+          if (last < src.length) frag.appendChild(document.createTextNode(src.slice(last)));
+          tn.parentNode?.replaceChild(frag, tn);
+        }
+      };
+
+      root.querySelectorAll("a[href^='http']").forEach((a) => {
+        const href = String(a.getAttribute("href") || "");
+        const txt = String(a.textContent || "").trim();
+        if (!href) return;
+        if (/^https?:\/\//i.test(txt) || txt === href) {
+          a.textContent = compactUrlLabel(href);
+          a.classList.add("citation-url-compact");
+          a.title = href;
+        }
+      });
+      linkifyBareUrls();
     }
 
     function enhanceAnswerCodeBlocks() {
