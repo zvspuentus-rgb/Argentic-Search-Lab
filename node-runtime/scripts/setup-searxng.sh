@@ -52,12 +52,11 @@ install_venv_pkg_debian() {
       echo "[setup-searxng] missing sudo/root for apt install."
       return 1
     fi
-
+    $cmd update >/dev/null || true
     for pkg in "python3.${py_minor}-venv" "python3-venv"; do
-      if apt-cache show "$pkg" >/dev/null 2>&1; then
-        echo "[setup-searxng] installing missing package: $pkg"
-        $cmd update >/dev/null
-        $cmd install -y "$pkg" >/dev/null
+      echo "[setup-searxng] trying package: $pkg"
+      if $cmd install -y "$pkg" >/dev/null 2>&1; then
+        echo "[setup-searxng] installed: $pkg"
         return 0
       fi
     done
@@ -72,23 +71,27 @@ if [ -z "$PYTHON" ]; then
   exit 1
 fi
 
+if [ -d "$VENV_DIR" ] && [ ! -f "$VENV_DIR/bin/activate" ]; then
+  echo "[setup-searxng] found partial venv, recreating."
+  rm -rf "$VENV_DIR"
+fi
+
 if [ ! -d "$VENV_DIR" ]; then
   echo "[setup-searxng] creating venv with $PYTHON"
   if ! "$PYTHON" -m venv "$VENV_DIR" >"$RUN_DIR/.venv.err" 2>&1; then
-    if grep -Eiq 'ensurepip is not available|No module named venv|venv package' "$RUN_DIR/.venv.err"; then
-      echo "[setup-searxng] python venv components are missing."
-      if install_venv_pkg_debian; then
-        echo "[setup-searxng] retrying venv creation"
-        rm -rf "$VENV_DIR"
-        "$PYTHON" -m venv "$VENV_DIR"
-      else
-        echo "[setup-searxng] install failed. Run one of:"
-        echo "  sudo apt install python3-venv"
-        echo "  sudo apt install python3.$("$PYTHON" -c 'import sys; print(sys.version_info.minor)')-venv"
+    echo "[setup-searxng] venv creation failed, trying Debian venv packages."
+    if install_venv_pkg_debian; then
+      echo "[setup-searxng] retrying venv creation"
+      rm -rf "$VENV_DIR"
+      if ! "$PYTHON" -m venv "$VENV_DIR" >"$RUN_DIR/.venv.err" 2>&1; then
+        cat "$RUN_DIR/.venv.err"
         exit 1
       fi
     else
       cat "$RUN_DIR/.venv.err"
+      echo "[setup-searxng] install failed. Run one of:"
+      echo "  sudo apt install python3-venv"
+      echo "  sudo apt install python3.$("$PYTHON" -c 'import sys; print(sys.version_info.minor)')-venv"
       exit 1
     fi
   fi
