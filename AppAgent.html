@@ -455,6 +455,23 @@
               <input type="number" id="criticMinScore"
                 class="form-control form-control-sm bg-dark text-white border-secondary" value="60">
             </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Critic Agents (Parallel)</label>
+              <input type="number" id="criticAgents"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="3" min="1" max="3">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Critic Re-check Loops</label>
+              <input type="number" id="maxAutoLoops"
+                class="form-control form-control-sm bg-dark text-white border-secondary" value="1" min="0" max="3">
+              <div class="small text-muted mt-1">0 = single critic pass, 1 = up to two passes, 2 = up to three passes.</div>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch small text-muted">
+                <input class="form-check-input" type="checkbox" id="criticHardGate">
+                <label class="form-check-label">Hard gate on low critic score</label>
+              </div>
+            </div>
             <div class="col-md-6 d-flex align-items-end">
               <div class="form-check form-switch small text-muted">
                 <input class="form-check-input" type="checkbox" id="streamSynthesis" checked>
@@ -471,10 +488,7 @@
                 <option value="fresh"></option>
               </select>
               <input type="checkbox" id="robustJson" checked>
-              <input type="checkbox" id="criticHardGate">
               <input type="checkbox" id="copilotMode" checked>
-              <input type="number" id="criticAgents" value="3">
-              <input type="number" id="maxAutoLoops" value="1">
               <textarea id="customSystem"></textarea>
             </div>
           </div>
