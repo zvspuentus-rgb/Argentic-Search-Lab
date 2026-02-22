@@ -61,3 +61,15 @@ cd node-runtime && npx argentic up
 - SearXNG runs from local venv at `node-runtime/.venv-searxng`.
 - If default search port is occupied, next free port is selected automatically.
 - For Docker-first stack, see main Docker section in root README.
+
+## Troubleshooting
+If setup fails on `msgspec`:
+```bash
+export PYTHON_BIN=python3.12
+bash ./scripts/bootstrap-node-runtime.sh
+```
+If your distro still builds `msgspec` from source:
+```bash
+sudo apt update
+sudo apt install -y build-essential python3.12-dev rustc cargo pkg-config
+```
