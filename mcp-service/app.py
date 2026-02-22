@@ -32,6 +32,8 @@ class SearchInput(BaseModel):
 
 class FetchInput(BaseModel):
     url: str
+    max_urls: int = Field(5, ge=1, le=20)
+    max_chars_per_url: int = Field(2200, ge=500, le=8000)
 
 
 class SmartFetchInput(BaseModel):
@@ -146,6 +148,26 @@ def parse_github_repo(url: str) -> Optional[Dict[str, str]]:
     if not owner or not repo:
         return None
     return {"owner": owner, "repo": repo}
+
+
+def parse_github_target(url: str) -> Optional[Dict[str, str]]:
+    repo = parse_github_repo(url)
+    if not repo:
+        return None
+    try:
+        p = urlparse(url)
+        parts = [x for x in (p.path or "").split("/") if x]
+    except Exception:
+        return None
+    # /owner/repo
+    if len(parts) < 2:
+        return None
+    out: Dict[str, str] = {"owner": repo["owner"], "repo": repo["repo"], "kind": "repo", "ref": "", "path": ""}
+    if len(parts) >= 4 and parts[2] in {"blob", "tree"}:
+        out["kind"] = parts[2]
+        out["ref"] = parts[3]
+        out["path"] = "/".join(parts[4:]).strip("/")
+    return out
 
 
 def github_scope_urls(urls: List[str]) -> List[Dict[str, str]]:
@@ -338,7 +360,13 @@ async def fetch_context_items(urls: List[str], max_urls: int, max_chars: int) ->
     return out
 
 
-async def fetch_github_repo_context(owner: str, repo: str, max_files: int, max_chars_per_file: int) -> List[Dict[str, Any]]:
+async def fetch_github_repo_context(
+    owner: str,
+    repo: str,
+    max_files: int,
+    max_chars_per_file: int,
+    path_prefix: str = "",
+) -> List[Dict[str, Any]]:
     max_files = max(1, min(20, int(max_files)))
     max_chars_per_file = max(500, min(5000, int(max_chars_per_file)))
     async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
@@ -354,6 +382,7 @@ async def fetch_github_repo_context(owner: str, repo: str, max_files: int, max_c
 
     preferred: List[str] = []
     others: List[str] = []
+    normalized_prefix = str(path_prefix or "").strip("/").lower()
     for node in tree:
         if node.get("type") != "blob":
             continue
@@ -361,6 +390,8 @@ async def fetch_github_repo_context(owner: str, repo: str, max_files: int, max_c
         if not path:
             continue
         lower = path.lower()
+        if normalized_prefix and not lower.startswith(normalized_prefix):
+            continue
         if re.search(r"(readme|dockerfile|compose|package\.json|requirements\.txt|pyproject\.toml|setup\.py|go\.mod|cargo\.toml|pom\.xml|build\.gradle)", lower):
             preferred.append(path)
         elif re.search(r"\.(md|txt|py|js|ts|tsx|jsx|json|yml|yaml|toml)$", lower):
@@ -388,6 +419,57 @@ async def fetch_github_repo_context(owner: str, repo: str, max_files: int, max_c
             }
         )
     return contexts
+
+
+async def fetch_github_target_context(url: str, max_urls: int, max_chars_per_url: int) -> List[Dict[str, Any]]:
+    target = parse_github_target(url)
+    if not target:
+        return []
+    owner = target["owner"]
+    repo = target["repo"]
+    kind = target.get("kind", "repo")
+    ref = target.get("ref") or "main"
+    rel_path = str(target.get("path") or "").strip("/")
+
+    items: List[Dict[str, Any]] = []
+    seen = set()
+
+    async def add_item(item_url: str, text: str, source: str) -> None:
+        key = (item_url or "").strip().lower()
+        if not key or key in seen:
+            return
+        seen.add(key)
+        compact = compact_text(text, max_chars_per_url)
+        if not compact:
+            return
+        items.append({"url": item_url, "context": compact, "source": source})
+
+    if kind == "blob" and rel_path:
+        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{rel_path}"
+        blob_url = f"https://github.com/{owner}/{repo}/blob/{ref}/{rel_path}"
+        try:
+            async with httpx.AsyncClient(timeout=25, headers={"User-Agent": "appagent-mcp/1.1"}) as client:
+                res = await client.get(raw_url)
+            if res.status_code == 200:
+                await add_item(blob_url, f"[GitHub file: {rel_path}] {res.text}", "github-raw")
+        except Exception:
+            pass
+
+    repo_budget = max(1, int(max_urls) - len(items))
+    repo_prefix = rel_path.rsplit("/", 1)[0] if kind in {"blob", "tree"} and rel_path else ""
+    repo_items = await fetch_github_repo_context(
+        owner,
+        repo,
+        max_files=repo_budget,
+        max_chars_per_file=max_chars_per_url,
+        path_prefix=repo_prefix,
+    )
+    for entry in repo_items:
+        await add_item(str(entry.get("url", "")), str(entry.get("context", "")), "github-repo")
+        if len(items) >= max_urls:
+            break
+
+    return items[:max_urls]
 
 
 def mcp_tools_payload() -> List[Dict[str, Any]]:
@@ -450,11 +532,16 @@ def mcp_tools_payload() -> List[Dict[str, Any]]:
             "description": (
                 "MANDATORY TOOL POLICY: Do NOT call this tool unless the user explicitly asks to inspect/extract/summarize a specific URL. "
                 "Forbidden without explicit request: automatic URL fetching, hidden context extraction, tool-discovery replies. "
-                "If no explicit URL-context request exists, do not call this tool."
+                "If no explicit URL-context request exists, do not call this tool. "
+                "GitHub URLs are repo-aware: the tool can pull multiple related files from the same repository for grounded context."
             ),
             "inputSchema": {
                 "type": "object",
-                "properties": {"url": {"type": "string"}},
+                "properties": {
+                    "url": {"type": "string"},
+                    "max_urls": {"type": "number", "default": 5},
+                    "max_chars_per_url": {"type": "number", "default": 2200},
+                },
                 "required": ["url"],
             },
         },
@@ -672,16 +759,47 @@ async def search_deep(payload: DeepSearchInput) -> Dict[str, Any]:
 
 @app.post("/tools/fetch_url_context")
 async def fetch_url_context(payload: FetchInput) -> Dict[str, Any]:
+    validate_http_url(payload.url)
+    max_urls = max(1, int(payload.max_urls))
+    max_chars = max(500, int(payload.max_chars_per_url))
+    repo_target = parse_github_target(payload.url)
+    if repo_target:
+        items = await fetch_github_target_context(payload.url, max_urls=max_urls, max_chars_per_url=max_chars)
+        merged = "\n\n".join(
+            [f"URL: {it.get('url','')}\n{it.get('context','')}" for it in items if it.get("context")]
+        ).strip()
+        return {
+            "url": payload.url,
+            "mode": "repo-aware",
+            "source": "github-repo-context",
+            "context": compact_text(merged, min(20000, max_chars * max_urls)),
+            "context_items": items,
+            "count": len(items),
+            "current_date": current_date_context(),
+        }
     try:
-        text = await fetch_clean_context(payload.url, 4000)
-        return {"url": payload.url, "context": text, "source": "jina-mirror", "current_date": current_date_context()}
+        text = await fetch_clean_context(payload.url, max_chars)
+        return {
+            "url": payload.url,
+            "mode": "single-url",
+            "context": text,
+            "source": "jina-mirror",
+            "current_date": current_date_context(),
+        }
     except Exception as first_err:
         try:
-            text = await fetch_direct_context(payload.url, 4000)
-            return {"url": payload.url, "context": text, "source": "direct-http", "current_date": current_date_context()}
+            text = await fetch_direct_context(payload.url, max_chars)
+            return {
+                "url": payload.url,
+                "mode": "single-url",
+                "context": text,
+                "source": "direct-http",
+                "current_date": current_date_context(),
+            }
         except Exception as second_err:
             return {
                 "url": payload.url,
+                "mode": "single-url",
                 "context": "",
                 "source": "none",
                 "error": f"url_context_failed: {first_err}; fallback_failed: {second_err}",

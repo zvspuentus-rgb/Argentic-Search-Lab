@@ -61,6 +61,15 @@ If your client supports native HTTP MCP, prefer:
 - `fetch_url_context`
 - `fetch_url_context_smart`
 
+### `fetch_url_context` (repo-aware for GitHub)
+- `url` (required)
+- `max_urls` (default `5`)
+- `max_chars_per_url` (default `2200`)
+
+Behavior:
+- Regular URLs: single-page cleaned extraction.
+- GitHub URLs (`repo`/`tree`/`blob`): repo-aware extraction with multiple related file contexts from the same repository.
+
 ### `search_deep` advanced arguments
 - `query` (string) or `queries` (array of strings)
 - `limit` (default `5`)
