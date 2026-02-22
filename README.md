@@ -26,7 +26,7 @@ Compared to hosted research products, this project can run fully local-first wit
 - Always validate high-stakes outputs (medical/legal/financial) before acting.
 
 ## Quick Start (1 minute)
-### Option A: Node.js runtime (recommended in this branch)
+### Node.js runtime (primary in this branch)
 ```bash
 git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
 cd Argentic-Search-Lab/node-runtime
@@ -38,28 +38,10 @@ Open:
 - UI: `http://localhost:3093`
 - MCP endpoint: `http://localhost:3093/mcp`
 
-### Option B: Docker (optional legacy path)
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/zvspuentus-rgb/Argentic-Search-Lab/main/scripts/bootstrap.sh)
-```
-
-Manual:
-```bash
-git clone https://github.com/zvspuentus-rgb/Argentic-Search-Lab.git
-cd Argentic-Search-Lab
-cp .env.example .env
-docker compose up -d --build
-```
-
-Open:
-- UI: `http://localhost:8093`
-- MCP endpoint: `http://localhost:8193/mcp`
-- SearXNG JSON: `http://localhost:8393/search?q=test&format=json`
-
 Useful links:
 - Full MCP Guide: [`MCP_INTEGRATION.md`](MCP_INTEGRATION.md)
-- Bootstrap script: [`scripts/bootstrap.sh`](scripts/bootstrap.sh)
 - Node runtime guide: [`node-runtime/README.md`](node-runtime/README.md)
+- Docker install (main branch): [`main`](https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main)
 
 ## Why This Project
 Argentic Search Lab gives you two research speeds in one interface:

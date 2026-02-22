@@ -45,3 +45,5 @@ SEARX_BASE=http://localhost:8393 PORT=3093 npm start
 
 ## Notes
 - This branch is Node-first. Docker can still be used from other branches if needed.
+- For Docker setup, use the main branch README:
+  - https://github.com/zvspuentus-rgb/Argentic-Search-Lab/tree/main
