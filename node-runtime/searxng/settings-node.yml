@@ -2,6 +2,8 @@ use_default_settings: true
 
 server:
   secret_key: "appagent-node-local-searxng"
+  bind_address: "127.0.0.1"
+  port: 8394
   limiter: false
   image_proxy: false
 

@@ -68,12 +68,34 @@ ensure_searx_running() {
   fi
 
   cat "$SETTINGS_TEMPLATE" > "$SETTINGS_ACTIVE"
-  cat >> "$SETTINGS_ACTIVE" <<EOF
+  sed -E -i.bak \
+    -e "s|^([[:space:]]*bind_address:[[:space:]]*).*$|\\1\"127.0.0.1\"|" \
+    -e "s|^([[:space:]]*port:[[:space:]]*).*$|\\1${SEARX_PORT}|" \
+    "$SETTINGS_ACTIVE" || true
+  rm -f "$SETTINGS_ACTIVE.bak"
 
-server:
-  bind_address: "127.0.0.1"
-  port: ${SEARX_PORT}
-EOF
+  if grep -Eq '^[[:space:]]*secret_key:[[:space:]]*"(ultrasecretkey)?"' "$SETTINGS_ACTIVE" || \
+     ! grep -Eq '^[[:space:]]*secret_key:' "$SETTINGS_ACTIVE"; then
+    SECRET="$("$VENV_DIR/bin/python" - <<'PY'
+import secrets
+print(secrets.token_hex(32))
+PY
+)"
+    if grep -Eq '^[[:space:]]*secret_key:' "$SETTINGS_ACTIVE"; then
+      sed -E -i.bak \
+        -e "s|^([[:space:]]*secret_key:[[:space:]]*).*$|\\1\"${SECRET}\"|" \
+        "$SETTINGS_ACTIVE"
+    else
+      awk -v s="$SECRET" '
+        BEGIN{in_server=0; inserted=0}
+        /^server:[[:space:]]*$/ {in_server=1; print; next}
+        in_server && /^[^[:space:]]/ && !inserted {print "  secret_key: \"" s "\""; inserted=1; in_server=0}
+        {print}
+        END {if (in_server && !inserted) print "  secret_key: \"" s "\""}
+      ' "$SETTINGS_ACTIVE" > "$SETTINGS_ACTIVE.tmp" && mv "$SETTINGS_ACTIVE.tmp" "$SETTINGS_ACTIVE"
+    fi
+    rm -f "$SETTINGS_ACTIVE.bak"
+  fi
 
   # shellcheck disable=SC1091
   source "$VENV_DIR/bin/activate"
