@@ -3,6 +3,16 @@
 
 Node-first branch for Argentic Search Lab: Web UI + MCP + Search with a single CLI (`argentic`), using Python venv for SearXNG (no Docker required in this mode).
 
+## Live UI Screenshots
+<p align="center">
+  <img src="docs/screenshots/ping/1.png" alt="UI Screenshot 1" width="48%" />
+  <img src="docs/screenshots/ping/2.png" alt="UI Screenshot 2" width="48%" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/ping/3.png" alt="UI Screenshot 3" width="48%" />
+  <img src="docs/screenshots/ping/4.png" alt="UI Screenshot 4" width="48%" />
+</p>
+
 > ## Android Support (Termux)
 > Yes. This branch supports Android via **Termux + proot Debian/Ubuntu**.
 > See `## Android / Termux` below and full steps in [`node-runtime/README.md`](node-runtime/README.md).
