@@ -972,10 +972,14 @@
       if (selectionAskBox?.classList.contains("show")) hideSelectionAskBox();
 
       const welcome = $("welcomeView");
-      if (!welcome || welcome.style.display === "none") return;
+      if (!welcome || welcome.style.display === "none") {
+        if (typeof updateDiscoveryScrollHint === "function") updateDiscoveryScrollHint(false);
+        return;
+      }
       if (state.discoveryLoading) return;
 
       const nearBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 320);
+      if (typeof updateDiscoveryScrollHint === "function") updateDiscoveryScrollHint(nearBottom);
       if (!nearBottom) return;
 
       const now = Date.now();

@@ -1389,7 +1389,8 @@
         const primary = cleanDisplayText(item?.content || "");
         if (primary && !/^no description available\.?$/i.test(primary)) return primary;
         const fromUrl = descriptionFromUrl(item?.url || "");
-        return cleanDisplayText(fromUrl);
+        if (fromUrl) return cleanDisplayText(fromUrl);
+        return cleanDisplayText(item?.title || "");
       };
 
       const userCap = countEl ? visibleCount : DISCOVERY_MAX_TOTAL;
@@ -1406,9 +1407,6 @@
         const icon = faviconForUrl(item.url);
         const title = cleanDisplayText(item.title || "Untitled");
         const description = getBestDescription(item);
-
-        // Skip low-quality entries that still have no usable summary text.
-        if (!description) continue;
 
         // Every few items, render a full-width featured strip (alternating image side)
         // to create the same editorial rhythm used by high-end discover pages.
@@ -1448,6 +1446,35 @@
         root.appendChild(col);
         rendered += 1;
       }
+      updateDiscoveryScrollHint();
+    }
+
+    function canLoadMoreDiscovery() {
+      const countEl = $("discoveryCount");
+      const configured = Number(countEl?.value || state.discoveryCount || DISCOVERY_VISIBLE);
+      const visibleCount = Number.isFinite(configured) ? Math.max(6, Math.min(48, configured)) : DISCOVERY_VISIBLE;
+      const userCap = countEl ? visibleCount : DISCOVERY_MAX_TOTAL;
+      const maxAllowed = Math.min(DISCOVERY_MAX_TOTAL, userCap, state.discovery.length);
+      const current = Number(state.discoveryRenderCount) || DISCOVERY_VISIBLE;
+      return current < maxAllowed;
+    }
+
+    function updateDiscoveryScrollHint(forceNearBottom) {
+      const hint = $("discoveryLoadHint");
+      if (!hint) return;
+      const welcome = $("welcomeView");
+      if (!welcome || welcome.style.display === "none") {
+        hint.classList.remove("show");
+        return;
+      }
+      if (!canLoadMoreDiscovery()) {
+        hint.classList.remove("show");
+        return;
+      }
+      const nearBottom = typeof forceNearBottom === "boolean"
+        ? forceNearBottom
+        : (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 340);
+      hint.classList.toggle("show", nearBottom);
     }
 
     function loadMoreDiscovery() {
@@ -1457,5 +1484,6 @@
       if (current >= maxAllowed) return false;
       state.discoveryRenderCount = Math.min(current + DISCOVERY_BATCH, maxAllowed);
       renderDiscovery();
+      updateDiscoveryScrollHint(false);
       return true;
     }
