@@ -58,6 +58,7 @@
       document.querySelectorAll('.discovery-tab').forEach(t => t.classList.remove('active'));
       if (btn) btn.classList.add('active');
       state.currentDiscoveryCategory = cat;
+      state.discoveryRenderCount = 12;
       const searchUrl = $("searchUrl").value.trim();
       state.discovery = []; // Clear immediately for instant feedback
       await loadDiscovery(searchUrl, cat);
@@ -65,6 +66,7 @@
 
     async function loadDiscovery(searchUrl, category = "tech") {
       if (!searchUrl) return;
+      state.discoveryRenderCount = 12;
       state.discoveryLoading = true;
       renderDiscovery();
       const picks = DISCOVERY_CATEGORIES[category] || DISCOVERY_CATEGORIES.tech;

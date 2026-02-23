@@ -961,8 +961,21 @@
       if (answer?.contains(e.target)) return;
       hideSelectionAskBox();
     });
+    let discoveryLoadTick = 0;
     window.addEventListener("scroll", () => {
       if (selectionAskBox?.classList.contains("show")) hideSelectionAskBox();
+
+      const welcome = $("welcomeView");
+      if (!welcome || welcome.style.display === "none") return;
+      if (state.discoveryLoading) return;
+
+      const nearBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 320);
+      if (!nearBottom) return;
+
+      const now = Date.now();
+      if (now - discoveryLoadTick < 280) return;
+      discoveryLoadTick = now;
+      loadMoreDiscovery();
     }, { passive: true });
 
     // Settings Bridge (Removed conflicting loops)
