@@ -52,7 +52,7 @@
     .media-sidecar {
       --media-sidecar-gap: 1px;
       --media-edge-pad: 0.75rem;
-      --center-col-width: min(900px, 62vw);
+      --center-col-width: min(760px, 52vw);
       --media-sidecar-width: clamp(
         170px,
         calc((100vw - var(--center-col-width) - (var(--media-edge-pad) * 2) - (var(--media-sidecar-gap) * 2)) / 2),
