@@ -229,30 +229,70 @@
       animation: fadeIn 1s ease-out;
     }
 
-    .hero-title {
-      font-size: 3.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      background: linear-gradient(135deg, #fff 0%, var(--accent-secondary) 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -1px;
+    .hero-brand-banner {
+      width: min(1320px, 97vw);
+      margin: 0 auto 1rem auto;
+      border-radius: 34px;
+      border: 1px solid rgba(140, 186, 220, 0.24);
+      background:
+        radial-gradient(140% 130% at 0% 0%, rgba(26, 56, 86, 0.52) 0%, rgba(17, 35, 47, 0.78) 44%, rgba(17, 26, 61, 0.78) 100%);
+      padding: clamp(1rem, 2.8vw, 2rem);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: clamp(0.8rem, 2vw, 1.8rem);
+      box-shadow: 0 24px 52px rgba(4, 10, 15, 0.52);
+      text-align: left;
+      overflow: hidden;
     }
 
-    .hero-logo-wrap {
-      background: none;
-      -webkit-text-fill-color: initial;
-      margin-bottom: 0.35rem;
+    .hero-brand-mark {
+      width: clamp(98px, 12vw, 165px);
+      height: clamp(98px, 12vw, 165px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    .hero-logo-svg {
-      width: min(860px, 94vw);
-      height: auto;
+    .hero-brand-mark svg {
+      width: 100%;
+      height: 100%;
       display: block;
-      margin: 0 auto;
-      filter: drop-shadow(0 10px 28px rgba(7, 18, 26, 0.45));
-      opacity: 0.98;
+      filter: drop-shadow(0 8px 18px rgba(4, 16, 26, 0.42));
+    }
+
+    .hero-brand-copy {
+      min-width: 0;
+    }
+
+    .hero-brand-title {
+      margin: 0;
+      font-size: clamp(1.72rem, 5vw, 4.35rem);
+      line-height: 1.02;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #edf7ff;
+      text-wrap: balance;
+    }
+
+    .hero-brand-line {
+      margin-top: clamp(0.45rem, 1vw, 0.95rem);
+      margin-bottom: clamp(0.45rem, 1vw, 0.9rem);
+      width: min(100%, 930px);
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #43d3a8, #5fa8ff);
+      box-shadow: 0 0 26px rgba(95, 168, 255, 0.27);
+    }
+
+    .hero-brand-subtitle {
+      margin: 0;
+      font-size: clamp(0.96rem, 2.1vw, 2rem);
+      line-height: 1.25;
+      color: #b8d7f0;
+      font-weight: 600;
+      letter-spacing: 0.01em;
     }
 
     /* Floating Search Bar */
@@ -697,6 +737,16 @@
     }
 
     @media (max-width: 991px) {
+      .hero-brand-banner {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+        border-radius: 24px;
+      }
+      .hero-brand-line {
+        margin-left: auto;
+        margin-right: auto;
+      }
       .search-container.dock-right {
         left: 50%;
         right: auto;
