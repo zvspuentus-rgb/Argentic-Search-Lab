@@ -52,11 +52,15 @@
     .media-sidecar {
       --media-sidecar-gap: 1px;
       --media-edge-pad: 0.75rem;
-      --center-col-width: min(760px, 52vw);
+      --media-min-width: 170px;
+      --center-col-width: min(
+        900px,
+        calc(100vw - (var(--media-edge-pad) * 2) - (var(--media-sidecar-gap) * 2) - (var(--media-min-width) * 2))
+      );
       --media-sidecar-width: clamp(
-        170px,
+        var(--media-min-width),
         calc((100vw - var(--center-col-width) - (var(--media-edge-pad) * 2) - (var(--media-sidecar-gap) * 2)) / 2),
-        420px
+        360px
       );
       position: fixed;
       top: 5.6rem;
@@ -90,7 +94,7 @@
       left: auto;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: 1220px) {
       .deep-grid {
         grid-template-columns: 1fr;
       }
