@@ -246,7 +246,7 @@
       margin-bottom: 0.35rem;
     }
 
-    .hero-logo {
+    .hero-logo-svg {
       width: min(860px, 94vw);
       height: auto;
       display: block;
