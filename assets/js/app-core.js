@@ -55,13 +55,16 @@
         limit: null,
         used: null,
         remaining: null
-      }
+      },
+      discoveryRenderCount: 12
     };
 
     const STORAGE_KEY = "agentic_search_lab_sessions_v1";
     const SETTINGS_KEY = "agentic_search_lab_settings_v1";
     const UI_STATE_KEY = "agentic_search_lab_ui_state_v1";
     const DISCOVERY_VISIBLE = 12;
+    const DISCOVERY_MAX_TOTAL = 30;
+    const DISCOVERY_BATCH = 6;
 
     const DEPTH_PRESETS = {
       speed: { queryCount: 2, perQueryResults: 3, maxSecondPassQueries: 1, contextSources: 8 },
@@ -1349,8 +1352,15 @@
         return cleanDisplayText(fromUrl);
       };
 
+      const userCap = countEl ? visibleCount : DISCOVERY_MAX_TOTAL;
+      const maxAllowed = Math.min(DISCOVERY_MAX_TOTAL, userCap, state.discovery.length);
+      const renderLimit = Math.min(
+        Math.max(DISCOVERY_VISIBLE, Number(state.discoveryRenderCount) || DISCOVERY_VISIBLE),
+        maxAllowed
+      );
+
       let rendered = 0;
-      for (const [idx, item] of state.discovery.slice(0, visibleCount).entries()) {
+      for (const [idx, item] of state.discovery.slice(0, renderLimit).entries()) {
         const mediaType = item.mediaType || inferMediaType(item.url);
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);
@@ -1398,4 +1408,14 @@
         root.appendChild(col);
         rendered += 1;
       }
+    }
+
+    function loadMoreDiscovery() {
+      if (state.discoveryLoading) return false;
+      const current = Number(state.discoveryRenderCount) || DISCOVERY_VISIBLE;
+      const maxAllowed = Math.min(DISCOVERY_MAX_TOTAL, state.discovery.length);
+      if (current >= maxAllowed) return false;
+      state.discoveryRenderCount = Math.min(current + DISCOVERY_BATCH, maxAllowed);
+      renderDiscovery();
+      return true;
     }
