@@ -14,6 +14,16 @@ Production-oriented local research stack with:
 
 The system is designed to run locally with zero mandatory cloud cost.
 
+## Live UI Screenshots
+<p align="center">
+  <img src="docs/screenshots/ping/1.png" alt="UI Screenshot 1" width="48%" />
+  <img src="docs/screenshots/ping/2.png" alt="UI Screenshot 2" width="48%" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/ping/3.png" alt="UI Screenshot 3" width="48%" />
+  <img src="docs/screenshots/ping/4.png" alt="UI Screenshot 4" width="48%" />
+</p>
+
 ## Why It Is Truly Free
 - No required subscription to run the core stack.
 - Runs on your local machine (`localhost`) with local providers (LM Studio / Ollama).
