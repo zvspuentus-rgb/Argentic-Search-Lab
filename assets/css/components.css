@@ -968,6 +968,51 @@
       margin-bottom: 0.35rem;
     }
 
+    .discovery-load-hint {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      margin: 0.55rem auto 0;
+      width: fit-content;
+      padding: 0.28rem 0.72rem;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 184, 255, 0.28);
+      background: rgba(11, 28, 43, 0.56);
+      color: #a8c8df;
+      pointer-events: none;
+      user-select: none;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+    }
+
+    .discovery-load-hint.show {
+      display: inline-flex;
+    }
+
+    .discovery-load-hint .hint-text {
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .discovery-load-hint .hint-arrow {
+      font-size: 0.88rem;
+      line-height: 1;
+      animation: discoveryHintBounce 1.05s ease-in-out infinite;
+    }
+
+    @keyframes discoveryHintBounce {
+      0%, 100% {
+        transform: translateY(0);
+        opacity: 0.65;
+      }
+      50% {
+        transform: translateY(4px);
+        opacity: 1;
+      }
+    }
+
     .discover-feature {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 320px;
