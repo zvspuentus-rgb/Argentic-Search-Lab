@@ -262,13 +262,16 @@
       const sidebar = document.getElementById('sidebar');
       const topBtn = document.getElementById('sidebarToggleBtn');
       const edgeBtn = document.getElementById('sidebarEdgeToggle');
+      const rightRail = document.getElementById('quickActionRail');
       const isOpen = !!sidebar?.classList.contains('active');
       if (topBtn) topBtn.classList.toggle('is-open', isOpen);
+      if (topBtn) topBtn.classList.toggle('is-under-sidebar', isOpen);
       if (edgeBtn) {
         edgeBtn.classList.toggle('is-open', isOpen);
         edgeBtn.textContent = isOpen ? "❮" : "❯";
         edgeBtn.title = isOpen ? "Close History" : "Open History";
       }
+      if (rightRail) rightRail.classList.toggle('sidebar-open', isOpen);
     }
 
     function toggleSidebar() {

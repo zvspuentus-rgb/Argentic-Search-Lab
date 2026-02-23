@@ -22,21 +22,35 @@
 
   <!-- Sidebar (Session Management) -->
   <aside id="sidebar" class="sidebar">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0;">History</h2>
-      <button class="btn-action" onclick="toggleSidebar()">✕</button>
+    <div class="d-flex justify-content-between align-items-center sidebar-header">
+      <h2 class="sidebar-title">History</h2>
+      <button class="btn-action sidebar-close-btn" onclick="toggleSidebar()" title="Close history">✕</button>
     </div>
-    <div id="sessionsList" class="flex-grow-1 overflow-auto d-flex flex-column gap-2" style="scrollbar-width: none;">
+    <div id="sessionsList" class="sessions-list flex-grow-1 overflow-auto d-flex flex-column gap-2">
       <!-- Sessions dynamic content -->
     </div>
-    <div class="d-grid gap-2 border-top pt-3" style="border-color: rgba(255,255,255,0.05) !important;">
-      <button onclick="startNewSession()" class="btn-action">＋ New Research</button>
-      <button onclick="showDiscovery()" class="btn-action">✨ Discovery</button>
-      <button onclick="toggleSettings()" class="btn-action">⚙ Settings</button>
+    <div class="d-grid gap-2 border-top pt-3 sidebar-bottom-actions">
+      <button onclick="startNewSession()" class="btn-action sidebar-action-btn">＋ New Research</button>
+      <button onclick="showDiscovery()" class="btn-action sidebar-action-btn">✨ Discovery</button>
+      <button onclick="toggleSettings()" class="btn-action sidebar-action-btn">⚙ Settings</button>
     </div>
   </aside>
 
   <button id="sidebarEdgeToggle" class="sidebar-edge-toggle" onclick="toggleSidebar()" title="Open History">❯</button>
+  <div id="quickActionRail" class="quick-action-rail" aria-label="Quick actions">
+    <button type="button" class="rail-action-btn" onclick="toggleSettings()" title="Open Settings">
+      <span class="rail-arrow">◂</span>
+      <span class="rail-label">Settings</span>
+    </button>
+    <button type="button" class="rail-action-btn" onclick="showDiscovery()" title="Open Discovery">
+      <span class="rail-arrow">◂</span>
+      <span class="rail-label">Discovery</span>
+    </button>
+    <button type="button" class="rail-action-btn" onclick="startNewSession()" title="Start New Research">
+      <span class="rail-arrow">◂</span>
+      <span class="rail-label">New Research</span>
+    </button>
+  </div>
 
   <main class="app-container">
     <!-- Initial State View -->
