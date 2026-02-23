@@ -984,8 +984,14 @@
       cards.forEach((card) => {
         card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double", "media-tail-span-2");
       });
+
+      // Desktop 4-column mode should stay fully uniform (no oversized feature cards).
+      if (cols >= 4) {
+        return;
+      }
+
       let featureOrder = 0;
-      const cycle = cols; // 3 cols => "3 + featured", 4 cols => "4 + featured"
+      const cycle = cols; // <=3 cols: compact cadence with featured inserts
       for (let i = 0; i < cards.length; i++) {
         if ((i + 1) % (cycle + 1) !== 0) continue;
         // Avoid a featured card that would leave an awkward tiny tail.
