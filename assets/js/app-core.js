@@ -973,12 +973,32 @@
 
     function applyMediaCadence(container, kind) {
       if (!container) return;
+      const cols = Math.max(
+        1,
+        (getComputedStyle(container).gridTemplateColumns || "")
+          .split(" ")
+          .map((s) => s.trim())
+          .filter(Boolean).length || 1
+      );
       const cards = [...container.querySelectorAll(".media-card")];
       cards.forEach((card) => {
         card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double", "media-tail-span-2");
       });
-      // Keep media sidebars strictly uniform to avoid broken asymmetric blocks.
-      // We intentionally disable featured/tail span behavior here.
+      if (cols < 3) return;
+
+      const cycle = cols >= 4 ? 4 : 3;
+      let featureOrder = 0;
+      for (let idx = cycle; idx < cards.length; idx += (cycle + 1)) {
+        const card = cards[idx];
+        if (!card) continue;
+        card.classList.add("media-feature");
+        const isVideo = String(kind || "").toLowerCase() === "videos";
+        const align = isVideo
+          ? (featureOrder % 2 === 0 ? "right" : "left")
+          : (featureOrder % 2 === 0 ? "left" : "right");
+        card.classList.add(align === "right" ? "media-feature-right" : "media-feature-left");
+        featureOrder += 1;
+      }
     }
 
     function appendMediaCards(kind, newItems) {

@@ -370,7 +370,7 @@
     .media-sidecar .media-card {
       min-width: 100%;
       max-width: 100%;
-      min-height: 168px;
+      min-height: 146px;
     }
 
     .media-sidecar .media-body {
@@ -380,7 +380,7 @@
 
     .media-sidecar .media-title {
       font-size: 0.71rem;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
     }
 
     .media-sidecar .media-desc {
@@ -392,6 +392,10 @@
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+
+    .media-sidecar .media-card:not(.media-feature) .media-desc {
+      display: none;
     }
 
     .media-sidecar .media-card.media-tail-single {
@@ -430,6 +434,11 @@
     .media-sidecar .media-card.media-feature .media-title {
       font-size: 0.82rem;
       -webkit-line-clamp: 3;
+    }
+
+    .media-sidecar .media-card.media-feature .media-desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
     }
 
     .media-sidecar .media-card.media-feature.media-feature-left {
