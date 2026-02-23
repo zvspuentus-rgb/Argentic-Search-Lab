@@ -71,11 +71,18 @@
       const q = picks[Math.floor(Math.random() * picks.length)];
       try {
         const [web, images, videos] = await Promise.all([
-          searchQuery({ searchUrl, query: q, limit: 8, sourceProfile: "web" }),
-          searchQuery({ searchUrl, query: q, limit: 3, sourceProfile: "images" }),
-          searchQuery({ searchUrl, query: q, limit: 3, sourceProfile: "videos" })
+          searchQuery({ searchUrl, query: q, limit: 22, sourceProfile: "web" }),
+          searchQuery({ searchUrl, query: q, limit: 10, sourceProfile: "images" }),
+          searchQuery({ searchUrl, query: q, limit: 8, sourceProfile: "videos" })
         ]);
-        state.discovery = [...web, ...images, ...videos];
+        const merged = [...web, ...images, ...videos];
+        const seen = new Set();
+        state.discovery = merged.filter((item) => {
+          const key = String(item?.url || item?.title || "").trim().toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       } catch (err) {
         addDebug("discovery", `Auto-load failed: ${err.message}`, "warn");
       } finally {
