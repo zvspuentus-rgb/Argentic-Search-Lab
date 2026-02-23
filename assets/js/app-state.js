@@ -367,10 +367,12 @@
       if (!root) return;
       root.innerHTML = "";
       if (!state.sessions.length) {
-        root.innerHTML = '<div class="mono p-3 text-center" style="color:#9db0bc; font-size: 0.8rem;">No history yet.</div>';
+        root.innerHTML = '<div class="session-empty mono">No history yet.</div>';
         return;
       }
       for (const s of state.sessions) {
+        const preview = String(s.data?.userQuery || "").replace(/\s+/g, " ").trim();
+        const turnCount = Array.isArray(s.data?.turns) ? s.data.turns.length : 0;
         const item = document.createElement("div");
         item.className = `session-item ${s.id === state.currentSessionId ? "active" : ""}`;
         item.dataset.sid = s.id;
@@ -380,12 +382,18 @@
         };
 
         item.innerHTML = `
-          <div class="mono" style="font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.title || "Session")}</div>
-          <div class="mono text-secondary" style="font-size: 0.7rem;">${escapeHtml(s.time || "")}</div>
-          <div class="session-actions">
-            <button class="btn-session-action" onclick="duplicateSession('${s.id}')" title="Duplicate">📑</button>
-            <button class="btn-session-action" onclick="renameSessionById('${s.id}')" title="Rename">✏️</button>
-            <button class="btn-session-action" onclick="removeSessionById('${s.id}')" title="Delete">🗑️</button>
+          <div class="session-item-head">
+            <div class="mono session-item-title">${escapeHtml(s.title || "Session")}</div>
+            <span class="mono session-item-time">${escapeHtml(s.time || "")}</span>
+          </div>
+          <div class="session-item-preview">${escapeHtml(preview || "No query preview yet.")}</div>
+          <div class="session-item-footer">
+            <span class="session-item-badge">${turnCount} turns</span>
+            <div class="session-actions">
+              <button class="btn-session-action" onclick="duplicateSession('${s.id}')" title="Duplicate">📑</button>
+              <button class="btn-session-action" onclick="renameSessionById('${s.id}')" title="Rename">✏️</button>
+              <button class="btn-session-action" onclick="removeSessionById('${s.id}')" title="Delete">🗑️</button>
+            </div>
           </div>
         `;
         root.appendChild(item);

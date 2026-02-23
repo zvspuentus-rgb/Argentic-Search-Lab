@@ -908,58 +908,133 @@
     }
 
     /* Session Item Styling */
+    .session-empty {
+      border: 1px dashed rgba(176, 208, 231, 0.28);
+      border-radius: 0.85rem;
+      padding: 0.95rem 0.8rem;
+      text-align: center;
+      color: #a7bbca;
+      font-size: 0.78rem;
+      background: rgba(255, 255, 255, 0.015);
+    }
+
     .session-item {
       position: relative;
-      padding: 0.75rem 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid transparent;
-      border-radius: 0.75rem;
+      padding: 0.72rem 0.78rem;
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.012));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.82rem;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
       width: 100%;
+      overflow: hidden;
     }
 
     .session-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+      border-color: rgba(166, 212, 255, 0.35);
+      transform: translateY(-1px);
     }
 
     .session-item.active {
-      background: rgba(120, 184, 255, 0.1);
-      border-color: var(--accent-secondary);
+      background: linear-gradient(145deg, rgba(120, 184, 255, 0.16), rgba(45, 87, 122, 0.12));
+      border-color: rgba(120, 184, 255, 0.62);
+      box-shadow: inset 0 0 0 1px rgba(120, 184, 255, 0.2);
+    }
+
+    .session-item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.65rem;
+      margin-bottom: 0.38rem;
+    }
+
+    .session-item-title {
+      font-size: 0.82rem;
+      color: #eef8ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 185px;
+    }
+
+    .session-item-time {
+      font-size: 0.64rem;
+      color: #8ea8bd;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .session-item-preview {
+      color: #9db0bc;
+      font-size: 0.69rem;
+      line-height: 1.35;
+      display: -webkit-box;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 1.8em;
+      margin-bottom: 0.46rem;
+      padding-right: 0.2rem;
+    }
+
+    .session-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .session-item-badge {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      border-radius: 999px;
+      padding: 0 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.62rem;
+      color: #9db5c6;
+      font-family: var(--font-mono);
+      letter-spacing: 0.25px;
     }
 
     .session-actions {
-      display: none;
-      position: absolute;
-      right: 0.5rem;
-      top: 50%;
-      transform: translateY(-50%);
-      gap: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.28rem;
+      opacity: 0.55;
+      transition: opacity 0.2s ease;
     }
 
-    .session-item:hover .session-actions {
-      display: flex;
+    .session-item:hover .session-actions,
+    .session-item.active .session-actions {
+      opacity: 1;
     }
 
     .btn-session-action {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(170, 210, 236, 0.18);
+      color: #a7c0d1;
       width: 24px;
       height: 24px;
-      border-radius: 4px;
-      display: flex;
+      border-radius: 7px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      padding: 0;
     }
 
     .btn-session-action:hover {
-      background: var(--accent-secondary);
-      color: #000;
-      border-color: var(--accent-secondary);
+      transform: translateY(-1px);
+      background: rgba(120, 184, 255, 0.22);
+      color: #ecf8ff;
+      border-color: rgba(120, 184, 255, 0.75);
     }
 
     /* Scrollbars */
