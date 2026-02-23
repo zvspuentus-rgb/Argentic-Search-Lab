@@ -1318,6 +1318,28 @@
         const mediaType = item.mediaType || inferMediaType(item.url);
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);
+
+        // Every few items, render a full-width featured strip (alternating image side)
+        // to create the same editorial rhythm used by high-end discover pages.
+        if (idx % 6 === 0) {
+          const feature = document.createElement("div");
+          feature.className = `col-12 discover-feature-wrap ${Math.floor(idx / 6) % 2 ? "is-reverse" : ""}`;
+          feature.innerHTML = `
+            <article class="discover-feature" data-didx="${idx}" onclick="explainDiscoveryItem(state.discovery[${idx}])">
+              <div class="discover-feature-copy">
+                <div class="badge rounded-pill align-self-start" style="background: rgba(120, 184, 255, 0.12); color: var(--accent-secondary); font-size: 0.62rem; text-transform: uppercase;">${escapeHtml(mediaType)}</div>
+                <h3>${escapeHtml(item.title || "Untitled")}</h3>
+                <p>${escapeHtml(item.content || "No description available.")}</p>
+              </div>
+              <div class="discover-feature-media">
+                ${thumb ? `<img class="discover-feature-thumb" src="${escapeAttr(thumb)}" alt="thumb" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : `<div class="discover-feature-thumb d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.03);"> ✨ </div>`}
+              </div>
+            </article>
+          `;
+          root.appendChild(feature);
+          continue;
+        }
+
         const col = document.createElement("div");
         // Balanced responsive grid: 4 columns on wide desktop, then 3/2 on smaller screens.
         col.className = "col-12 col-sm-6 col-lg-4 col-xxl-3";
