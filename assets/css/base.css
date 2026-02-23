@@ -230,25 +230,45 @@
     }
 
     .hero-brand-banner {
-      width: min(1320px, 97vw);
-      margin: 0 auto 1rem auto;
-      border-radius: 34px;
-      border: 1px solid rgba(140, 186, 220, 0.24);
+      width: min(1080px, 93vw);
+      margin: 0 auto 1.1rem auto;
+      border-radius: 28px;
+      border: 1px solid rgba(95, 168, 255, 0.12);
       background:
-        radial-gradient(140% 130% at 0% 0%, rgba(26, 56, 86, 0.52) 0%, rgba(17, 35, 47, 0.78) 44%, rgba(17, 26, 61, 0.78) 100%);
-      padding: clamp(1rem, 2.8vw, 2rem);
+        radial-gradient(120% 130% at 0% 0%, rgba(10, 28, 38, 0.92) 0%, rgba(5, 12, 18, 0.95) 52%, rgba(2, 7, 11, 0.98) 100%);
       display: grid;
       grid-template-columns: auto 1fr;
       align-items: center;
-      gap: clamp(0.8rem, 2vw, 1.8rem);
-      box-shadow: 0 24px 52px rgba(4, 10, 15, 0.52);
+      gap: clamp(0.7rem, 1.6vw, 1.25rem);
+      padding: clamp(0.8rem, 2vw, 1.35rem);
+      box-shadow: 0 16px 40px rgba(2, 8, 14, 0.52);
       text-align: left;
       overflow: hidden;
+      position: relative;
+    }
+
+    .hero-brand-banner::before {
+      content: "";
+      position: absolute;
+      inset: -22% -18%;
+      pointer-events: none;
+      background:
+        radial-gradient(58% 52% at 24% 30%, rgba(67, 211, 168, 0.17) 0%, rgba(67, 211, 168, 0) 70%),
+        radial-gradient(54% 46% at 72% 24%, rgba(95, 168, 255, 0.2) 0%, rgba(95, 168, 255, 0) 72%),
+        radial-gradient(38% 34% at 83% 84%, rgba(255, 176, 103, 0.14) 0%, rgba(255, 176, 103, 0) 72%);
+      filter: blur(14px);
+      opacity: 0.85;
+      z-index: 0;
+    }
+
+    .hero-brand-banner > * {
+      position: relative;
+      z-index: 1;
     }
 
     .hero-brand-mark {
-      width: clamp(98px, 12vw, 165px);
-      height: clamp(98px, 12vw, 165px);
+      width: clamp(88px, 10vw, 138px);
+      height: clamp(88px, 10vw, 138px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -268,8 +288,8 @@
 
     .hero-brand-title {
       margin: 0;
-      font-size: clamp(1.72rem, 5vw, 4.35rem);
-      line-height: 1.02;
+      font-size: clamp(1.76rem, 4.2vw, 3.7rem);
+      line-height: 1.03;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: #edf7ff;
@@ -277,21 +297,21 @@
     }
 
     .hero-brand-line {
-      margin-top: clamp(0.45rem, 1vw, 0.95rem);
-      margin-bottom: clamp(0.45rem, 1vw, 0.9rem);
-      width: min(100%, 930px);
-      height: 6px;
+      margin-top: clamp(0.34rem, 0.85vw, 0.68rem);
+      margin-bottom: clamp(0.34rem, 0.85vw, 0.72rem);
+      width: min(100%, 760px);
+      height: 4px;
       border-radius: 999px;
-      background: linear-gradient(90deg, #43d3a8, #5fa8ff);
-      box-shadow: 0 0 26px rgba(95, 168, 255, 0.27);
+      background: linear-gradient(90deg, rgba(67, 211, 168, 0.92), rgba(95, 168, 255, 0.95), rgba(255, 176, 103, 0.88));
+      box-shadow: 0 0 18px rgba(95, 168, 255, 0.24);
     }
 
     .hero-brand-subtitle {
       margin: 0;
-      font-size: clamp(0.96rem, 2.1vw, 2rem);
+      font-size: clamp(0.88rem, 1.45vw, 1.4rem);
       line-height: 1.25;
-      color: #b8d7f0;
-      font-weight: 600;
+      color: #a9c9df;
+      font-weight: 580;
       letter-spacing: 0.01em;
     }
 
@@ -741,11 +761,14 @@
         grid-template-columns: 1fr;
         justify-items: center;
         text-align: center;
-        border-radius: 24px;
+        border-radius: 22px;
+        width: min(96vw, 720px);
+        padding: 0.95rem;
       }
       .hero-brand-line {
         margin-left: auto;
         margin-right: auto;
+        width: min(100%, 360px);
       }
       .search-container.dock-right {
         left: 50%;
