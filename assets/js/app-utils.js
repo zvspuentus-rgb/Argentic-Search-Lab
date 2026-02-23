@@ -1,5 +1,14 @@
-    function escapeHtml(text) {
+    function sanitizeTextNoise(text) {
       return String(text ?? "")
+        // Common search-engine highlight/control markers that leak into UI.
+        .replace(/[\uE000-\uE007]/g, "")
+        .replace(/[\u2066-\u2069]/g, "")
+        .replace(/\uFFFD/g, "")
+        .replace(/�/g, "");
+    }
+
+    function escapeHtml(text) {
+      return sanitizeTextNoise(text)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -8,11 +17,11 @@
     }
 
     function escapeAttr(text) {
-      return String(text ?? "").replaceAll('"', "%22");
+      return sanitizeTextNoise(text).replaceAll('"', "%22");
     }
 
     function normalizeQuery(input) {
-      return String(input || "")
+      return sanitizeTextNoise(input)
         .replace(/[<>]{4,}/g, " ")
         .replace(/[_=-]{4,}/g, " ")
         .replace(/\s+/g, " ")

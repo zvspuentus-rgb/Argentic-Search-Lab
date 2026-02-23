@@ -1361,6 +1361,8 @@
       const cleanDisplayText = (value) => {
         const raw = String(value || "");
         return raw
+          .replace(/[\uE000-\uE007]/g, "")
+          .replace(/[\u2066-\u2069]/g, "")
           .replace(/\uFFFD/g, "")
           .replace(/�/g, "")
           .replace(/\s+/g, " ")
