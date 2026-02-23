@@ -901,6 +901,7 @@
       for (const item of items.slice(0, 80)) {
         container.appendChild(createMediaCard(item));
       }
+      applyMediaCadence(container, kind);
       if (kind) {
         const sentinel = document.createElement("div");
         sentinel.className = "media-load-sentinel";
@@ -922,10 +923,26 @@
       return String(kind || "").toLowerCase() === "videos" ? "answerMediaVideosGridLeft" : "answerMediaImagesGridRight";
     }
 
+    function mediaDescriptionFromItem(item) {
+      const raw = String(item?.content || item?.snippet || "").replace(/\s+/g, " ").trim();
+      if (raw && !/^no description available\.?$/i.test(raw)) return raw;
+      try {
+        const u = new URL(String(item?.url || ""));
+        const slug = (u.pathname || "").split("/").filter(Boolean).pop() || "";
+        const normalized = decodeURIComponent(slug)
+          .replace(/[-_]+/g, " ")
+          .replace(/\.(html?|php|aspx?|webm|jpg|jpeg|png|gif|svg)$/i, "")
+          .trim();
+        if (normalized.length > 10) return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+      } catch {}
+      return String(item?.title || "").trim();
+    }
+
     function createMediaCard(item) {
       const t = item.mediaType || inferMediaType(item.url);
       const thumb = previewImageForUrl(item);
       const icon = faviconForUrl(item.url);
+      const description = mediaDescriptionFromItem(item);
       const card = document.createElement("article");
       card.className = "media-card";
       const mediaKey = String(item.url || item.title || "").toLowerCase().trim();
@@ -935,10 +952,32 @@
         <div class="media-body">
           <div class="media-label">${escapeHtml(t)}</div>
           <h4 class="media-title">${escapeHtml(item.title || "Untitled")}</h4>
+          <p class="media-desc">${escapeHtml(description)}</p>
           <a class="media-link" href="${escapeAttr(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.url || "")}</a>
         </div>
       `;
       return card;
+    }
+
+    function applyMediaCadence(container, kind) {
+      if (!container) return;
+      const cards = [...container.querySelectorAll(".media-card")];
+      cards.forEach((card) => {
+        card.classList.remove("media-feature", "media-feature-left", "media-feature-right");
+      });
+      let featureOrder = 0;
+      for (let i = 0; i < cards.length; i++) {
+        // Pattern: 3 compact cards, then 1 featured row card.
+        if ((i + 1) % 4 !== 0) continue;
+        const card = cards[i];
+        card.classList.add("media-feature");
+        const isVideo = String(kind || "").toLowerCase() === "videos";
+        const align = isVideo
+          ? (featureOrder % 2 === 0 ? "right" : "left")   // videos: right, left, right...
+          : (featureOrder % 2 === 0 ? "left" : "right");  // images: left, right, left...
+        card.classList.add(align === "right" ? "media-feature-right" : "media-feature-left");
+        featureOrder += 1;
+      }
     }
 
     function appendMediaCards(kind, newItems) {
@@ -959,6 +998,7 @@
         else container.appendChild(card);
         added += 1;
       }
+      if (added) applyMediaCadence(container, kind);
       return added > 0;
     }
 
