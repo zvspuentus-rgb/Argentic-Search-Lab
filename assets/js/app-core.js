@@ -1319,7 +1319,8 @@
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);
         const col = document.createElement("div");
-        col.className = "col-md-4 col-sm-6";
+        // Balanced responsive grid: 4 columns on wide desktop, then 3/2 on smaller screens.
+        col.className = "col-12 col-sm-6 col-lg-4 col-xxl-3";
         col.innerHTML = `
           <article class="discover-item" data-didx="${idx}" onclick="explainDiscoveryItem(state.discovery[${idx}])">
             ${thumb ? `<img class="discover-thumb" src="${escapeAttr(thumb)}" alt="thumb" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : `<div class="discover-thumb d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.03);"> ✨ </div>`}
