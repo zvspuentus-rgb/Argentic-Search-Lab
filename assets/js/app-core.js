@@ -943,17 +943,29 @@
       const thumb = previewImageForUrl(item);
       const icon = faviconForUrl(item.url);
       const description = mediaDescriptionFromItem(item);
+      const url = String(item.url || "").trim();
       const card = document.createElement("article");
       card.className = "media-card";
       const mediaKey = String(item.url || item.title || "").toLowerCase().trim();
       if (mediaKey) card.dataset.mediaKey = mediaKey;
+      if (url) {
+        card.setAttribute("role", "link");
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("aria-label", String(item.title || "Open media"));
+        card.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
+        card.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            window.open(url, "_blank", "noopener,noreferrer");
+          }
+        };
+      }
       card.innerHTML = `
         ${thumb ? `<img class="media-thumb" src="${escapeAttr(thumb)}" alt="${escapeAttr(item.title || "media")}" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : '<div class="media-thumb"></div>'}
         <div class="media-body">
           <div class="media-label">${escapeHtml(t)}</div>
           <h4 class="media-title">${escapeHtml(item.title || "Untitled")}</h4>
           <p class="media-desc">${escapeHtml(description)}</p>
-          <a class="media-link" href="${escapeAttr(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.url || "")}</a>
         </div>
       `;
       return card;

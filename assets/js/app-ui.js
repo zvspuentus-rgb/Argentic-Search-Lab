@@ -285,6 +285,7 @@
       const modal = document.getElementById('settingsModal');
       const nextVisible = modal.style.display === 'none';
       modal.style.display = nextVisible ? 'flex' : 'none';
+      document.body.classList.toggle("settings-open", nextVisible);
       if (nextVisible) switchSettingsTab("llm");
     }
 
