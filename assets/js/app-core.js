@@ -94,7 +94,13 @@
     }
 
     /* Dynamic Model Fetching */
-    async function refreshModels() {
+    async function refreshModels(opts = {}) {
+      const selectedProvider = String($("provider")?.value || "").toLowerCase();
+      if (selectedProvider !== "lmstudio" && !opts.force) {
+        if (typeof syncChatModelOptions === "function") syncChatModelOptions({ keepChatSelection: true });
+        setStatus("Model list refresh is available for LM Studio.");
+        return;
+      }
       try {
         const runtime = getProviderRuntime();
         const pName = providerDisplayName(runtime.provider);
