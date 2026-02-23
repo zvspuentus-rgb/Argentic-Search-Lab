@@ -240,6 +240,21 @@
       letter-spacing: -1px;
     }
 
+    .hero-logo-wrap {
+      background: none;
+      -webkit-text-fill-color: initial;
+      margin-bottom: 0.35rem;
+    }
+
+    .hero-logo {
+      width: min(860px, 94vw);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 10px 28px rgba(7, 18, 26, 0.45));
+      opacity: 0.98;
+    }
+
     /* Floating Search Bar */
     .search-container {
       position: fixed;
