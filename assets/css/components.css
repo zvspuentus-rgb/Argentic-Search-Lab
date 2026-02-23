@@ -295,6 +295,7 @@
     .media-sidecar .media-scroll-container {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-auto-flow: row dense;
       overflow-y: auto;
       overflow-x: hidden;
       height: 100%;
@@ -308,13 +309,13 @@
       touch-action: pan-y;
     }
 
-    @media (max-width: 1480px) {
+    @media (max-width: 1280px) {
       .media-sidecar .media-scroll-container {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 1280px) {
+    @media (max-width: 980px) {
       .media-sidecar .media-scroll-container {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
