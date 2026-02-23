@@ -973,55 +973,12 @@
 
     function applyMediaCadence(container, kind) {
       if (!container) return;
-      const cols = Math.max(
-        1,
-        (getComputedStyle(container).gridTemplateColumns || "")
-          .split(" ")
-          .map((s) => s.trim())
-          .filter(Boolean).length || 1
-      );
       const cards = [...container.querySelectorAll(".media-card")];
       cards.forEach((card) => {
         card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double", "media-tail-span-2");
       });
-
-      // Desktop 4-column mode should stay fully uniform (no oversized feature cards).
-      if (cols >= 4) {
-        return;
-      }
-
-      let featureOrder = 0;
-      const cycle = cols; // <=3 cols: compact cadence with featured inserts
-      for (let i = 0; i < cards.length; i++) {
-        if ((i + 1) % (cycle + 1) !== 0) continue;
-        // Avoid a featured card that would leave an awkward tiny tail.
-        const remainingAfter = cards.length - (i + 1);
-        if (remainingAfter > 0 && remainingAfter < cols) continue;
-        const card = cards[i];
-        card.classList.add("media-feature");
-        const isVideo = String(kind || "").toLowerCase() === "videos";
-        const align = isVideo
-          ? (featureOrder % 2 === 0 ? "right" : "left")   // videos: right, left, right...
-          : (featureOrder % 2 === 0 ? "left" : "right");  // images: left, right, left...
-        card.classList.add(align === "right" ? "media-feature-right" : "media-feature-left");
-        featureOrder += 1;
-      }
-
-      // Fill final row gracefully (no dead gaps): 1 card => full row, 2 cards => first spans 2 columns.
-      let tailStart = cards.length;
-      for (let i = cards.length - 1; i >= 0; i--) {
-        if (cards[i].classList.contains("media-feature")) break;
-        tailStart = i;
-      }
-      const tailCards = cards.slice(tailStart).filter((c) => !c.classList.contains("media-feature"));
-      if (tailCards.length === 1) {
-        tailCards[0].classList.add("media-tail-single");
-      } else if (tailCards.length === 2 && cols >= 3) {
-        tailCards[0].classList.add("media-tail-double");
-        if (cols >= 4) tailCards[1].classList.add("media-tail-span-2");
-      } else if (tailCards.length === 3 && cols >= 4) {
-        tailCards[0].classList.add("media-tail-span-2");
-      }
+      // Keep media sidebars strictly uniform to avoid broken asymmetric blocks.
+      // We intentionally disable featured/tail span behavior here.
     }
 
     function appendMediaCards(kind, newItems) {
