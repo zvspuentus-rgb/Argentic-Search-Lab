@@ -973,17 +973,24 @@
 
     function applyMediaCadence(container, kind) {
       if (!container) return;
+      const cols = Math.max(
+        1,
+        (getComputedStyle(container).gridTemplateColumns || "")
+          .split(" ")
+          .map((s) => s.trim())
+          .filter(Boolean).length || 1
+      );
       const cards = [...container.querySelectorAll(".media-card")];
       cards.forEach((card) => {
-        card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double");
+        card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double", "media-tail-span-2");
       });
       let featureOrder = 0;
+      const cycle = cols; // 3 cols => "3 + featured", 4 cols => "4 + featured"
       for (let i = 0; i < cards.length; i++) {
-        // Pattern: 3 compact cards, then 1 featured row card.
-        if ((i + 1) % 4 !== 0) continue;
+        if ((i + 1) % (cycle + 1) !== 0) continue;
         // Avoid a featured card that would leave an awkward tiny tail.
         const remainingAfter = cards.length - (i + 1);
-        if (remainingAfter > 0 && remainingAfter < 3) continue;
+        if (remainingAfter > 0 && remainingAfter < cols) continue;
         const card = cards[i];
         card.classList.add("media-feature");
         const isVideo = String(kind || "").toLowerCase() === "videos";
@@ -1003,8 +1010,11 @@
       const tailCards = cards.slice(tailStart).filter((c) => !c.classList.contains("media-feature"));
       if (tailCards.length === 1) {
         tailCards[0].classList.add("media-tail-single");
-      } else if (tailCards.length === 2) {
+      } else if (tailCards.length === 2 && cols >= 3) {
         tailCards[0].classList.add("media-tail-double");
+        if (cols >= 4) tailCards[1].classList.add("media-tail-span-2");
+      } else if (tailCards.length === 3 && cols >= 4) {
+        tailCards[0].classList.add("media-tail-span-2");
       }
     }
 

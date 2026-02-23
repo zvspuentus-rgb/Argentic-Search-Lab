@@ -1008,6 +1008,16 @@
       loadMoreDiscovery();
     }, { passive: true });
 
+    let mediaResizeTick = 0;
+    window.addEventListener("resize", () => {
+      const now = Date.now();
+      if (now - mediaResizeTick < 220) return;
+      mediaResizeTick = now;
+      if ((state.mediaImages?.length || 0) + (state.mediaVideos?.length || 0) > 0) {
+        renderAnswerMedia();
+      }
+    }, { passive: true });
+
     // Settings Bridge (Removed conflicting loops)
     // Buttons now call actual backend functions directly
   
