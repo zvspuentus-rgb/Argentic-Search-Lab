@@ -1314,22 +1314,63 @@
         root.innerHTML = '<div class="mono p-5 text-center" style="color:#9db0bc; width: 100%;">Finding trending tech stories...</div>';
         return;
       }
+
+      const cleanDisplayText = (value) => {
+        const raw = String(value || "");
+        return raw
+          .replace(/\uFFFD/g, "")
+          .replace(/�/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      };
+
+      const descriptionFromUrl = (url) => {
+        try {
+          const u = new URL(String(url || ""));
+          const slug = (u.pathname || "")
+            .split("/")
+            .filter(Boolean)
+            .pop() || "";
+          const decoded = decodeURIComponent(slug)
+            .replace(/[-_]+/g, " ")
+            .replace(/\.(html?|php|aspx?)$/i, "")
+            .trim();
+          if (!decoded || decoded.length < 12) return "";
+          return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+        } catch {
+          return "";
+        }
+      };
+
+      const getBestDescription = (item) => {
+        const primary = cleanDisplayText(item?.content || "");
+        if (primary && !/^no description available\.?$/i.test(primary)) return primary;
+        const fromUrl = descriptionFromUrl(item?.url || "");
+        return cleanDisplayText(fromUrl);
+      };
+
+      let rendered = 0;
       for (const [idx, item] of state.discovery.slice(0, visibleCount).entries()) {
         const mediaType = item.mediaType || inferMediaType(item.url);
         const thumb = previewImageForUrl(item);
         const icon = faviconForUrl(item.url);
+        const title = cleanDisplayText(item.title || "Untitled");
+        const description = getBestDescription(item);
+
+        // Skip low-quality entries that still have no usable summary text.
+        if (!description) continue;
 
         // Every few items, render a full-width featured strip (alternating image side)
         // to create the same editorial rhythm used by high-end discover pages.
-        if (idx % 6 === 0) {
+        if (rendered % 5 === 0) {
           const feature = document.createElement("div");
-          feature.className = `col-12 discover-feature-wrap ${Math.floor(idx / 6) % 2 ? "is-reverse" : ""}`;
+          feature.className = `col-12 discover-feature-wrap ${Math.floor(rendered / 5) % 2 ? "is-reverse" : ""}`;
           feature.innerHTML = `
             <article class="discover-feature" data-didx="${idx}" onclick="explainDiscoveryItem(state.discovery[${idx}])">
               <div class="discover-feature-copy">
                 <div class="badge rounded-pill align-self-start" style="background: rgba(120, 184, 255, 0.12); color: var(--accent-secondary); font-size: 0.62rem; text-transform: uppercase;">${escapeHtml(mediaType)}</div>
-                <h3>${escapeHtml(item.title || "Untitled")}</h3>
-                <p>${escapeHtml(item.content || "No description available.")}</p>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(description)}</p>
               </div>
               <div class="discover-feature-media">
                 ${thumb ? `<img class="discover-feature-thumb" src="${escapeAttr(thumb)}" alt="thumb" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : `<div class="discover-feature-thumb d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.03);"> ✨ </div>`}
@@ -1337,6 +1378,7 @@
             </article>
           `;
           root.appendChild(feature);
+          rendered += 1;
           continue;
         }
 
@@ -1348,11 +1390,12 @@
             ${thumb ? `<img class="discover-thumb" src="${escapeAttr(thumb)}" alt="thumb" loading="lazy" onerror="this.onerror=null;this.src='${escapeAttr(icon)}';" />` : `<div class="discover-thumb d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.03);"> ✨ </div>`}
             <div class="d-flex flex-column gap-1 flex-grow-1">
               <div class="badge rounded-pill align-self-start" style="background: rgba(120, 184, 255, 0.1); color: var(--accent-secondary); font-size: 0.6rem; text-transform: uppercase;">${escapeHtml(mediaType)}</div>
-              <h4>${escapeHtml(item.title || "Untitled")}</h4>
-              <p>${escapeHtml(item.content || "No description available.")}</p>
+              <h4>${escapeHtml(title)}</h4>
+              <p>${escapeHtml(description)}</p>
             </div>
           </article>
         `;
         root.appendChild(col);
+        rendered += 1;
       }
     }
