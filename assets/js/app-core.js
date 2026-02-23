@@ -975,12 +975,15 @@
       if (!container) return;
       const cards = [...container.querySelectorAll(".media-card")];
       cards.forEach((card) => {
-        card.classList.remove("media-feature", "media-feature-left", "media-feature-right");
+        card.classList.remove("media-feature", "media-feature-left", "media-feature-right", "media-tail-single", "media-tail-double");
       });
       let featureOrder = 0;
       for (let i = 0; i < cards.length; i++) {
         // Pattern: 3 compact cards, then 1 featured row card.
         if ((i + 1) % 4 !== 0) continue;
+        // Avoid a featured card that would leave an awkward tiny tail.
+        const remainingAfter = cards.length - (i + 1);
+        if (remainingAfter > 0 && remainingAfter < 3) continue;
         const card = cards[i];
         card.classList.add("media-feature");
         const isVideo = String(kind || "").toLowerCase() === "videos";
@@ -989,6 +992,19 @@
           : (featureOrder % 2 === 0 ? "left" : "right");  // images: left, right, left...
         card.classList.add(align === "right" ? "media-feature-right" : "media-feature-left");
         featureOrder += 1;
+      }
+
+      // Fill final row gracefully (no dead gaps): 1 card => full row, 2 cards => first spans 2 columns.
+      let tailStart = cards.length;
+      for (let i = cards.length - 1; i >= 0; i--) {
+        if (cards[i].classList.contains("media-feature")) break;
+        tailStart = i;
+      }
+      const tailCards = cards.slice(tailStart).filter((c) => !c.classList.contains("media-feature"));
+      if (tailCards.length === 1) {
+        tailCards[0].classList.add("media-tail-single");
+      } else if (tailCards.length === 2) {
+        tailCards[0].classList.add("media-tail-double");
       }
     }
 
