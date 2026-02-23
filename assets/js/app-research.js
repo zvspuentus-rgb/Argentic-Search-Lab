@@ -100,8 +100,13 @@
       $("contextUrls").value = item.url || "";
 
       if (autoRun) {
-        // Auto-run should not inject a long editable template and run simultaneously.
-        const directQuery = normalizeQuery(`${item.title || ""}\n${item.content || ""}`) || (item.title || "Summarize this source");
+        // Auto-run uses a concise, intent-aware prompt (avoid copying ad-like snippets as raw query).
+        const directQuery = normalizeQuery([
+          `Summarize and evaluate this source in context.`,
+          `URL: ${item.url || "-"}`,
+          `Title: ${item.title || "-"}`,
+          "Include key points, credibility check, and practical takeaways."
+        ].join("\n")) || (item.title || "Summarize this source");
         input.value = directQuery;
         input.style.height = "auto";
         input.style.height = (input.scrollHeight) + "px";
@@ -504,8 +509,7 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       const base = normalizeQuery(queryText);
       if (!base) return base;
       const scope = state.temporalScope || inferTemporalScope(base);
-      const nowYear = new Date().getFullYear();
-      const allowedYears = new Set([nowYear]);
+      const allowedYears = new Set();
       if (scope.type === "historical" && Array.isArray(scope.years)) {
         for (const y of scope.years) {
           if (Number.isInteger(y) && y >= 1900 && y <= 2100) allowedYears.add(y);
@@ -525,11 +529,28 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
         return `${baseSafe} historical ${y} archived`.replace(/\s+/g, " ").trim();
       }
       if (scope.type === "current") {
-        const y = nowYear;
-        if (new RegExp(`\\b${y}\\b`).test(baseSafe)) return baseSafe;
-        return `${baseSafe} ${y} latest`.replace(/\s+/g, " ").trim();
+        // Keep "latest/current" intent but avoid forcing specific date/year tokens into search.
+        if (/\b(latest|current|today|now|live)\b/i.test(baseSafe)) return baseSafe;
+        return `${baseSafe} latest`.replace(/\s+/g, " ").trim();
       }
       return baseSafe;
+    }
+
+    function removeUnrequestedTemporalNoise(queryText) {
+      const q = normalizeQuery(queryText);
+      if (!q) return q;
+      const scope = state.temporalScope || inferTemporalScope(q);
+      const wantsSpecificYear = scope.type === "historical" && Array.isArray(scope.years) && scope.years.length > 0;
+      if (wantsSpecificYear) return q;
+      return q
+        .replace(/\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, " ")
+        .replace(/\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b\s+\d{1,2}(?:,\s*\d{4})?/gi, " ")
+        .replace(/\b\d{1,2}[\/.-]\d{1,2}(?:[\/.-]\d{2,4})?\b/g, " ")
+        .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, " ")
+        .replace(/\b(as of|today is|current date|right now)\b/gi, " ")
+        .replace(/\b(19|20)\d{2}\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
     function sanitizeQueriesByTemporalScope(queries) {
@@ -903,7 +924,8 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     async function searchQuery({ searchUrl, query, limit = 4, sourceProfile = "web", page = 1 }) {
       const u = new URL(normalizeSearchUrl(searchUrl));
       const focusedQuery = enforceFocusDomainScope(query);
-      const scopedQuery = enforceTemporalScopeInSearchQuery(focusedQuery);
+      const deNoisedQuery = removeUnrequestedTemporalNoise(focusedQuery);
+      const scopedQuery = enforceTemporalScopeInSearchQuery(deNoisedQuery || focusedQuery);
       u.searchParams.set("q", scopedQuery);
       u.searchParams.set("format", "json");
       const p = Number(page) || 1;
@@ -1310,19 +1332,40 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
     }
 
     async function testConnections() {
-      const lmBase = $("lmBase").value.trim();
       const searchUrl = normalizeSearchUrl($("searchUrl").value.trim());
-
-      addLog("health", "Testing LM Studio...", "ok");
-      await fetchJson(`${lmBase.replace(/\/$/, "")}/models`, {}, { scope: "health", label: "LM Studio models" });
-      addLog("health", "LM Studio OK", "ok");
+      const provider = String($("provider")?.value || "lmstudio").toLowerCase();
+      setStatus("Testing connections...");
+      addLog("health", `Testing provider (${provider})...`, "ok");
+      let providerOk = false;
+      let searchOk = false;
+      try {
+        const runtime = getProviderRuntime();
+        const info = await testProviderConnection(runtime);
+        const count = Array.isArray(info?.models) ? info.models.length : 0;
+        addLog("health", `${provider} OK (${count} models detected)`, "ok");
+        providerOk = true;
+      } catch (err) {
+        addLog("health", `${provider} failed: ${err.message || err}`, "err");
+      }
 
       addLog("health", "Testing SearXNG...", "ok");
-      const u = new URL(searchUrl);
-      u.searchParams.set("q", "test");
-      u.searchParams.set("format", "json");
-      await fetchJson(u.toString(), {}, { scope: "health", label: "SearXNG direct" });
-      addLog("health", "SearXNG OK", "ok");
+      try {
+        const u = new URL(searchUrl);
+        u.searchParams.set("q", "latest technology news");
+        u.searchParams.set("format", "json");
+        const searx = await fetchJson(u.toString(), {}, { scope: "health", label: "SearXNG direct" });
+        const hits = Array.isArray(searx?.results) ? searx.results.length : 0;
+        addLog("health", `SearXNG OK (${hits} results)`, "ok");
+        searchOk = true;
+      } catch (err) {
+        addLog("health", `SearXNG failed: ${err.message || err}`, "err");
+      }
+      const ok = providerOk && searchOk;
+      setStatus(ok ? "Connection test passed." : "Connection test failed.");
+      if (typeof showMiniToast === "function") {
+        showMiniToast(ok ? "Connection OK" : "Connection failed");
+      }
+      return ok;
     }
 
     async function runQuickPipeline({

@@ -573,11 +573,13 @@
       saveUiState();
     }
 
-    function loadSessionById(id) {
+    function loadSessionById(id, opts = {}) {
       const s = state.sessions.find((x) => x.id === id);
       if (!s) return;
       state.currentSessionId = s.id;
-      applySettingsSnapshot(s.settings, { preserveModelSelection: true });
+      if (opts.applySessionSettings === true) {
+        applySettingsSnapshot(s.settings, { preserveModelSelection: true });
+      }
       $("userQuery").value = s.data?.userQuery || "";
       state.attachments = Array.isArray(s.data?.attachments) ? s.data.attachments : [];
       if (typeof renderAttachmentTray === "function") renderAttachmentTray();

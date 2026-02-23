@@ -41,7 +41,8 @@
         renderFlow();
         renderDebug();
         setStatus("Testing connections...");
-        await testConnections();
+        const ok = await testConnections();
+        if (ok === false) throw new Error("Connection test failed.");
         setStatus("Connection test passed.");
         if (typeof showMiniToast === "function") showMiniToast("Connection OK");
       } catch (err) {
@@ -203,7 +204,12 @@
       updateAnswerMeta();
       renderAttachmentTray();
       setupVoiceInput();
-      refreshModels();
+      const providerNow = String($("provider")?.value || "").toLowerCase();
+      if (providerNow === "lmstudio") {
+        refreshModels();
+      } else if (typeof syncChatModelOptions === "function") {
+        syncChatModelOptions({ keepChatSelection: true });
+      }
       if (typeof refreshDemoQuota === "function") await refreshDemoQuota();
       const searchContainer = $("searchContainer");
       if (searchContainer) {
