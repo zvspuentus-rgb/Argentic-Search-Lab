@@ -227,13 +227,16 @@
       text-align: center;
       margin-top: 3.2rem;
       animation: fadeIn 1s ease-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .hero-brand-banner {
-      width: min(1080px, 93vw);
+      width: min(100%, 900px);
       margin: 0 auto 1.1rem auto;
       border-radius: 28px;
-      border: 1px solid rgba(95, 168, 255, 0.12);
+      border: 1px solid rgba(95, 168, 255, 0.08);
       background:
         radial-gradient(120% 130% at 0% 0%, rgba(10, 28, 38, 0.92) 0%, rgba(5, 12, 18, 0.95) 52%, rgba(2, 7, 11, 0.98) 100%);
       display: grid;
@@ -241,7 +244,7 @@
       align-items: center;
       gap: clamp(0.7rem, 1.6vw, 1.25rem);
       padding: clamp(0.8rem, 2vw, 1.35rem);
-      box-shadow: 0 16px 40px rgba(2, 8, 14, 0.52);
+      box-shadow: 0 14px 34px rgba(2, 8, 14, 0.46);
       text-align: left;
       overflow: hidden;
       position: relative;
@@ -253,11 +256,11 @@
       inset: -22% -18%;
       pointer-events: none;
       background:
-        radial-gradient(58% 52% at 24% 30%, rgba(67, 211, 168, 0.17) 0%, rgba(67, 211, 168, 0) 70%),
-        radial-gradient(54% 46% at 72% 24%, rgba(95, 168, 255, 0.2) 0%, rgba(95, 168, 255, 0) 72%),
-        radial-gradient(38% 34% at 83% 84%, rgba(255, 176, 103, 0.14) 0%, rgba(255, 176, 103, 0) 72%);
-      filter: blur(14px);
-      opacity: 0.85;
+        radial-gradient(62% 58% at 22% 34%, rgba(67, 211, 168, 0.24) 0%, rgba(67, 211, 168, 0) 70%),
+        radial-gradient(58% 52% at 72% 22%, rgba(95, 168, 255, 0.28) 0%, rgba(95, 168, 255, 0) 72%),
+        radial-gradient(42% 38% at 84% 84%, rgba(255, 176, 103, 0.2) 0%, rgba(255, 176, 103, 0) 72%);
+      filter: blur(16px);
+      opacity: 0.96;
       z-index: 0;
     }
 
@@ -762,7 +765,7 @@
         justify-items: center;
         text-align: center;
         border-radius: 22px;
-        width: min(96vw, 720px);
+        width: min(100%, 720px);
         padding: 0.95rem;
       }
       .hero-brand-line {
