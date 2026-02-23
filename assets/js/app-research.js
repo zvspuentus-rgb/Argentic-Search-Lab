@@ -268,7 +268,12 @@
       const payload = {
         exportedAt: new Date().toISOString(),
         sessionId: state.currentSessionId || null,
-        settings: getCurrentSettingsSnapshot(),
+        query: normalizeQuery($("userQuery")?.value || state.lastUserQuery || ""),
+        sources: (state.sources || []).map((s) => ({
+          title: s?.title || "",
+          url: s?.url || "",
+          snippet: String(s?.content || "").slice(0, 500)
+        })),
         turns: (state.turns || []).map((t) => ({
           id: t.id,
           createdAt: t.createdAt,
@@ -287,6 +292,22 @@
       a.click();
       URL.revokeObjectURL(url);
       setStatus("All turns exported as JSON.");
+    }
+
+    function shouldPreferContextualCopilotQuery(query, lastQuery) {
+      const q = String(query || "").trim().toLowerCase();
+      if (!q) return false;
+      const contextSignals = [
+        "translate", "summarize", "rewrite", "rephrase", "shorten", "expand", "explain", "continue",
+        "use the article", "this article", "this report", "this analysis", "this summary", "based on this",
+        "תרגם", "תסכם", "סכם", "תשכתב", "תקצר", "תסביר", "הכתבה", "הסיכום", "הדוח", "לפי זה", "בהקשר"
+      ];
+      const hasSignal = contextSignals.some((token) => q.includes(token));
+      if (hasSignal) return true;
+      const words = q.split(/\s+/).filter(Boolean);
+      const seemsShortFollowup = words.length <= 12;
+      const hasHistory = String(lastQuery || "").trim().length > 0;
+      return seemsShortFollowup && hasHistory;
     }
 
     function exportAllTurnsPdf() {
@@ -615,12 +636,12 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       return 1600;
     }
 
-    async function runFastFollowupPipeline(rawQuery) {
+    async function runFastFollowupPipeline(rawQuery, opts = {}) {
       if (state.busy) {
         setStatus("A request is already running...");
         return;
       }
-      if (typeof consumeDemoQuota === "function") {
+      if (!opts.skipQuotaCheck && typeof consumeDemoQuota === "function") {
         const ok = await consumeDemoQuota();
         if (!ok) return;
       }
@@ -1517,6 +1538,17 @@ ${turns.map((turn, idx) => `<section class="turn"><div class="q">[${idx + 1}] ${
       }
       if (!cleanQuery && hasAttachments) cleanQuery = "Analyze attached files";
       state.temporalScope = inferTemporalScope(cleanQuery);
+      const shouldUseCopilotContextOnly =
+        $("copilotBtn")?.checked &&
+        $("fastFollowups")?.checked &&
+        previousSourcesSnapshot.length >= 3 &&
+        shouldPreferContextualCopilotQuery(cleanQuery, state.lastUserQuery) &&
+        !contextUrls.length;
+      if (shouldUseCopilotContextOnly) {
+        addLog("copilot", "Detected contextual follow-up. Reusing current research context.", "ok");
+        await runFastFollowupPipeline(rawQuery, { skipQuotaCheck: true });
+        return;
+      }
       state.lastUserQuery = cleanQuery;
       cleanQuery = await prepareEnglishQuery(cleanQuery, lmBase, model);
       const modelQuery = composeModelQuery(cleanQuery);

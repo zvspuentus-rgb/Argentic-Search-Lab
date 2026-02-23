@@ -1347,9 +1347,13 @@
     }
 
     function openTurnPrintWindow(turn) {
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(turn.query || "Research Turn")}</title><style>body{font-family:Arial,sans-serif;margin:26px;color:#0d1217}h1{font-size:20px;margin:0 0 8px}.meta{font-size:12px;color:#5a6b79;margin-bottom:12px}pre{white-space:pre-wrap;line-height:1.5;font-size:13px;border:1px solid #d8e2ea;border-radius:8px;padding:10px;background:#f7fafc}</style></head><body><h1>${escapeHtml(turn.query || "Research Turn")}</h1><div class="meta">${escapeHtml(turn.createdAt || "")}</div><pre>${escapeHtml(turn.answerText || "")}</pre></body></html>`;
+      if (typeof printHtmlDocument === "function") {
+        printHtmlDocument(html, { statusMessage: "Print dialog opened (turn)." });
+        return;
+      }
       const w = window.open("", "_blank", "noopener,noreferrer,width=980,height=900");
       if (!w) return;
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(turn.query || "Research Turn")}</title><style>body{font-family:Arial,sans-serif;margin:26px;color:#0d1217}h1{font-size:20px;margin:0 0 8px}.meta{font-size:12px;color:#5a6b79;margin-bottom:12px}pre{white-space:pre-wrap;line-height:1.5;font-size:13px;border:1px solid #d8e2ea;border-radius:8px;padding:10px;background:#f7fafc}</style></head><body><h1>${escapeHtml(turn.query || "Research Turn")}</h1><div class="meta">${escapeHtml(turn.createdAt || "")}</div><pre>${escapeHtml(turn.answerText || "")}</pre></body></html>`;
       w.document.open();
       w.document.write(html);
       w.document.close();

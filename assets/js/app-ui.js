@@ -901,13 +901,14 @@
       selectionAskBox.classList.remove("show");
     }
 
-    function isSelectionInsideAnswer() {
-      const answer = $("answer");
+    function isSelectionInsideAnalysisZones() {
+      const zones = [$("answer"), $("threadTurnsList"), $("deepViewBody")].filter(Boolean);
       const sel = window.getSelection?.();
-      if (!answer || !sel || !sel.rangeCount || sel.isCollapsed) return null;
+      if (!zones.length || !sel || !sel.rangeCount || sel.isCollapsed) return null;
       const range = sel.getRangeAt(0);
       const container = range.commonAncestorContainer;
-      if (!answer.contains(container)) return null;
+      const insideZone = zones.some((zone) => zone.contains(container));
+      if (!insideZone) return null;
       const text = String(sel.toString() || "").replace(/\s+/g, " ").trim();
       if (text.length < 8) return null;
       const rect = range.getBoundingClientRect();
@@ -935,7 +936,7 @@
         hideSelectionAskBox();
         return;
       }
-      const data = isSelectionInsideAnswer();
+      const data = isSelectionInsideAnalysisZones();
       if (!data) {
         hideSelectionAskBox();
         return;
@@ -983,8 +984,8 @@
     document.addEventListener("mousedown", (e) => {
       if (!selectionAskBox || !selectionAskBox.classList.contains("show")) return;
       if (selectionAskBox.contains(e.target)) return;
-      const answer = $("answer");
-      if (answer?.contains(e.target)) return;
+      const zones = [$("answer"), $("threadTurnsList"), $("deepViewBody")].filter(Boolean);
+      if (zones.some((zone) => zone.contains(e.target))) return;
       hideSelectionAskBox();
     });
     let discoveryLoadTick = 0;
