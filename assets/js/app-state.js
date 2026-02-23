@@ -204,8 +204,11 @@
       };
     }
 
-    function applySettingsSnapshot(s) {
+    function applySettingsSnapshot(s, opts = {}) {
       if (!s) return;
+      const preserveModelSelection = opts.preserveModelSelection === true;
+      const preservedModel = $("modelName")?.value || "";
+      const preservedChatModel = $("chatModel")?.value || "";
       if (s.provider && $("provider")) $("provider").value = s.provider;
       if (s.lmBase) $("lmBase").value = s.lmBase;
       if (typeof s.ollamaBase === "string" && $("ollamaBase")) $("ollamaBase").value = s.ollamaBase;
@@ -215,7 +218,7 @@
       if (typeof s.openaiKey === "string" && $("openaiKey")) $("openaiKey").value = s.openaiKey;
       if (typeof s.anthropicKey === "string" && $("anthropicKey")) $("anthropicKey").value = s.anthropicKey;
       if (typeof s.geminiKey === "string" && $("geminiKey")) $("geminiKey").value = s.geminiKey;
-      if (s.modelName) $("modelName").value = s.modelName;
+      if (!preserveModelSelection && s.modelName) $("modelName").value = s.modelName;
       if (s.searchUrl) $("searchUrl").value = s.searchUrl;
       if (s.searchMode && $("searchMode")) $("searchMode").value = s.searchMode;
       if (s.discoveryCount && $("discoveryCount")) {
@@ -257,7 +260,17 @@
       if (typeof s.criticHardGate === "boolean") $("criticHardGate").checked = s.criticHardGate;
       if (typeof s.customSystem === "string") $("customSystem").value = s.customSystem;
       if (typeof s.contextUrls === "string") $("contextUrls").value = s.contextUrls;
-      if (typeof syncChatModelOptions === "function") syncChatModelOptions();
+      if (typeof syncChatModelOptions === "function") syncChatModelOptions({ keepChatSelection: preserveModelSelection });
+      if (preserveModelSelection) {
+        const keepValue = String(preservedChatModel || preservedModel || "").trim();
+        if (keepValue) {
+          const modelEl = $("modelName");
+          const chatModelEl = $("chatModel");
+          const allowed = modelEl ? [...modelEl.options].map((o) => o.value) : [];
+          if (modelEl && allowed.includes(keepValue)) modelEl.value = keepValue;
+          if (chatModelEl && allowed.includes(keepValue)) chatModelEl.value = keepValue;
+        }
+      }
       const lanes = Array.isArray(s.sourceLanes) ? new Set(s.sourceLanes) : new Set(["web"]);
       document.querySelectorAll(".source-lane").forEach((el) => { el.checked = lanes.has(el.value); });
       renderDiscovery();
@@ -623,7 +636,7 @@
       const s = state.sessions.find((x) => x.id === id);
       if (!s) return;
       state.currentSessionId = s.id;
-      applySettingsSnapshot(s.settings);
+      applySettingsSnapshot(s.settings, { preserveModelSelection: true });
       $("userQuery").value = s.data?.userQuery || "";
       state.attachments = Array.isArray(s.data?.attachments) ? s.data.attachments : [];
       if (typeof renderAttachmentTray === "function") renderAttachmentTray();
