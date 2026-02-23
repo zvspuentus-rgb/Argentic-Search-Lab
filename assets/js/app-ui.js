@@ -272,7 +272,31 @@
 
     function toggleSettings() {
       const modal = document.getElementById('settingsModal');
-      modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+      const nextVisible = modal.style.display === 'none';
+      modal.style.display = nextVisible ? 'flex' : 'none';
+      if (nextVisible) switchSettingsTab("llm");
+    }
+
+    function switchSettingsTab(tabId) {
+      const target = String(tabId || "llm");
+      document.querySelectorAll("#settingsModal [data-settings-tab]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.settingsTab === target);
+      });
+      document.querySelectorAll("#settingsModal [data-settings-pane]").forEach((pane) => {
+        pane.classList.toggle("active", pane.dataset.settingsPane === target);
+      });
+    }
+
+    function initSettingsTabs() {
+      const rail = document.querySelector("#settingsModal .settings-tab-rail");
+      if (!rail || rail.dataset.bound === "1") return;
+      rail.dataset.bound = "1";
+      rail.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-settings-tab]");
+        if (!btn) return;
+        switchSettingsTab(btn.dataset.settingsTab);
+      });
+      switchSettingsTab("llm");
     }
 
     function showMiniToast(message = "Saved") {
@@ -949,6 +973,7 @@
     addListenerIfPresent("deepViewModal", "click", (e) => {
       if (e.target && e.target.id === "deepViewModal") closeDeepResearchView();
     });
+    initSettingsTabs();
 
     document.addEventListener("selectionchange", () => {
       clearTimeout(handleAnswerSelectionUi._timer);

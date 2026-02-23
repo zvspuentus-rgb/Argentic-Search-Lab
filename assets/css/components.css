@@ -896,6 +896,88 @@
       text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
     }
 
+    #settingsModal .settings-layout {
+      display: grid;
+      grid-template-columns: 152px minmax(0, 1fr);
+      gap: 0.9rem;
+      min-height: 420px;
+    }
+
+    #settingsModal .settings-tab-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding-right: 0.2rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    #settingsModal .settings-tab-btn {
+      width: 100%;
+      border: 1px solid rgba(145, 192, 230, 0.22);
+      background: rgba(255, 255, 255, 0.03);
+      color: #b7ccdd;
+      border-radius: 0.62rem;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-align: left;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    #settingsModal .settings-tab-btn:hover {
+      border-color: rgba(120, 184, 255, 0.42);
+      color: #d7eaff;
+      background: rgba(120, 184, 255, 0.08);
+    }
+
+    #settingsModal .settings-tab-btn.active {
+      border-color: rgba(120, 184, 255, 0.62);
+      color: #e7f2ff;
+      background: linear-gradient(145deg, rgba(120, 184, 255, 0.17), rgba(120, 184, 255, 0.06));
+      box-shadow: inset 0 0 0 1px rgba(120, 184, 255, 0.16);
+    }
+
+    #settingsModal .settings-tab-body {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    #settingsModal .settings-pane {
+      display: none;
+      background: rgba(255, 255, 255, 0.018);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      animation: fadeIn 0.18s ease;
+    }
+
+    #settingsModal .settings-pane.active {
+      display: block;
+    }
+
+    @media (max-width: 880px) {
+      #settingsModal .settings-layout {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+
+      #settingsModal .settings-tab-rail {
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0 0 0.5rem 0;
+      }
+
+      #settingsModal .settings-tab-btn {
+        width: auto;
+        flex: 1 1 45%;
+      }
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from {
