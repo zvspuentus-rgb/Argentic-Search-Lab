@@ -152,6 +152,18 @@
       const preserveModelSelection = opts.preserveModelSelection === true;
       const preservedModel = $("modelName")?.value || "";
       const preservedChatModel = $("chatModel")?.value || "";
+      const ensureSelectOption = (id, value) => {
+        const el = $(id);
+        const v = String(value || "").trim();
+        if (!el || !v) return;
+        const exists = [...el.options].some((o) => o.value === v);
+        if (!exists) {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          el.appendChild(opt);
+        }
+      };
       if (s.provider && $("provider")) $("provider").value = s.provider;
       if (s.lmBase) $("lmBase").value = s.lmBase;
       if (typeof s.ollamaBase === "string" && $("ollamaBase")) $("ollamaBase").value = s.ollamaBase;
@@ -159,6 +171,7 @@
       if (typeof s.openaiKey === "string" && $("openaiKey")) $("openaiKey").value = s.openaiKey;
       if (typeof s.anthropicKey === "string" && $("anthropicKey")) $("anthropicKey").value = s.anthropicKey;
       if (typeof s.geminiKey === "string" && $("geminiKey")) $("geminiKey").value = s.geminiKey;
+      if (!preserveModelSelection && s.modelName) ensureSelectOption("modelName", s.modelName);
       if (!preserveModelSelection && s.modelName) $("modelName").value = s.modelName;
       if (s.searchUrl) $("searchUrl").value = s.searchUrl;
       if (s.searchMode && $("searchMode")) $("searchMode").value = s.searchMode;
