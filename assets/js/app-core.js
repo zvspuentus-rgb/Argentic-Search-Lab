@@ -116,7 +116,7 @@
             storedModel = String(saved?.chatModel || saved?.modelName || "").trim();
           }
         } catch { }
-        const current = select.value || storedModel;
+        const current = storedModel || select.value;
         select.innerHTML = "";
 
         if (models.length === 0) {
